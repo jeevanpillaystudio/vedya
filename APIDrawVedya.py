@@ -26,7 +26,7 @@ def run(context):
         # Draw a rectangle with a hole in the center
         drawBackgroundRectangeWithCenterHole(rootComp)
         # drawBorderAroundRectangle(rootComp, 200, 200, 8)
-        # drawBorderedCircle(rootComp, 100, 1, 'circle', BG_DEPTH)
+        drawBorderedCircle(rootComp, 100, 1, 'circle', BG_DEPTH)
         
         # # Draw an astroid with a hole in the center
         # drawOuterAsteroidWithCenterHole(rootComp, OUTER_SUPERELLIPSE_DEPTH, 2/3, 100, 100, 100, 'outer-superellipse', BG_DEPTH)
@@ -68,35 +68,18 @@ def drawBackgroundRectangeWithCenterHole(rootComp: adsk.fusion.Component):
     sketch.name = name
     
     # Draw the rectangle
-    # Calculate corner points
-    topLeft = adsk.core.Point3D.create(-BG_LENGTH / 2, BG_WIDTH / 2, 0)
-    bottomRight = adsk.core.Point3D.create(BG_LENGTH / 2, -BG_WIDTH / 2, 0)
+    sketch.sketchCurves.sketchLines.addTwoPointRectangle(adsk.core.Point3D.create(-BG_LENGTH / 2, BG_WIDTH / 2, 0), adsk.core.Point3D.create(BG_LENGTH / 2, -BG_WIDTH / 2, 0))
     
-    # Draw the rectangle
-    lines = sketch.sketchCurves.sketchLines
-    rectLines = lines.addTwoPointRectangle(topLeft, bottomRight)
+    # Create a circle in the middle with the specified radius
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), hole_radius)
     
     # Extrude the rectangle
-    prof = sketch.profiles.item(0)
-    extrudes = rootComp.features.extrudeFeatures
-    extInput = extrudes.createInput(prof, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-    extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(bg_depth))
-    extrude = extrudes.add(extInput)
-    body = extrude.bodies.item(0)
-    
-    # Create a new sketch for the hole
-    sketchHole = sketches.add(xyPlane)
-    sketch.name = 'hole'
-    sketchHole.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), hole_radius)
-    
-    # Extrude cut the hole
-    holeProf = sketchHole.profiles.item(0)
-    cutInput = extrudes.createInput(holeProf, adsk.fusion.FeatureOperations.CutFeatureOperation)
-    cutInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(bg_depth))
-    extrude = extrudes.add(cutInput)
-    body = extrude.bodies.item(0)
-    # cutInput.targetBody = body  # Make sure 'body' references the correct extruded body.
-    # extrudes.add(cutInput)
+    if EXTRUDE:
+        # Iterate each Profile & Find Profile with the Area = extract area calc for the rectangle - hole (use params above)
+        searchArea = bg_length * bg_width - math.pi * hole_radius ** 2
+        profile = extrudeProfileByArea(rootComp, sketch.profiles, searchArea, bg_depth, name)    
+        if profile is None:
+            raise ValueError('Failed to find the profile for extrusion')
     
 def drawOuterAsteroidWithCenterHole(rootComp, depth, n, numPoints, scaleX, scaleY, name, offset):
     # Create an offset plane from the xyPlane
@@ -218,14 +201,14 @@ def drawBorderedCircle(rootComp, radius, depth, name, offset):
     # center = adsk.core.Point3D.create(0, 0, 0)
     # sketch.sketchCurves.sketchCircles.addByCenterRadius(center, 10) 
     
-    # Extrude if needed
+    # Extrude
     if EXTRUDE:
-        extrudes = rootComp.features.extrudeFeatures
-        profile = sketch.profiles.item(0)  # Assuming Fusion 360 recognizes the single composite profile
-        extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-        extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
-        extrudes.add(extrudeInput)
-
+        # Iterate each Profile & Find Profile with the Area = extract area for the circle - hole (use params above)
+        searchArea = math.pi * radius ** 2 - math.pi * (radius - 1) ** 2
+        profile = extrudeProfileByArea(rootComp, sketch.profiles, searchArea, depth, name)    
+        if profile is None:
+            raise ValueError('Failed to find the profile for extrusion')
+    
 def drawCircle(rootComp, radius, depth, name, offset):
     # Create an offset plane from the xyPlane
     xyPlane = rootComp.xYConstructionPlane
@@ -334,3 +317,28 @@ def createOffsetPlane(rootComp, planeOffset):
     planeInput.setByOffset(xyPlane, offsetValue)
     offsetPlane = planes.add(planeInput)
     return offsetPlane
+
+def extrudeProfileByArea(rootComp, profiles, area, depth, bodyName):
+    """
+    Creates an extrusion based on the specified area and depth for the given profiles.
+    
+    Parameters:
+    - rootComp: The root component to which the extrusion is added.
+    - profiles: The collection of profiles to search for the specified area.
+    - area: The area to search for in the profiles.
+    - depth: The depth of the extrusion.
+    - bodyName: The name of the body created by the extrusion.
+    
+    Returns:
+    - The body created by the extrusion based on the specified area and depth.
+    """
+    for profile in profiles:
+        if profile.areaProperties().area == area:
+            extrudes = rootComp.features.extrudeFeatures
+            extInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
+            extrude = extrudes.add(extInput)
+            body = extrude.bodies.item(0)
+            body.name = bodyName
+            return body
+    return None
