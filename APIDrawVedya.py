@@ -2,15 +2,6 @@ import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
 
 EXTRUDE = True
-
-BG_DEPTH = 2
-BG_LENGTH = 200
-BG_WIDTH = 200
-
-HOLE_RADIUS = 20
-
-OUTER_SUPERELLIPSE_DEPTH = 1
-INNER_SUPERELLIPSE_DEPTH = 1
 FP_TOLERANCE = 1e-2 # 0.01 Precision for floating point comparison
 
 def run(context):
@@ -23,45 +14,42 @@ def run(context):
 
         # Get the root component of the active design
         rootComp: adsk.fusion.Component = design.rootComponent
+        hole_radius = 10
         
-        # Draw a rectangle with a hole in the center
-        drawBackgroundRectangeWithCenterHole(rootComp)
-        # drawBorderAroundRectangle(rootComp, 200, 200, 8)
-        drawBorderedCircle(rootComp, 100, 1, 'circle', BG_DEPTH)
+        # Depth == 0
+        drawBackgroundRectangeWithCenterHole(rootComp, 200, 200, 2, hole_radius, 'bg-rect')
+        drawBorderAroundRectangle(rootComp, 200, 200, 6, 2)
         
-        # Draw an astroid with a hole in the center
-        drawOuterAsteroidWithCenterHole(rootComp, OUTER_SUPERELLIPSE_DEPTH, 2/3, 100, 100, 100, 'outer-superellipse', BG_DEPTH)
-        # Draw a circle with a hole in the center with radius 50
-        drawCircle(rootComp, 50, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + BG_DEPTH)
-        # drawBorderedCircle(rootComp, 50, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + BG_DEPTH + 1)
-        # drawBorderedCircle(rootComp, 50-2, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + BG_DEPTH + 1)
+        # Depth == 1
+        drawBorderedCircle(rootComp, 100, 1, 'circle', 2, 1)
+        drawOuterAsteroidWithCenterHole(rootComp, 1, 2/3, 100, 100, 100, 'outer-superellipse', 1, 10)
+        
+        # Depth == 2
+        drawCircle(rootComp, 50, 1, 'circle', 2)
+        
+        # Depth == 3
+        drawBorderedCircle(rootComp, 50, 1, 'circle', 3, 1)
+        drawBorderedCircle(rootComp, 50 - 2, 1, 'circle', 3, 1 / 2)
+        drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 3, 10)
 
-        # # Create a smaller superellipse
-        # drawInnerSuperellipseWithCenterHole(rootComp, INNER_SUPERELLIPSE_DEPTH, 4 / 10, 100, 100, 100, 'inner-superellipse', OUTER_SUPERELLIPSE_DEPTH + BG_DEPTH)
-        # drawInnerSuperellipseWithCenterHole(rootComp, INNER_SUPERELLIPSE_DEPTH, 4 / 10, 100, 100, 100, 'inner-superellipse', OUTER_SUPERELLIPSE_DEPTH + BG_DEPTH + 1)
+        # Depth == 4
+        drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 4, 10)
+        drawCircle(rootComp, 25, 1, 'circle', 4 + 1)
 
-        # # Create a circle on the xy plane
-        # drawCircle(rootComp, 25, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + INNER_SUPERELLIPSE_DEPTH + BG_DEPTH + 1)
-        # drawBorderedCircle(rootComp, 25, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + INNER_SUPERELLIPSE_DEPTH + BG_DEPTH + 2)
+        # Depth == 5
+        drawBorderedCircle(rootComp, 25, 1, 'circle', 5, 1 / 2)
+        drawCircle(rootComp, 15, 1, 'circle', 5)
+        drawBorderedCircle(rootComp, 15, 1, 'circle', 5, 1 / 2)
         
-        # drawCircle(rootComp, 15, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + INNER_SUPERELLIPSE_DEPTH + BG_DEPTH + 2)
-        # drawBorderedCircle(rootComp, 15, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + INNER_SUPERELLIPSE_DEPTH + BG_DEPTH + 2)
-        
-        # drawBorderedCircle(rootComp, 10, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + INNER_SUPERELLIPSE_DEPTH + BG_DEPTH + 3)
+        # Depth == 6
+        drawBorderedCircle(rootComp, 10, 1, 'circle', 6, 1 / 2)
         
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
             
             
-def drawBackgroundRectangeWithCenterHole(rootComp: adsk.fusion.Component):
-    # Parameters
-    name = 'bg-rect'
-    bg_length = BG_LENGTH  # Length of the rectangle
-    bg_width = BG_WIDTH  # Width of the rectangle
-    bg_depth = BG_DEPTH  # Depth of the extruded rectangle
-    hole_radius = 10  # Diameter of the hole
-    
+def drawBackgroundRectangeWithCenterHole(rootComp: adsk.fusion.Component, bg_length, bg_width, bg_depth, hole_radius, name):
     # Create a new sketch on the xy plane
     sketches = rootComp.sketches
     xyPlane = rootComp.xYConstructionPlane
@@ -69,7 +57,7 @@ def drawBackgroundRectangeWithCenterHole(rootComp: adsk.fusion.Component):
     sketch.name = name
     
     # Draw the rectangle
-    sketch.sketchCurves.sketchLines.addTwoPointRectangle(adsk.core.Point3D.create(-BG_LENGTH / 2, BG_WIDTH / 2, 0), adsk.core.Point3D.create(BG_LENGTH / 2, -BG_WIDTH / 2, 0))
+    sketch.sketchCurves.sketchLines.addTwoPointRectangle(adsk.core.Point3D.create(-bg_length / 2, bg_width / 2, 0), adsk.core.Point3D.create(bg_length / 2, -bg_width / 2, 0))
     
     # Create a circle in the middle with the specified radius
     sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), hole_radius)
@@ -82,7 +70,7 @@ def drawBackgroundRectangeWithCenterHole(rootComp: adsk.fusion.Component):
         if profile is None:
             raise ValueError('Failed to find the profile for extrusion')
     
-def drawOuterAsteroidWithCenterHole(rootComp, depth, n, numPoints, scaleX, scaleY, name, offset):
+def drawOuterAsteroidWithCenterHole(rootComp, depth, n, numPoints, scaleX, scaleY, name, offset, hole_radius):
     # Create an offset plane from the xyPlane
     xyPlane = rootComp.xYConstructionPlane
     planes = rootComp.constructionPlanes
@@ -110,7 +98,7 @@ def drawOuterAsteroidWithCenterHole(rootComp, depth, n, numPoints, scaleX, scale
     sketch.sketchCurves.sketchFittedSplines.add(points)
 
     # Add a circle in the middle with a radius of 10cm
-    sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), 10)
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), hole_radius)
     
     # Extrude
     if EXTRUDE:
@@ -121,7 +109,7 @@ def drawOuterAsteroidWithCenterHole(rootComp, depth, n, numPoints, scaleX, scale
             raise ValueError('Failed to find the profile for extrusion')
       
         
-def drawInnerSuperellipseWithCenterHole(rootComp, depth, n, numPoints, scaleX, scaleY, name, offset):
+def drawInnerSuperellipseWithCenterHole(rootComp, depth, n, numPoints, scaleX, scaleY, name, offset, hole_radius):
     # Create an offset plane from the xyPlane
     xyPlane = rootComp.xYConstructionPlane
     planes = rootComp.constructionPlanes
@@ -146,21 +134,12 @@ def drawInnerSuperellipseWithCenterHole(rootComp, depth, n, numPoints, scaleX, s
         points.add(adsk.core.Point3D.create(x, y, 0))
 
     # Create a spline through the calculated points
-    spline = sketch.sketchCurves.sketchFittedSplines.add(points)
+    sketch.sketchCurves.sketchFittedSplines.add(points)
 
     # Add a circle in the middle with a radius of 10cm
-    center = adsk.core.Point3D.create(0, 0, 0)
-    sketch.sketchCurves.sketchCircles.addByCenterRadius(center, 10)
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), hole_radius)
     
-    # # Calculate the radius of the inscribed circle for the outer superellipse (astroid)
-    # # Adjusted for the astroid scaled to fit within scaleX by scaleY area
-    # # The radius calculation is done based on the normalized astroid's inscribed circle radius 
-    # inscribedCircleRadius = 50  # Calculated radius of the inscribed circle scaled to fit the astroid
-    # # Add a circle in the middle with the calculated radius
-    # center = adsk.core.Point3D.create(0, 0, 0)
-    # sketch.sketchCurves.sketchCircles.addByCenterRadius(center, inscribedCircleRadius)
-    
-    # Extrude if needed
+    # Extrude
     if EXTRUDE:
         extrudes = rootComp.features.extrudeFeatures
         profile = sketch.profiles.item(0)  # Assuming Fusion 360 recognizes the single composite profile
@@ -168,7 +147,7 @@ def drawInnerSuperellipseWithCenterHole(rootComp, depth, n, numPoints, scaleX, s
         extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
         extrudes.add(extrudeInput)
 
-def drawBorderedCircle(rootComp, radius, depth, name, offset):
+def drawBorderedCircle(rootComp, radius, depth, name, offset, width):
     # Create an offset plane from the xyPlane
     xyPlane = rootComp.xYConstructionPlane
     planes = rootComp.constructionPlanes
@@ -188,16 +167,12 @@ def drawBorderedCircle(rootComp, radius, depth, name, offset):
 
     # Create another circle with a smaller radius
     center = adsk.core.Point3D.create(0, 0, 0)
-    sketch.sketchCurves.sketchCircles.addByCenterRadius(center, radius - 1)
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(center, radius - width)
    
-    # # Add a circle in the middle with a radius of 10cm
-    # center = adsk.core.Point3D.create(0, 0, 0)
-    # sketch.sketchCurves.sketchCircles.addByCenterRadius(center, 10) 
-    
     # Extrude
     if EXTRUDE:
         # Iterate each Profile & Find Profile with the Area = extract area for the circle - hole (use params above)
-        searchArea = math.pi * radius ** 2 - math.pi * (radius - 1) ** 2
+        searchArea = math.pi * radius ** 2 - math.pi * (radius - width) ** 2
         profile = extrudeProfileByArea(rootComp, sketch.profiles, searchArea, depth, name)    
         if profile is None:
             raise ValueError('Failed to find the profile for extrusion')
@@ -233,10 +208,7 @@ def drawCircle(rootComp, radius, depth, name, offset):
         extrudes.add(extrudeInput)
  
 
-def drawBorderAroundRectangle(rootComp, originalWidth, originalHeight, borderDepth):
-    # Constants
-    borderWidth = BG_DEPTH  # The width of the border is equal to the specified depth for visual consistency
-    
+def drawBorderAroundRectangle(rootComp, originalWidth, originalHeight, borderDepth, borderWidth):
     # Create a new sketch on the xy plane
     sketches = rootComp.sketches
     xyPlane = rootComp.xYConstructionPlane
