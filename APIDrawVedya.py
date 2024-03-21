@@ -11,6 +11,7 @@ HOLE_RADIUS = 20
 
 OUTER_SUPERELLIPSE_DEPTH = 1
 INNER_SUPERELLIPSE_DEPTH = 1
+FP_TOLERANCE = 1e-2 # 0.01 Precision for floating point comparison
 
 def run(context):
     ui = None
@@ -28,10 +29,10 @@ def run(context):
         # drawBorderAroundRectangle(rootComp, 200, 200, 8)
         drawBorderedCircle(rootComp, 100, 1, 'circle', BG_DEPTH)
         
-        # # Draw an astroid with a hole in the center
-        # drawOuterAsteroidWithCenterHole(rootComp, OUTER_SUPERELLIPSE_DEPTH, 2/3, 100, 100, 100, 'outer-superellipse', BG_DEPTH)
-        # # Draw a circle with a hole in the center with radius 50
-        # drawCircle(rootComp, 50, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + BG_DEPTH)
+        # Draw an astroid with a hole in the center
+        drawOuterAsteroidWithCenterHole(rootComp, OUTER_SUPERELLIPSE_DEPTH, 2/3, 100, 100, 100, 'outer-superellipse', BG_DEPTH)
+        # Draw a circle with a hole in the center with radius 50
+        drawCircle(rootComp, 50, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + BG_DEPTH)
         # drawBorderedCircle(rootComp, 50, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + BG_DEPTH + 1)
         # drawBorderedCircle(rootComp, 50-2, 1, 'circle', OUTER_SUPERELLIPSE_DEPTH + BG_DEPTH + 1)
 
@@ -106,27 +107,19 @@ def drawOuterAsteroidWithCenterHole(rootComp, depth, n, numPoints, scaleX, scale
         points.add(adsk.core.Point3D.create(x, y, 0))
 
     # Create a spline through the calculated points
-    spline = sketch.sketchCurves.sketchFittedSplines.add(points)
+    sketch.sketchCurves.sketchFittedSplines.add(points)
 
     # Add a circle in the middle with a radius of 10cm
-    center = adsk.core.Point3D.create(0, 0, 0)
-    sketch.sketchCurves.sketchCircles.addByCenterRadius(center, 10)
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), 10)
     
-   # Calculate the radius of the inscribed circle for the outer superellipse (astroid)
-    # Adjusted for the astroid scaled to fit within scaleX by scaleY area
-    # The radius calculation is done based on the normalized astroid's inscribed circle radius 
-    # inscribedCircleRadius = 50  # Calculated radius of the inscribed circle scaled to fit the astroid
-    # # Add a circle in the middle with the calculated radius
-    # center = adsk.core.Point3D.create(0, 0, 0)
-    # sketch.sketchCurves.sketchCircles.addByCenterRadius(center, inscribedCircleRadius)
-    
-    # Extrude if needed
+    # Extrude
     if EXTRUDE:
-        extrudes = rootComp.features.extrudeFeatures
-        profile = sketch.profiles.item(0)  # Assuming Fusion 360 recognizes the single composite profile
-        extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-        extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
-        extrudes.add(extrudeInput)       
+        # Iterate each Profile & Find Profile with the Area = extract area calc for the superellipse - hole (use params above)
+        searchArea = (3 / 8) * math.pi * (scaleX ** 2) - math.pi * 10 ** 2
+        profile = extrudeProfileByArea(rootComp, sketch.profiles, searchArea, depth, name)    
+        if profile is None:
+            raise ValueError('Failed to find the profile for extrusion')
+      
         
 def drawInnerSuperellipseWithCenterHole(rootComp, depth, n, numPoints, scaleX, scaleY, name, offset):
     # Create an offset plane from the xyPlane
@@ -318,7 +311,7 @@ def createOffsetPlane(rootComp, planeOffset):
     offsetPlane = planes.add(planeInput)
     return offsetPlane
 
-def extrudeProfileByArea(rootComp, profiles, area, depth, bodyName):
+def extrudeProfileByArea(rootComp: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, depth, bodyName):
     """
     Creates an extrusion based on the specified area and depth for the given profiles.
     
@@ -333,7 +326,7 @@ def extrudeProfileByArea(rootComp, profiles, area, depth, bodyName):
     - The body created by the extrusion based on the specified area and depth.
     """
     for profile in profiles:
-        if profile.areaProperties().area == area:
+        if abs(profile.areaProperties().area - area) < FP_TOLERANCE:
             extrudes = rootComp.features.extrudeFeatures
             extInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
