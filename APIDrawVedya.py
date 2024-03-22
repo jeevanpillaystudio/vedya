@@ -34,12 +34,14 @@ def run(context):
 
         # Depth == 4
         drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 4, 10)
-        drawCircle(rootComp, 25, 1, 'circle', 4 + 1)
 
         # Depth == 5
+        # drawCircle(rootComp, 15, 1, 'circle', 5)
         drawBorderedCircle(rootComp, 25, 1, 'circle', 5, 1 / 2)
-        drawCircle(rootComp, 15, 1, 'circle', 5)
         drawBorderedCircle(rootComp, 15, 1, 'circle', 5, 1 / 2)
+        drawBorderedCircle(rootComp, 10, 1, 'circle', 5, 1 / 2)
+        create_seed_of_life(rootComp=rootComp, diameter=24.5, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=1.0, n=2, layer_offset=5.0)
+        create_seed_of_life(rootComp=rootComp, diameter=22, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=0.5, n=2, layer_offset=5.0)
         
         # Depth == 6
         drawBorderedCircle(rootComp, 10, 1, 'circle', 6, 1 / 2)
@@ -307,3 +309,68 @@ def extrudeProfileByArea(rootComp: adsk.fusion.Component, profiles: list[adsk.fu
             body.name = bodyName
             return body
     return None
+
+def create_seed_of_life(rootComp: adsk.fusion.Component, diameter=10.0, layer_depth=0.1, layer_offset=0.0, radius_diff=0.1, strokeWeight=0.05, extrudeHeight=0.1, n=3):
+    try:
+        sketches = rootComp.sketches
+        extrudes = rootComp.features.extrudeFeatures
+        
+        # Function to create a circle in a sketch
+        def create_circle(sketch, radius, center_x, center_y):
+            circles = sketch.sketchCurves.sketchCircles
+            circle = circles.addByCenterRadius(adsk.core.Point3D.create(center_x, center_y, 0), radius)
+            return circle
+
+        # Function to create the Seed of Life pattern
+        def create_seed_of_life_pattern(sketch, diameter, center_x=0, center_y=0, angle_offset=0):
+            # Calculate the radius
+            radius = diameter / 2
+            # Create the center circle
+            create_circle(sketch, radius, center_x, center_y)
+            create_circle(sketch, radius - strokeWeight, center_x, center_y)
+            
+            # Create the surrounding circles
+            for i in range(6):
+                # use angle offset
+                angle = math.radians(i * 60 + angle_offset)
+                x = center_x + radius * math.cos(angle)
+                y = center_y + radius * math.sin(angle)
+                create_circle(sketch, radius, x, y)
+                create_circle(sketch, radius - strokeWeight, x, y)
+
+        
+        # Main code to create the Seed of Life and extrude
+        for i in range(n):  # Creating 3 layers
+            # create offset plane
+            offsetPlane = createOffsetPlane(rootComp, layer_offset + layer_depth * i)
+            xyPlane = rootComp.xYConstructionPlane
+            sketch = sketches.add(offsetPlane)
+            sketch.name = 'seed-of-life- ' + str(i + 1)
+            
+            create_seed_of_life_pattern(sketch, diameter - i * (radius_diff * 2), 0, 0, 30 * i)
+            for i in range(sketch.profiles.count):
+                profile = sketch.profiles.item(i)
+                # Check if the profile is less than some area
+                if profile.areaProperties().area > 15:
+                    continue
+                
+                # Extrude the profile
+                extrudes = rootComp.features.extrudeFeatures
+                extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrudeHeight))
+                extrude = extrudes.add(extrudeInput)
+
+
+            # sketch
+            sketch = sketches.add(offsetPlane)
+            sketch.name = 'large-circle-enclosed-' + str(i + 1)
+            
+            create_circle(sketch, diameter + strokeWeight, 0, 0)
+            create_circle(sketch, diameter, 0, 0)
+            
+            # Extrude the large circle
+            extrudeInput = extrudes.createInput(sketch.profiles.item(0), adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrudeHeight))
+            extrude = extrudes.add(extrudeInput)
+    except:
+        raise Exception('Failed:\n{}'.format(traceback.format_exc()))
