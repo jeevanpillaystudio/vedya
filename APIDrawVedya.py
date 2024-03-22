@@ -31,6 +31,7 @@ def run(context):
         drawBorderedCircle(rootComp, 50, 1, 'circle', 3, 1)
         drawBorderedCircle(rootComp, 50 - 2, 1, 'circle', 3, 1 / 2)
         drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 3, 10)
+        create_inverted_triangle(rootComp, 75, n=1, layer_depth=0.5, extrudeHeight=0.5, layer_offset=3.0)
 
         # Depth == 4
         drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 4, 10)
@@ -41,7 +42,7 @@ def run(context):
         drawBorderedCircle(rootComp, 15, 1, 'circle', 5, 1 / 2)
         drawBorderedCircle(rootComp, 10, 1, 'circle', 5, 1 / 2)
         create_seed_of_life(rootComp=rootComp, diameter=24.5, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=1.0, n=2, layer_offset=5.0)
-        create_seed_of_life(rootComp=rootComp, diameter=22, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=0.5, n=2, layer_offset=5.0)
+        # create_seed_of_life(rootComp=rootComp, diameter=22, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=0.5, n=2, layer_offset=5.0)
         
         # Depth == 6
         drawBorderedCircle(rootComp, 10, 1, 'circle', 6, 1 / 2)
@@ -374,3 +375,95 @@ def create_seed_of_life(rootComp: adsk.fusion.Component, diameter=10.0, layer_de
             extrude = extrudes.add(extrudeInput)
     except:
         raise Exception('Failed:\n{}'.format(traceback.format_exc()))
+
+def create_inverted_triangle(rootComp, side_length, center_x=0, center_y=0, n=3, layer_depth=0.1, extrudeHeight=0.1, layer_offset=0.0):
+    """
+    Creates inverted triangles with two options: fill-based or stroke-based.
+    For stroke-based, it draws smaller triangles inside the larger triangles and extrudes the space between them.
+    
+    Parameters:
+    - rootComp: The root component in which the sketches are to be created.
+    - side_length: The length of the side of the triangles.
+    - center_x, center_y: The center position of the composite shape.
+    - n: The number of layers to create.
+    - layer_depth: The depth between each layer.
+    - type: The type of triangles to create ('fill' or 'stroke').
+    """
+    sketches = rootComp.sketches
+    extrudes = rootComp.features.extrudeFeatures
+    
+    def create_triangles(sketch, side_length, center_x, center_y, type):
+        # Base triangle height
+        height = (math.sqrt(3) / 2) * side_length
+        # Define vertices for both triangles
+        vertices_up = [
+            (center_x, center_y + 2 * height / 3),  # Top vertex of upward triangle
+            (center_x - side_length / 2, center_y - height / 3),  # Bottom left vertex
+            (center_x + side_length / 2, center_y - height / 3)   # Bottom right vertex
+        ]
+        
+        vertices_down = [
+            (center_x, center_y - 2 * height / 3),  # Bottom vertex of downward triangle
+            (center_x - side_length / 2, center_y + height / 3),  # Top left vertex
+            (center_x + side_length / 2, center_y + height / 3)   # Top right vertex
+        ]
+
+        def add_line(start_point, end_point):
+            sketch.sketchCurves.sketchLines.addByTwoPoints(
+                adsk.core.Point3D.create(*start_point), 
+                adsk.core.Point3D.create(*end_point)
+            )
+
+        def draw_triangle(vertices, shrink_factor=0):
+            if shrink_factor:
+                center = (center_x, center_y)
+                shrinked_vertices = [
+                    (v[0] + (center[0] - v[0]) * shrink_factor, v[1] + (center[1] - v[1]) * shrink_factor)
+                    for v in vertices
+                ]
+                for i in range(len(shrinked_vertices)):
+                    start_point = shrinked_vertices[i]
+                    end_point = shrinked_vertices[(i + 1) % len(shrinked_vertices)]
+                    add_line(start_point, end_point)
+            else:
+                for i in range(len(vertices)):
+                    start_point = vertices[i]
+                    end_point = vertices[(i + 1) % len(vertices)]
+                    add_line(start_point, end_point)
+
+        # Draw outer triangles
+        draw_triangle(vertices_up)
+        draw_triangle(vertices_down)
+
+        if type == 'stroke':
+            # Draw inner triangles for the stroke effect
+            draw_triangle(vertices_up, shrink_factor=0.1)
+            draw_triangle(vertices_down, shrink_factor=0.1)
+        
+        # Extrude the space between the outer and inner triangles if 'stroke', else extrude the whole profile for 'fill'
+        if type == 'stroke':
+            for profile in sketch.profiles:
+                if profile.areaProperties().area > 170:  # Adjust this threshold based on your design needs
+                    continue
+                extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrudeHeight))  # Set extrusion depth
+                extrudes.add(extrudeInput)
+        elif type == 'fill':
+            for profile in sketch.profiles:
+                extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrudeHeight))
+                extrudes.add(extrudeInput)
+    
+    
+    # Create Base
+    offsetPlane = createOffsetPlane(rootComp, layer_offset)
+    sketch = sketches.add(offsetPlane)
+    sketch.name = 'base'
+    create_triangles(sketch, side_length, center_x, center_y, 'fill')
+    
+    # Create layers
+    offsetPlane = createOffsetPlane(rootComp, layer_offset + layer_depth)
+    sketch = sketches.add(offsetPlane)
+    sketch.name = 'layer-1'
+    create_triangles(sketch, side_length, center_x, center_y, 'stroke')
+      
