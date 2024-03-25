@@ -1,8 +1,9 @@
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
+from .shapes import draw_astroid_filled, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle
+from .utils import create_offset_plane, create_sketch, extrude_profile_by_area
 
 EXTRUDE = True
-FP_TOLERANCE = 1e-2 # 0.01 Precision for floating point comparison
 
 def run(context):
     ui = None
@@ -18,34 +19,34 @@ def run(context):
         
         # Depth == 0
         drawBackgroundRectangeWithCenterHole(rootComp, 200, 200, 2, hole_radius, 'bg-rect')
-        drawBorderAroundRectangle(rootComp, 200, 200, 6, 2)
+        # drawBorderAroundRectangle(rootComp, 200, 200, 6, 2)
         
-        # Depth == 1
+        # # Depth == 1
         drawBorderedCircle(rootComp, 100, 1, 'circle', 2, 1)
-        drawOuterAsteroidWithCenterHole(rootComp, 1, 2/3, 100, 100, 100, 'outer-superellipse', 1, 10)
+        drawOuterAsteroidWithCenterHole(rootComp, 1, 2/3, 100, 100, 100, 'outer-superellipse',hole_radius=10.0, layer_offset=2.0, strokeWeight=4.0)
         
-        # Depth == 2
-        drawCircle(rootComp, 50, 1, 'circle', 2)
+        # # Depth == 2
+        # drawCircle(rootComp, 50, 1, 'circle', 2)
         
-        # Depth == 3
-        drawBorderedCircle(rootComp, 50, 1, 'circle', 3, 1)
-        drawBorderedCircle(rootComp, 50 - 2, 1, 'circle', 3, 1 / 2)
-        drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 3, 10)
-        create_inverted_triangle(rootComp, 75, n=1, layer_depth=0.5, extrudeHeight=0.5, layer_offset=3.0)
+        # # Depth == 3
+        # drawBorderedCircle(rootComp, 50, 1, 'circle', 3, 1)
+        # drawBorderedCircle(rootComp, 50 - 2, 1, 'circle', 3, 1 / 2)
+        # drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 3, 10)
+        # create_inverted_triangle(rootComp, 75, n=1, layer_depth=0.5, extrudeHeight=0.5, layer_offset=3.0)
 
-        # Depth == 4
-        drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 4, 10)
+        # # Depth == 4
+        # drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 4, 10)
 
-        # Depth == 5
-        # drawCircle(rootComp, 15, 1, 'circle', 5)
-        drawBorderedCircle(rootComp, 25, 1, 'circle', 5, 1 / 2)
-        drawBorderedCircle(rootComp, 15, 1, 'circle', 5, 1 / 2)
-        drawBorderedCircle(rootComp, 10, 1, 'circle', 5, 1 / 2)
-        create_seed_of_life(rootComp=rootComp, diameter=24.5, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=1.0, n=2, layer_offset=5.0)
-        # create_seed_of_life(rootComp=rootComp, diameter=22, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=0.5, n=2, layer_offset=5.0)
+        # # Depth == 5
+        # # drawCircle(rootComp, 15, 1, 'circle', 5)
+        # drawBorderedCircle(rootComp, 25, 1, 'circle', 5, 1 / 2)
+        # drawBorderedCircle(rootComp, 15, 1, 'circle', 5, 1 / 2)
+        # drawBorderedCircle(rootComp, 10, 1, 'circle', 5, 1 / 2)
+        # create_seed_of_life(rootComp=rootComp, diameter=24.5, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=1.0, n=2, layer_offset=5.0)
+        # # create_seed_of_life(rootComp=rootComp, diameter=22, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=0.5, n=2, layer_offset=5.0)
         
-        # Depth == 6
-        drawBorderedCircle(rootComp, 10, 1, 'circle', 6, 1 / 2)
+        # # Depth == 6
+        # drawBorderedCircle(rootComp, 10, 1, 'circle', 6, 1 / 2)
         
     except:
         if ui:
@@ -53,65 +54,22 @@ def run(context):
             
             
 def drawBackgroundRectangeWithCenterHole(rootComp: adsk.fusion.Component, bg_length, bg_width, bg_depth, hole_radius, name):
-    # Create a new sketch on the xy plane
-    sketches = rootComp.sketches
-    xyPlane = rootComp.xYConstructionPlane
-    sketch = sketches.add(xyPlane)
-    sketch.name = name
+    sketch = create_sketch(rootComp, name, offset=0.0)
+    draw_rectangle(sketch, bg_length, bg_width)
+    draw_circle(sketch, hole_radius)
+    extrude_profile_by_area(rootComp, sketch.profiles, calculate_rectangle_area(bg_length, bg_width) - calculate_circle_area(hole_radius), bg_depth, name) 
     
-    # Draw the rectangle
-    sketch.sketchCurves.sketchLines.addTwoPointRectangle(adsk.core.Point3D.create(-bg_length / 2, bg_width / 2, 0), adsk.core.Point3D.create(bg_length / 2, -bg_width / 2, 0))
-    
-    # Create a circle in the middle with the specified radius
-    sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), hole_radius)
-    
-    # Extrude the rectangle
-    if EXTRUDE:
-        # Iterate each Profile & Find Profile with the Area = extract area calc for the rectangle - hole (use params above)
-        searchArea = bg_length * bg_width - math.pi * hole_radius ** 2
-        profile = extrudeProfileByArea(rootComp, sketch.profiles, searchArea, bg_depth, name)    
-        if profile is None:
-            raise ValueError('Failed to find the profile for extrusion')
-    
-def drawOuterAsteroidWithCenterHole(rootComp, depth, n, numPoints, scaleX, scaleY, name, offset, hole_radius):
-    # Create an offset plane from the xyPlane
-    xyPlane = rootComp.xYConstructionPlane
-    planes = rootComp.constructionPlanes
-    planeInput = planes.createInput()
-    offsetValue = adsk.core.ValueInput.createByReal(offset)
-    planeInput.setByOffset(xyPlane, offsetValue)
-    offsetPlane = planes.add(planeInput)
-    
-    # Create a new sketch on the offset plane
-    sketches = rootComp.sketches   
-    sketch = sketches.add(offsetPlane)
-    sketch.name = name    
-    
-    # Superellipse parameters
-    points = adsk.core.ObjectCollection.create()
-
-    for i in range(numPoints + 1):
-        angle = i * 2 * math.pi / numPoints
-        x = pow(abs(math.cos(angle)), 2/n) * math.copysign(1, math.cos(angle)) * scaleX
-        y = pow(abs(math.sin(angle)), 2/n) * math.copysign(1, math.sin(angle)) * scaleY
-        # Add point to the collection
-        points.add(adsk.core.Point3D.create(x, y, 0))
-
-    # Create a spline through the calculated points
-    sketch.sketchCurves.sketchFittedSplines.add(points)
-
-    # Add a circle in the middle with a radius of 10cm
-    sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), hole_radius)
-    
-    # Extrude
-    if EXTRUDE:
-        # Iterate each Profile & Find Profile with the Area = extract area calc for the superellipse - hole (use params above)
-        searchArea = (3 / 8) * math.pi * (scaleX ** 2) - math.pi * 10 ** 2
-        profile = extrudeProfileByArea(rootComp, sketch.profiles, searchArea, depth, name)    
-        if profile is None:
-            raise ValueError('Failed to find the profile for extrusion')
-      
-        
+def drawOuterAsteroidWithCenterHole(rootComp, depth, n, numPoints, scaleX, scaleY, name, hole_radius, layer_offset=0.0, strokeWeight = 0.0):
+    sketch = create_sketch(rootComp, name, layer_offset)
+    if strokeWeight > 0:
+        draw_astroid_filled(sketch, n, numPoints, scaleX, scaleY)
+        draw_astroid_stroke(sketch, n, numPoints, scaleX, scaleY, strokeWeight)
+        extrude_profile_by_area(rootComp, sketch.profiles, calculate_astroid_area(scaleX) - calculate_astroid_area(scaleX - strokeWeight), depth, name)
+    else:
+        draw_astroid_filled(sketch, n, numPoints, scaleX, scaleY)
+        draw_circle(sketch, hole_radius)
+        extrude_profile_by_area(rootComp, sketch.profiles, calculate_astroid_area(scaleX) - calculate_circle_area(hole_radius), depth, name)
+ 
 def drawInnerSuperellipseWithCenterHole(rootComp, depth, n, numPoints, scaleX, scaleY, name, offset, hole_radius):
     # Create an offset plane from the xyPlane
     xyPlane = rootComp.xYConstructionPlane
@@ -176,7 +134,7 @@ def drawBorderedCircle(rootComp, radius, depth, name, offset, width):
     if EXTRUDE:
         # Iterate each Profile & Find Profile with the Area = extract area for the circle - hole (use params above)
         searchArea = math.pi * radius ** 2 - math.pi * (radius - width) ** 2
-        profile = extrudeProfileByArea(rootComp, sketch.profiles, searchArea, depth, name)    
+        profile = extrude_profile_by_area(rootComp, sketch.profiles, searchArea, depth, name)    
         if profile is None:
             raise ValueError('Failed to find the profile for extrusion')
     
@@ -267,49 +225,7 @@ def drawBorderAroundRectangle(rootComp, originalWidth, originalHeight, borderDep
                 extrudeInput.setDistanceExtent(False, distance)
                 extrudes.add(extrudeInput)
 
-def createOffsetPlane(rootComp, planeOffset):
-    """
-    Creates an offset plane from the XY plane based on the specified offset.
 
-    Parameters:
-    - rootComp: The root component to which the plane is added.
-    - offset: The offset distance from the XY plane.
-
-    Returns:
-    - The created offset construction plane.
-    """
-    xyPlane = rootComp.xYConstructionPlane
-    planes = rootComp.constructionPlanes
-    planeInput = planes.createInput()
-    offsetValue = adsk.core.ValueInput.createByReal(planeOffset)
-    planeInput.setByOffset(xyPlane, offsetValue)
-    offsetPlane = planes.add(planeInput)
-    return offsetPlane
-
-def extrudeProfileByArea(rootComp: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, depth, bodyName):
-    """
-    Creates an extrusion based on the specified area and depth for the given profiles.
-    
-    Parameters:
-    - rootComp: The root component to which the extrusion is added.
-    - profiles: The collection of profiles to search for the specified area.
-    - area: The area to search for in the profiles.
-    - depth: The depth of the extrusion.
-    - bodyName: The name of the body created by the extrusion.
-    
-    Returns:
-    - The body created by the extrusion based on the specified area and depth.
-    """
-    for profile in profiles:
-        if abs(profile.areaProperties().area - area) < FP_TOLERANCE:
-            extrudes = rootComp.features.extrudeFeatures
-            extInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-            extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
-            extrude = extrudes.add(extInput)
-            body = extrude.bodies.item(0)
-            body.name = bodyName
-            return body
-    return None
 
 def create_seed_of_life(rootComp: adsk.fusion.Component, diameter=10.0, layer_depth=0.1, layer_offset=0.0, radius_diff=0.1, strokeWeight=0.05, extrudeHeight=0.1, n=3):
     try:
@@ -343,7 +259,7 @@ def create_seed_of_life(rootComp: adsk.fusion.Component, diameter=10.0, layer_de
         # Main code to create the Seed of Life and extrude
         for i in range(n):  # Creating 3 layers
             # create offset plane
-            offsetPlane = createOffsetPlane(rootComp, layer_offset + layer_depth * i)
+            offsetPlane = create_offset_plane(rootComp, layer_offset + layer_depth * i)
             xyPlane = rootComp.xYConstructionPlane
             sketch = sketches.add(offsetPlane)
             sketch.name = 'seed-of-life- ' + str(i + 1)
@@ -456,13 +372,13 @@ def create_inverted_triangle(rootComp, side_length, center_x=0, center_y=0, n=3,
     
     
     # Create Base
-    offsetPlane = createOffsetPlane(rootComp, layer_offset)
+    offsetPlane = create_offset_plane(rootComp, layer_offset)
     sketch = sketches.add(offsetPlane)
     sketch.name = 'base'
     create_triangles(sketch, side_length, center_x, center_y, 'fill')
     
     # Create layers
-    offsetPlane = createOffsetPlane(rootComp, layer_offset + layer_depth)
+    offsetPlane = create_offset_plane(rootComp, layer_offset + layer_depth)
     sketch = sketches.add(offsetPlane)
     sketch.name = 'layer-1'
     create_triangles(sketch, side_length, center_x, center_y, 'stroke')
