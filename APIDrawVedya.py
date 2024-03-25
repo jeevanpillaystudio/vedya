@@ -5,6 +5,14 @@ from .utils import create_offset_plane, create_sketch, extrude_profile_by_area
 
 EXTRUDE = True
 
+# structurally
+# 1 layer; each having 4 sub-layers
+# 1 sub-layer == 0.32cm
+# 1 layer == 1.28cm
+# total layers = 4
+# total depth = 5.12cm
+# base = 6.4cm - 5.12cm = 1.28cm
+
 def run(context):
     ui = None
     try:
@@ -15,23 +23,25 @@ def run(context):
 
         # Get the root component of the active design
         rootComp: adsk.fusion.Component = design.rootComponent
-        hole_radius = 10
+        hole_radius = 16.0 - 1.0
         
-        # Depth == 0
-        drawBackgroundRectangeWithCenterHole(rootComp, 200, 200, 2, hole_radius, 'bg-rect')
+        # Layer 0
+        drawBackgroundRectangeWithCenterHole(rootComp=rootComp, bg_length=128, bg_width=128, bg_depth=1.28, hole_radius=hole_radius, name='bg-rect')
         # drawBorderAroundRectangle(rootComp, 200, 200, 6, 2)
         
-        # # Depth == 1
-        drawBorderedCircle(rootComp, 100, 1, 'circle', 2, 1)
-        drawOuterAsteroidWithCenterHole(rootComp, 1, 2/3, 100, 100, 100, 'outer-superellipse',hole_radius=10.0, layer_offset=2.0, strokeWeight=4.0)
+        # Layer 1
+        drawZenoRectangles(rootComp=rootComp, layer_offset=1.28, strokeWeight=1.28, depth=1.28)
+        drawZenoCircles(rootComp=rootComp, layer_offset=1.28, strokeWeight=1.28, depth=1.28)
+        drawBorderedCircle(rootComp=rootComp, radius=64.0, depth=1.28, name='outer-circle', offset=1.28, width=1.28)
+        drawOuterAsteroidWithCenterHole(rootComp=rootComp, depth=1.28, n=2/3, numPoints=128, scaleX=64, scaleY=64, name='outer-superellipse', hole_radius=hole_radius, layer_offset=1.28, strokeWeight=2.56)
+        drawInnerSuperellipseWithCenterHole(rootComp=rootComp, depth=1.28, n=4/10, numPoints=128, scaleX=64.0, scaleY=64.0, name='inner-superellipse', offset=1.28, hole_radius=hole_radius)
         
         # # Depth == 2
-        # drawCircle(rootComp, 50, 1, 'circle', 2)
+        # drawBorderedCircle(rootComp=rootComp, radius=32, depth=1, name='inner-circle', offset=2, width=1)
         
         # # Depth == 3
         # drawBorderedCircle(rootComp, 50, 1, 'circle', 3, 1)
         # drawBorderedCircle(rootComp, 50 - 2, 1, 'circle', 3, 1 / 2)
-        # drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 3, 10)
         # create_inverted_triangle(rootComp, 75, n=1, layer_depth=0.5, extrudeHeight=0.5, layer_offset=3.0)
 
         # # Depth == 4
@@ -52,7 +62,36 @@ def run(context):
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
             
-            
+
+def drawZenoRectangles(rootComp: adsk.fusion.Component, layer_offset=0.0, strokeWeight=0.0, depth=0.5):
+    sketch = create_sketch(rootComp, 'zeno-rectangles', offset=layer_offset)
+    for i in range(2):
+        # based on power series of 1/2
+        val = (2 ** (i + 6))
+        length = width = val
+        
+        # Draw the rectangle (only border)
+        draw_rectangle(sketch, length, width)
+        draw_rectangle(sketch, length - strokeWeight, width - strokeWeight)
+        
+        # Extrude the rectangle
+        extrude_profile_by_area(rootComp, sketch.profiles, calculate_rectangle_area(length, width) - calculate_rectangle_area(length - strokeWeight, width - strokeWeight), depth, 'zeno-rectangle-' + str(i + 1))
+
+def drawZenoCircles(rootComp: adsk.fusion.Component, layer_offset=0.0, strokeWeight=0.0, depth=0.5):
+    sketch = create_sketch(rootComp, 'zeno-circles', offset=layer_offset)
+    for i in range(2):
+        # based on power series of 1/2
+        val = (2 ** (i + 5))
+        radius = val / 2
+        
+        # Draw the circle (only border)
+        draw_circle(sketch, radius)
+        draw_circle(sketch, radius - strokeWeight)
+        
+        # Extrude the circle
+        extrude_profile_by_area(rootComp, sketch.profiles, calculate_circle_area(radius) - calculate_circle_area(radius - strokeWeight), depth, 'zeno-circle-' + str(i + 1))
+
+
 def drawBackgroundRectangeWithCenterHole(rootComp: adsk.fusion.Component, bg_length, bg_width, bg_depth, hole_radius, name):
     sketch = create_sketch(rootComp, name, offset=0.0)
     draw_rectangle(sketch, bg_length, bg_width)
