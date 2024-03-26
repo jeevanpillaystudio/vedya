@@ -31,3 +31,9 @@ def draw_rectangle(sketch, length, width):
     
 def calculate_rectangle_area(width, height):
     return width * height
+
+def draw_rotated_rectangle(sketch, width, height):
+    sketch.sketchCurves.sketchLines.addThreePointRectangle(adsk.core.Point3D.create(-width, 0, 0), adsk.core.Point3D.create(0, height, 0), adsk.core.Point3D.create(width, 0, 0))
+
+def calculate_three_point_rectangle_area(width, height):
+    return math.sqrt(width ** 2 + height ** 2) * math.sqrt(width ** 2 + height ** 2)
