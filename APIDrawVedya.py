@@ -1,9 +1,7 @@
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
-from .shapes import draw_astroid_filled, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, calculate_three_point_rectangle_area
-from .utils import create_offset_plane, create_sketch, extrude_profile_by_area
-
-EXTRUDE = True
+from .shapes import draw_astroid, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, calculate_three_point_rectangle_area, draw_seed_of_life_pattern
+from .utils import create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component
 
 # structurally
 # 1 layer; each having 4 sub-layers
@@ -13,6 +11,24 @@ EXTRUDE = True
 # total depth = 5.12cm
 # base = 6.4cm - 5.12cm = 1.28cm
 
+class AppConfig():
+    """
+    List of the configurations for the creation
+    """
+    def __init__(self):
+        pass
+    HoleRadius = 8.0
+    Extrude = True
+    MaxWidth = 128.0
+    MaxLength = 128.0
+    LayerDepth = 1.28
+    
+class AstroidConfig():
+    def __init__(self):
+        pass
+    N = 2/3
+    NumPoints = 128
+
 def run(context):
     ui = None
     try:
@@ -20,182 +36,59 @@ def run(context):
         app = adsk.core.Application.get()
         ui  = app.userInterface
         design = app.activeProduct
+        
+        # Check if the design is not in "Design" mode.
+        if not design:
+            ui.messageBox('It is not supported in current workspace, please switch to DESIGN workspace and try again.')
+            return
 
         # Get the root component of the active design
-        rootComp: adsk.fusion.Component = design.rootComponent
-        hole_radius = 16.0
+        root_comp: adsk.fusion.Component = design.rootComponent
         
-        # Layer 0
-        # drawBackgroundRectangle(rootComp=rootComp, bg_length=128, bg_width=128, bg_depth=1.28, hole_radius=hole_radius, name='bg-rect')
-        drawCircle(rootComp, 16.0, 1.28, 'circle', 1.28)
-        # drawBorderAroundRectangle(rootComp, 200, 200, 6, 2)
-        
-        # Layer 1
-        # drawZenoRectangles(rootComp=rootComp, layer_offset=1.28, strokeWeight=1.28, depth=1.28)
-        # drawZenoCircles(rootComp=rootComp, layer_offset=1.28, strokeWeight=0.64, depth=1.28)
-        # drawRotatedSquare(rootComp=rootComp, width=64.0, layer_offset=1.28, depth=1.28)
-        # drawRotatedSquare(rootComp=rootComp, width=32.0 + 16.0, layer_offset=1.28, depth=1.28)
-        # drawRotatedSquare(rootComp=rootComp, width=32.0, layer_offset=1.28, depth=1.28)
-        
-        # drawBorderedCircle(rootComp=rootComp, radius=64.0, depth=1.28, name='outer-circle', offset=1.28, strokeWeight=1.28)
-        # drawOuterAstroid(rootComp=rootComp, depth=1.28, n=2/3, numPoints=128, scaleX=64, scaleY=64, name='outer-superellipse', hole_radius=hole_radius, layer_offset=1.28, strokeWeight=2.56)
-        # drawOuterAstroid(rootComp=rootComp, depth=1.28, n=2/3, numPoints=128, scaleX=32.0, scaleY=32.0, name='outer-superellipse', hole_radius=hole_radius, layer_offset=1.28, strokeWeight=2.56)
-        
-        # drawInnerSuperellipse(rootComp=rootComp, depth=1.28, n=4/10, numPoints=128, scaleX=64.0, scaleY=64.0, name='inner-superellipse', offset=1.28, hole_radius=hole_radius)
-        create_seed_of_life(rootComp=rootComp, radius=16.0, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=1.28, n=2, layer_offset=1.28, fp_tolerance=26)
-        # create_seed_of_life(rootComp=rootComp, diameter=32.0, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.64, extrudeHeight=1.28, n=2, layer_offset=1.28, fp_tolerance=14)
-        
-        # # Depth == 2
-        # drawBorderedCircle(rootComp=rootComp, radius=32, depth=1, name='inner-circle', offset=2, width=1)
-        
-        # # Depth == 3
-        # drawBorderedCircle(rootComp, 50, 1, 'circle', 3, 1)
-        # drawBorderedCircle(rootComp, 50 - 2, 1, 'circle', 3, 1 / 2)
-        # create_inverted_triangle(rootComp, 75, n=1, layer_depth=0.5, extrudeHeight=0.5, layer_offset=3.0)
+        # Structural Component - Background
+        if not component_exist(root_comp, 'bg'):
+            core_structural_comp = create_component(root_component=root_comp, name="bg")
+            sketch = create_sketch(core_structural_comp, 'bg-rect', offset=0.0)
+            draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+            extrude_profile_by_area(component=core_structural_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth) - calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='bg-rect')
 
-        # # Depth == 4
-        # drawInnerSuperellipseWithCenterHole(rootComp, 1, 4 / 10, 100, 100, 100, 'inner-superellipse', 4, 10)
+        # Structural Component - Border
+        if not component_exist(root_comp, 'border'):
+            border_comp = create_component(root_component=root_comp, name="border")
+            draw_border(component=border_comp, originalWidth=AppConfig.MaxLength, originalHeight=AppConfig.MaxWidth, borderDepth=AppConfig.LayerDepth, borderWidth=1.28, name='border', offset=0.0)
+        
+        # Structural Component - Main Design
+        if not component_exist(root_comp, 'core'):
+            main_comp = create_component(root_component=root_comp, name="core")
+            extrudes = main_comp.features.extrudeFeatures
+            
+            sketch = create_sketch(main_comp, 'angled-rectangles-outer', offset=AppConfig.LayerDepth)
+            draw_rotated_rectangle(sketch=sketch, width=64.0, height=64.0)
+            extrude_thin(component=main_comp, sketch=sketch, strokeWeight=0.64, depth=1.28)
+            
+            sketch = create_sketch(main_comp, 'angled-rectangles-middle', offset=AppConfig.LayerDepth)
+            draw_rotated_rectangle(sketch=sketch, width=64.0 - 16.0, height=64.0 - 16.0) 
+            extrude_thin(component=main_comp, sketch=sketch, strokeWeight=0.64, depth=1.28)
 
-        # # Depth == 5
-        # # drawCircle(rootComp, 15, 1, 'circle', 5)
-        # drawBorderedCircle(rootComp, 25, 1, 'circle', 5, 1 / 2)
-        # drawBorderedCircle(rootComp, 15, 1, 'circle', 5, 1 / 2)
-        # drawBorderedCircle(rootComp, 10, 1, 'circle', 5, 1 / 2)
-        # create_seed_of_life(rootComp=rootComp, diameter=24.5, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=1.0, n=2, layer_offset=5.0)
-        # # create_seed_of_life(rootComp=rootComp, diameter=22, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.5, extrudeHeight=0.5, n=2, layer_offset=5.0)
-        
-        # # Depth == 6
-        # drawBorderedCircle(rootComp, 10, 1, 'circle', 6, 1 / 2)
-        
+            sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=AppConfig.LayerDepth)            
+            draw_rotated_rectangle(sketch=sketch, width=32.0, height=32.0)
+            extrude_thin(component=main_comp, sketch=sketch, strokeWeight=0.64, depth=1.28)
+            
+            sketch = create_sketch(main_comp, 'astroid-64', offset=AppConfig.LayerDepth)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=64.0, scaleY=64.0, strokeWeight=1.28)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(64.0) - calculate_astroid_area(64.0 - 1.28), depth=1.28, name='astroid-64')
+
+            sketch = create_sketch(main_comp, 'astroid-32', offset=AppConfig.LayerDepth)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=32.0 + 8.0, scaleY=32.0 + 8.0, strokeWeight=1.28)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(32.0 + 8.0) - calculate_astroid_area(32.0 + 8.0 - 1.28), depth=1.28, name='astroid-32')
+            
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
-def drawRotatedSquare(rootComp, width=64.0, layer_offset=1.28, depth=1.28, strokeWeight=1.28):
-    sketch = create_sketch(rootComp, '60-rectangle', offset=layer_offset)
-    draw_rotated_rectangle(sketch, width, width)
-    draw_rotated_rectangle(sketch, width - strokeWeight, width - strokeWeight)
-    extrude_profile_by_area(rootComp, sketch.profiles, calculate_three_point_rectangle_area(width, width) - calculate_three_point_rectangle_area(width - strokeWeight, width - strokeWeight), depth, '60-rectangle')
-
-def drawZenoRectangles(rootComp: adsk.fusion.Component, layer_offset=0.0, strokeWeight=0.0, depth=0.5):
-    sketch = create_sketch(rootComp, 'zeno-rectangles', offset=layer_offset)
-    for i in range(2):
-        # based on power series of 1/2
-        val = (2 ** (i + 6))
-        length = width = val
-        
-        # Draw the rectangle (only border)
-        draw_rectangle(sketch, length, width)
-        draw_rectangle(sketch, length - strokeWeight, width - strokeWeight)
-        
-        # Extrude the rectangle
-        extrude_profile_by_area(rootComp, sketch.profiles, calculate_rectangle_area(length, width) - calculate_rectangle_area(length - strokeWeight, width - strokeWeight), depth, 'zeno-rectangle-' + str(i + 1))
-
-def drawZenoCircles(rootComp: adsk.fusion.Component, layer_offset=0.0, strokeWeight=0.0, depth=0.5):
-    sketch = create_sketch(rootComp, 'zeno-circles', offset=layer_offset)
-    for i in range(2):
-        # based on power series of 1/2
-        val = (2 ** (i + 5))
-        radius = val / 2
-        
-        # Draw the circle (only border)
-        draw_circle(sketch, radius)
-        draw_circle(sketch, radius - strokeWeight)
-        
-        # Extrude the circle
-        extrude_profile_by_area(rootComp, sketch.profiles, calculate_circle_area(radius) - calculate_circle_area(radius - strokeWeight), depth, 'zeno-circle-' + str(i + 1))
-
-
-def drawBackgroundRectangle(rootComp: adsk.fusion.Component, bg_length, bg_width, bg_depth, hole_radius, name):
-    sketch = create_sketch(rootComp, name, offset=0.0)
-    draw_rectangle(sketch, bg_length, bg_width)
-    extrude_profile_by_area(rootComp, sketch.profiles, calculate_rectangle_area(bg_length, bg_width), bg_depth, name) 
-    
-def drawOuterAstroid(rootComp, depth, n, numPoints, scaleX, scaleY, name, hole_radius, layer_offset=0.0, strokeWeight = 0.0):
-    sketch = create_sketch(rootComp, name, layer_offset)
-    if strokeWeight > 0:
-        draw_astroid_filled(sketch, n, numPoints, scaleX, scaleY)
-        draw_astroid_stroke(sketch, n, numPoints, scaleX, scaleY, strokeWeight)
-        extrude_profile_by_area(rootComp, sketch.profiles, calculate_astroid_area(scaleX) - calculate_astroid_area(scaleX - strokeWeight), depth, name)
-    else:
-        draw_astroid_filled(sketch, n, numPoints, scaleX, scaleY)
-        extrude_profile_by_area(rootComp, sketch.profiles, calculate_astroid_area(scaleX), depth, name)
- 
-def drawInnerSuperellipse(rootComp, depth, n, numPoints, scaleX, scaleY, name, offset, hole_radius):
-    sketch = create_sketch(rootComp, name, offset)
-    draw_astroid_filled(sketch, n, numPoints, scaleX, scaleY)
-    
-    if EXTRUDE:
-        # Iterate and extrude each profile
-        for profile in sketch.profiles:
-            area = profile.areaProperties().area
-            extrudeInput = rootComp.features.extrudeFeatures.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-            extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
-            rootComp.features.extrudeFeatures.add(extrudeInput)
-
-def drawBorderedCircle(rootComp, radius, depth, name, offset, strokeWeight):
-    # Create an offset plane from the xyPlane
-    xyPlane = rootComp.xYConstructionPlane
-    planes = rootComp.constructionPlanes
-    planeInput = planes.createInput()
-    offsetValue = adsk.core.ValueInput.createByReal(offset)
-    planeInput.setByOffset(xyPlane, offsetValue)
-    offsetPlane = planes.add(planeInput)
-    
-    # Create a new sketch on the offset plane
-    sketches = rootComp.sketches   
-    sketch = sketches.add(offsetPlane)
-    sketch.name = name    
-    
-    # Create a circle with the specified radius
-    center = adsk.core.Point3D.create(0, 0, 0)
-    sketch.sketchCurves.sketchCircles.addByCenterRadius(center, radius)
-
-    # Create another circle with a smaller radius
-    center = adsk.core.Point3D.create(0, 0, 0)
-    sketch.sketchCurves.sketchCircles.addByCenterRadius(center, radius - strokeWeight)
-   
-    # Extrude
-    if EXTRUDE:
-        # Iterate each Profile & Find Profile with the Area = extract area for the circle - hole (use params above)
-        searchArea = math.pi * radius ** 2 - math.pi * (radius - strokeWeight) ** 2
-        profile = extrude_profile_by_area(rootComp, sketch.profiles, searchArea, depth, name)    
-        if profile is None:
-            raise ValueError('Failed to find the profile for extrusion')
-    
-def drawCircle(rootComp, radius, depth, name, offset):
-    # Create an offset plane from the xyPlane
-    xyPlane = rootComp.xYConstructionPlane
-    planes = rootComp.constructionPlanes
-    planeInput = planes.createInput()
-    offsetValue = adsk.core.ValueInput.createByReal(offset)
-    planeInput.setByOffset(xyPlane, offsetValue)
-    offsetPlane = planes.add(planeInput)
-    
-    # Create a new sketch on the offset plane
-    sketches = rootComp.sketches   
-    sketch = sketches.add(offsetPlane)
-    sketch.name = name    
-    
-    # Create a circle with the specified radius
-    center = adsk.core.Point3D.create(0, 0, 0)
-    sketch.sketchCurves.sketchCircles.addByCenterRadius(center, radius)
-    
-    # Extrude if needed
-    if EXTRUDE:
-        extrudes = rootComp.features.extrudeFeatures
-        profile = sketch.profiles.item(0)  # Assuming Fusion 360 recognizes the single composite profile
-        extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-        extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
-        extrudes.add(extrudeInput)
- 
-
-def drawBorderAroundRectangle(rootComp, originalWidth, originalHeight, borderDepth, borderWidth):
-    # Create a new sketch on the xy plane
-    sketches = rootComp.sketches
-    xyPlane = rootComp.xYConstructionPlane
-    sketch = sketches.add(xyPlane)
-    sketch.name = 'bg-border'
+def draw_border(component, originalWidth, originalHeight, borderDepth, borderWidth, name, offset=0.0):
+    sketch = create_sketch(component, name, offset)
     
     # Define the corner points for the border rectangles
     # Calculations account for original rectangle size plus the border on each side
@@ -226,9 +119,9 @@ def drawBorderAroundRectangle(rootComp, originalWidth, originalHeight, borderDep
     # Assuming you'd extrude these borders with the same or different depth as needed
     # Extrude if needed
     # Extrude if needed
-    if EXTRUDE:
+    if AppConfig.Extrude:
         # Extrude each border rectangle individually
-        extrudes = rootComp.features.extrudeFeatures
+        extrudes = component.features.extrudeFeatures
         largestArea = 0
         # First, find the largest profile area to identify the inner profile to skip
         for profile in sketch.profiles:
@@ -241,25 +134,23 @@ def drawBorderAroundRectangle(rootComp, originalWidth, originalHeight, borderDep
             area = profile.areaProperties().area
             if area < largestArea:
                 # This profile is not the inner profile, so extrude it
-                extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.JoinFeatureOperation)
                 distance = adsk.core.ValueInput.createByReal(borderDepth)  # Depth of the extrusion for each border
                 extrudeInput.setDistanceExtent(False, distance)
                 extrudes.add(extrudeInput)
 
-
-
-def create_seed_of_life(rootComp: adsk.fusion.Component, radius=8.0, layer_depth=0.1, layer_offset=0.0, radius_diff=0.1, strokeWeight=0.05, extrudeHeight=0.1, n=3, fp_tolerance=0.1):
+def create_seed_of_life(component: adsk.fusion.Component, radius=8.0, layer_depth=0.1, layer_offset=0.0, radius_diff=0.1, strokeWeight=0.05, extrudeHeight=0.1, n=3, fp_tolerance=0.1):
     try:
-        sketches = rootComp.sketches
-        extrudes = rootComp.features.extrudeFeatures
+        sketches = component.sketches
+        extrudes = component.features.extrudeFeatures
                 
         # angle multiplier
         angle_mult = 30
 
         # Main code to create the Seed of Life and extrude
         for i in range(n):  # Creating 3 layers
-            sketch = create_sketch(rootComp, 'seed-of-life-' + str(i + 1), layer_offset + layer_depth * i)
-            create_seed_of_life_pattern(sketch, radius - i * (radius_diff * 2), 0, 0, angle_mult * i)
+            sketch = create_sketch(component, 'seed-of-life-' + str(i + 1), layer_offset + layer_depth * i)
+            draw_seed_of_life_pattern(sketch, radius - i * (radius_diff * 2), 0, 0, angle_mult * i)
             
             # Thin Extrude the Seed of Life 
             for profile in sketch.profiles:
@@ -278,21 +169,21 @@ def create_seed_of_life(rootComp: adsk.fusion.Component, radius=8.0, layer_depth
     except:
         raise Exception('Failed:\n{}'.format(traceback.format_exc()))
 
-def create_inverted_triangle(rootComp, side_length, center_x=0, center_y=0, n=3, layer_depth=0.1, extrudeHeight=0.1, layer_offset=0.0):
+def create_inverted_triangle(component, side_length, center_x=0, center_y=0, n=3, layer_depth=0.1, extrudeHeight=0.1, layer_offset=0.0):
     """
     Creates inverted triangles with two options: fill-based or stroke-based.
     For stroke-based, it draws smaller triangles inside the larger triangles and extrudes the space between them.
     
     Parameters:
-    - rootComp: The root component in which the sketches are to be created.
+    - component: The root component in which the sketches are to be created.
     - side_length: The length of the side of the triangles.
     - center_x, center_y: The center position of the composite shape.
     - n: The number of layers to create.
     - layer_depth: The depth between each layer.
     - type: The type of triangles to create ('fill' or 'stroke').
     """
-    sketches = rootComp.sketches
-    extrudes = rootComp.features.extrudeFeatures
+    sketches = component.sketches
+    extrudes = component.features.extrudeFeatures
     
     def create_triangles(sketch, side_length, center_x, center_y, type):
         # Base triangle height
@@ -358,32 +249,28 @@ def create_inverted_triangle(rootComp, side_length, center_x=0, center_y=0, n=3,
     
     
     # Create Base
-    offsetPlane = create_offset_plane(rootComp, layer_offset)
+    offsetPlane = create_offset_plane(component, layer_offset)
     sketch = sketches.add(offsetPlane)
     sketch.name = 'base'
     create_triangles(sketch, side_length, center_x, center_y, 'fill')
     
     # Create layers
-    offsetPlane = create_offset_plane(rootComp, layer_offset + layer_depth)
+    offsetPlane = create_offset_plane(component, layer_offset + layer_depth)
     sketch = sketches.add(offsetPlane)
     sketch.name = 'layer-1'
     create_triangles(sketch, side_length, center_x, center_y, 'stroke')
     
-# Function to create a circle in a sketch
-def create_circle(sketch, radius, center_x, center_y):
-    circles = sketch.sketchCurves.sketchCircles
-    circle = circles.addByCenterRadius(adsk.core.Point3D.create(center_x, center_y, 0), radius)
-    return circle
-
-# Function to create the Seed of Life pattern
-def create_seed_of_life_pattern(sketch, radius, center_x=0, center_y=0, angle_offset=0):
-    # Create the center circle
-    create_circle(sketch, radius, center_x, center_y)
-    
-    # Create the surrounding circles
-    for i in range(6):
-        # use angle offset
-        angle = math.radians(i * 60 + angle_offset)
-        x = center_x + radius * math.cos(angle)
-        y = center_y + radius * math.sin(angle)
-        create_circle(sketch, radius, x, y)
+def extrude_thin(component: adsk.fusion.Component, sketch: adsk.fusion.Sketch, strokeWeight, depth):
+    extrudes = component.features.extrudeFeatures
+    for profile in sketch.profiles:
+        # Thin Extrude
+        extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+        
+        # Set the extrude to be a thin extrusion with a specified thickness.
+        extrudeInput.setThinExtrude(adsk.fusion.ThinExtrudeWallLocation.Side1, adsk.core.ValueInput.createByReal(strokeWeight))
+        
+        # Extrude Height
+        extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
+        
+        # Create the extrusion.
+        extrudes.add(extrudeInput)

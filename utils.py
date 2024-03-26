@@ -38,7 +38,7 @@ def create_sketch(rootComp, name, offset=0):
     sketch.name = name
     return sketch
 
-def extrude_profile_by_area(rootComp: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, depth, bodyName):
+def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, depth, name):
     """
     Creates an extrusion based on the specified area and depth for the given profiles.
     
@@ -57,11 +57,20 @@ def extrude_profile_by_area(rootComp: adsk.fusion.Component, profiles: list[adsk
     
     for profile in profiles:
         if abs(profile.areaProperties().area - area) < FP_TOLERANCE:
-            extrudes = rootComp.features.extrudeFeatures
+            extrudes = component.features.extrudeFeatures
             extInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
             extrude = extrudes.add(extInput)
             body = extrude.bodies.item(0)
-            body.name = bodyName
+            body.name = name
             return body
     raise ValueError('Failed to find the profile for extrusion')
+
+def create_component(root_component: adsk.fusion.Component, name) -> adsk.fusion.Component:
+    # Create a new component
+    newComp = root_component.occurrences.addNewComponent(adsk.core.Matrix3D.create())
+    newComp.component.name = name
+    return newComp.component
+
+def component_exist(root_component: adsk.fusion.Component, name) -> bool:
+    return root_component.occurrences.itemByName(name + ":1") is not None

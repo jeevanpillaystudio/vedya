@@ -10,7 +10,7 @@ def create_astroid_points(n, numPoints, scaleX, scaleY):
         points.add(adsk.core.Point3D.create(x, y, 0))
     return points  
 
-def draw_astroid_filled(sketch, n, numPoints, scaleX, scaleY):
+def draw_astroid(sketch, n, numPoints, scaleX, scaleY):
     sketch.sketchCurves.sketchFittedSplines.add(create_astroid_points(n, numPoints, scaleX, scaleY))
     
 def draw_astroid_stroke(sketch, n, numPoints, scaleX, scaleY, strokeWeight):
@@ -20,13 +20,15 @@ def draw_astroid_stroke(sketch, n, numPoints, scaleX, scaleY, strokeWeight):
 def calculate_astroid_area(scaleX):
     return (3 / 8) * math.pi * scaleX ** 2 
 
-def draw_circle(sketch, radius):
-    sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), radius)
+def draw_circle(sketch, radius, center_x=0.0, center_y=0.0):
+    circles = sketch.sketchCurves.sketchCircles
+    circle = circles.addByCenterRadius(adsk.core.Point3D.create(center_x, center_y, 0), radius)
+    return circle
     
 def calculate_circle_area(radius):
     return math.pi * radius ** 2
 
-def draw_rectangle(sketch, length, width):
+def draw_rectangle(sketch: adsk.fusion.Sketch, length, width):
     sketch.sketchCurves.sketchLines.addTwoPointRectangle(adsk.core.Point3D.create(-length / 2, width / 2, 0), adsk.core.Point3D.create(length / 2, -width / 2, 0))   
     
 def calculate_rectangle_area(width, height):
@@ -37,3 +39,16 @@ def draw_rotated_rectangle(sketch, width, height):
 
 def calculate_three_point_rectangle_area(width, height):
     return math.sqrt(width ** 2 + height ** 2) * math.sqrt(width ** 2 + height ** 2)
+
+# Function to create the Seed of Life pattern
+def draw_seed_of_life_pattern(sketch, radius, center_x=0, center_y=0, angle_offset=0):
+    # Create the center circle
+    draw_circle(sketch, radius, center_x, center_y)
+    
+    # Create the surrounding circles
+    for i in range(6):
+        # use angle offset
+        angle = math.radians(i * 60 + angle_offset)
+        x = center_x + radius * math.cos(angle)
+        y = center_y + radius * math.sin(angle)
+        draw_circle(sketch, radius, x, y)
