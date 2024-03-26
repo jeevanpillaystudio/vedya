@@ -27,7 +27,7 @@ def run(context):
         
         # Layer 0
         # drawBackgroundRectangle(rootComp=rootComp, bg_length=128, bg_width=128, bg_depth=1.28, hole_radius=hole_radius, name='bg-rect')
-        # drawCircle(rootComp, 16.0, 1.28, 'circle', 1.28)
+        drawCircle(rootComp, 16.0, 1.28, 'circle', 1.28)
         # drawBorderAroundRectangle(rootComp, 200, 200, 6, 2)
         
         # Layer 1
@@ -42,7 +42,7 @@ def run(context):
         # drawOuterAstroid(rootComp=rootComp, depth=1.28, n=2/3, numPoints=128, scaleX=32.0, scaleY=32.0, name='outer-superellipse', hole_radius=hole_radius, layer_offset=1.28, strokeWeight=2.56)
         
         # drawInnerSuperellipse(rootComp=rootComp, depth=1.28, n=4/10, numPoints=128, scaleX=64.0, scaleY=64.0, name='inner-superellipse', offset=1.28, hole_radius=hole_radius)
-        create_seed_of_life(rootComp=rootComp, radius=16.0, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.64, extrudeHeight=1.28, n=2, layer_offset=1.28, fp_tolerance=26)
+        create_seed_of_life(rootComp=rootComp, radius=16.0, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=1.28, n=2, layer_offset=1.28, fp_tolerance=26)
         # create_seed_of_life(rootComp=rootComp, diameter=32.0, layer_depth=0.0, radius_diff=0.0, strokeWeight=0.64, extrudeHeight=1.28, n=2, layer_offset=1.28, fp_tolerance=14)
         
         # # Depth == 2
