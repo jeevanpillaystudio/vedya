@@ -123,7 +123,7 @@ def run(context):
             sketch = create_sketch(seed_of_life_comp, 'cut-out-of-bounds', offset=AppConfig.LayerDepth)
             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength * 4, width=AppConfig.MaxWidth * 4)
             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-            extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength * 2, AppConfig.MaxWidth * 2) - calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), depth=AppConfig.LayerDepth, name='cut-out-of-bounds', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength * 4, AppConfig.MaxWidth * 4) - calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), depth=AppConfig.LayerDepth, name='cut-out-of-bounds', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
