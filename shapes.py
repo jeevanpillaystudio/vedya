@@ -1,5 +1,9 @@
 import math
 import adsk.fusion
+import os
+import hashlib
+import random
+import time
 
 def create_astroid_points(n, numPoints, scaleX, scaleY):
     points = adsk.core.ObjectCollection.create()
@@ -52,3 +56,9 @@ def draw_seed_of_life_pattern(sketch, radius, center_x=0, center_y=0, angle_offs
         x = center_x + radius * math.cos(angle)
         y = center_y + radius * math.sin(angle)
         draw_circle(sketch, radius, x, y)
+
+def create_seed():
+    base_string = str(time.time()) + str(os.getpid()) + str(random.random())
+    hash_object = hashlib.sha256(base_string.encode())
+    hex_dig = hash_object.hexdigest()
+    return hex_dig[:64]

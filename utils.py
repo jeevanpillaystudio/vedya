@@ -1,4 +1,5 @@
 import adsk.core, adsk.fusion
+import datetime
 
 EXTRUDE = True
 FP_TOLERANCE = 1e-2 # 0.01 Precision for floating point comparison
@@ -74,3 +75,15 @@ def create_component(root_component: adsk.fusion.Component, name) -> adsk.fusion
 
 def component_exist(root_component: adsk.fusion.Component, name) -> bool:
     return root_component.occurrences.itemByName(name + ":1") is not None
+
+def log(value):
+    try:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_message = f"{timestamp} INFO: {str(value)}\n"
+        
+        with open("/Users/jeevanpillay/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/APIDrawVedya/logfile.txt", "a") as file:
+            file.write(log_message)
+        
+        print("Values written to logfile.txt successfully.")
+    except Exception as e:
+        print("An error occurred while writing to logfile.txt:", str(e))

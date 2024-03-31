@@ -1,8 +1,8 @@
 import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
-from .shapes import draw_astroid, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, calculate_three_point_rectangle_area, draw_seed_of_life_pattern
-from .utils import create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component
+from .shapes import draw_astroid, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, calculate_three_point_rectangle_area, draw_seed_of_life_pattern, create_seed
+from .utils import create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, log
 
 # structurally
 # 1 layer; each having 4 sub-layers
@@ -18,11 +18,14 @@ class AppConfig():
     """
     def __init__(self):
         pass
+    def __str__(self) -> str:
+        return f"AppConfig: HoleRadius={self.HoleRadius}, Extrude={self.Extrude}, MaxWidth={self.MaxWidth}, MaxLength={self.MaxLength}, LayerDepth={self.LayerDepth}, Seed={self.Seed}"
     HoleRadius = 8.0
     Extrude = True
     MaxWidth = 128.0
     MaxLength = 128.0
     LayerDepth = 1.28
+    Seed = create_seed()
     
 class AstroidConfig():
     def __init__(self):
@@ -42,6 +45,10 @@ def run(context):
         if not design:
             ui.messageBox('It is not supported in current workspace, please switch to DESIGN workspace and try again.')
             return
+        
+        # Log the seed for reproducibility
+        app_config = AppConfig()
+        log(app_config)
 
         # Get the root component of the active design
         root_comp: adsk.fusion.Component = design.rootComponent
@@ -57,7 +64,7 @@ def run(context):
         # Structural Component - Border
         if not component_exist(root_comp, 'border'):
             border_comp = create_component(root_component=root_comp, name="border")
-            draw_border(component=border_comp, originalWidth=AppConfig.MaxLength, originalHeight=AppConfig.MaxWidth, borderDepth=AppConfig.LayerDepth, borderWidth=AppConfig.LayerDepth * 4, name='border', offset=0.0)
+            draw_border(component=border_comp, originalWidth=AppConfig.MaxLength, originalHeight=AppConfig.MaxWidth, borderDepth=AppConfig.LayerDepth * 4, borderWidth=AppConfig.LayerDepth, name='border', offset=0.0)
         
         # Structural Component - Main Design
         if not component_exist(root_comp, 'core'):
@@ -100,37 +107,23 @@ def run(context):
         # Structural Component - Seed of Life
         if not component_exist(root_comp, 'seed-of-life'):
             seed_of_life_comp = create_component(root_component=root_comp, name="seed-of-life")
-            
-            # pick 2 to 4 random radius values to enumerate
-            for (i, radius) in enumerate(create_random_array_size_8(random.randint(2, 4))):
+           
+            # create seed of life
+            for (_, radius) in enumerate(create_random_array_size_8(random.randint(2, 4))):
                 n = random.randint(1, 2)
-                create_seed_of_life(seed_of_life_comp, radius=radius, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=n, fp_tolerance=0.1)
+                create_seed_of_life(seed_of_life_comp, radius=radius, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=n)
+                log(f"seed-of-life: {n} circles with radius: {radius}")
 
-            # create_seed_of_life(seed_of_life_comp, radius=8.0, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=2, fp_tolerance=0.1)
-            # create_seed_of_life(seed_of_life_comp, radius=16.0, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=1, fp_tolerance=0.1)
-            # create_seed_of_life(seed_of_life_comp, radius=32.0, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=1, fp_tolerance=0.1)
-            # create_seed_of_life(seed_of_life_comp, radius=32.0 + 8.0, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=2, fp_tolerance=0.1)
-            # create_seed_of_life(seed_of_life_comp, radius=64.0, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=2, fp_tolerance=0.1)
-            
+            # cut a hole in the center
             sketch = create_sketch(seed_of_life_comp, 'cut-hole', offset=AppConfig.LayerDepth)
-            extrudes = seed_of_life_comp.features.extrudeFeatures
             draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
             extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-            
-            # draw_rectangle(sketch=sketch, length=AppConfig.MaxLength * 2, width=AppConfig.MaxWidth * 2)
-            # # Thin Extrude the Seed of Life 
-            # for profile in sketch.profiles:
-            #     # Thin Extrude
-            #     extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.CutFeatureOperation)
-                
-            #     # Set the extrude to be a thin extrusion with a specified thickness.
-            #     extrudeInput.setThinExtrude(adsk.fusion.ThinExtrudeWallLocation.Side1, adsk.core.ValueInput.createByReal(AppConfig.MaxLength))
-                
-            #     # Extrude Height
-            #     extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(AppConfig.LayerDepth * 2))
-                
-            #     # Create the extrusion.
-            #     extrudes.add(extrudeInput)
+           
+            # cut all the circles that is out of bounds
+            sketch = create_sketch(seed_of_life_comp, 'cut-out-of-bounds', offset=AppConfig.LayerDepth)
+            draw_rectangle(sketch=sketch, length=AppConfig.MaxLength * 4, width=AppConfig.MaxWidth * 4)
+            draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
+            extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength * 2, AppConfig.MaxWidth * 2) - calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), depth=AppConfig.LayerDepth, name='cut-out-of-bounds', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -196,7 +189,7 @@ def draw_border(component, originalWidth, originalHeight, borderDepth, borderWid
                 extrudeInput.setDistanceExtent(False, distance)
                 extrudes.add(extrudeInput)
 
-def create_seed_of_life(component: adsk.fusion.Component, radius=8.0, layer_depth=0.1, layer_offset=0.0, radius_diff=0.1, strokeWeight=0.05, extrudeHeight=0.1, n=3, fp_tolerance=0.1):
+def create_seed_of_life(component: adsk.fusion.Component, radius=8.0, layer_depth=0.1, layer_offset=0.0, radius_diff=0.1, strokeWeight=0.05, extrudeHeight=0.1, n=2):
     try:
         sketches = component.sketches
         extrudes = component.features.extrudeFeatures
