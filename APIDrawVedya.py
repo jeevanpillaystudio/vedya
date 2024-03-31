@@ -1,3 +1,4 @@
+import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
 from .shapes import draw_astroid, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, calculate_three_point_rectangle_area, draw_seed_of_life_pattern
@@ -56,12 +57,11 @@ def run(context):
         # Structural Component - Border
         if not component_exist(root_comp, 'border'):
             border_comp = create_component(root_component=root_comp, name="border")
-            draw_border(component=border_comp, originalWidth=AppConfig.MaxLength, originalHeight=AppConfig.MaxWidth, borderDepth=AppConfig.LayerDepth, borderWidth=1.28, name='border', offset=0.0)
+            draw_border(component=border_comp, originalWidth=AppConfig.MaxLength, originalHeight=AppConfig.MaxWidth, borderDepth=AppConfig.LayerDepth, borderWidth=AppConfig.LayerDepth * 4, name='border', offset=0.0)
         
         # Structural Component - Main Design
         if not component_exist(root_comp, 'core'):
             main_comp = create_component(root_component=root_comp, name="core")
-            extrudes = main_comp.features.extrudeFeatures
             
             sketch = create_sketch(main_comp, 'angled-rectangles-outer', offset=AppConfig.LayerDepth)
             draw_rotated_rectangle(sketch=sketch, width=64.0, height=64.0)
@@ -83,9 +83,66 @@ def run(context):
             draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=32.0 + 8.0, scaleY=32.0 + 8.0, strokeWeight=1.28)
             extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(32.0 + 8.0) - calculate_astroid_area(32.0 + 8.0 - 1.28), depth=1.28, name='astroid-32')
             
+            
+        # Structural Component - Kailash Terrain Generation Sketch
+        # Note: This is a placeholder for the actual terrain generation code. Requires manual intervention using STL files & Fusion Forms.
+        # Guide: https://www.youtube.com/watch?v=Ea_YC4Jh0Sw
+        if not component_exist(root_comp, 'kailash'):
+            kailash_comp = create_component(root_component=root_comp, name="kailash")
+            sketch = create_sketch(kailash_comp, 'kailash-terrain', offset=AppConfig.LayerDepth)
+           
+            draw_rotated_rectangle(sketch=sketch, width=64.0, height=64.0) 
+            draw_rotated_rectangle(sketch=sketch, width=64.0 - 16.0, height=64.0 - 16.0) 
+            draw_rotated_rectangle(sketch=sketch, width=32.0, height=32.0)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=64.0, scaleY=64.0, strokeWeight=1.28)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=32.0 + 8.0, scaleY=32.0 + 8.0, strokeWeight=1.28) 
+            
+        # Structural Component - Seed of Life
+        if not component_exist(root_comp, 'seed-of-life'):
+            seed_of_life_comp = create_component(root_component=root_comp, name="seed-of-life")
+            
+            # pick 2 to 4 random radius values to enumerate
+            for (i, radius) in enumerate(create_random_array_size_8(random.randint(2, 4))):
+                n = random.randint(1, 2)
+                create_seed_of_life(seed_of_life_comp, radius=radius, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=n, fp_tolerance=0.1)
+
+            # create_seed_of_life(seed_of_life_comp, radius=8.0, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=2, fp_tolerance=0.1)
+            # create_seed_of_life(seed_of_life_comp, radius=16.0, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=1, fp_tolerance=0.1)
+            # create_seed_of_life(seed_of_life_comp, radius=32.0, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=1, fp_tolerance=0.1)
+            # create_seed_of_life(seed_of_life_comp, radius=32.0 + 8.0, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=2, fp_tolerance=0.1)
+            # create_seed_of_life(seed_of_life_comp, radius=64.0, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=2, fp_tolerance=0.1)
+            
+            sketch = create_sketch(seed_of_life_comp, 'cut-hole', offset=AppConfig.LayerDepth)
+            extrudes = seed_of_life_comp.features.extrudeFeatures
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+            extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            
+            # draw_rectangle(sketch=sketch, length=AppConfig.MaxLength * 2, width=AppConfig.MaxWidth * 2)
+            # # Thin Extrude the Seed of Life 
+            # for profile in sketch.profiles:
+            #     # Thin Extrude
+            #     extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.CutFeatureOperation)
+                
+            #     # Set the extrude to be a thin extrusion with a specified thickness.
+            #     extrudeInput.setThinExtrude(adsk.fusion.ThinExtrudeWallLocation.Side1, adsk.core.ValueInput.createByReal(AppConfig.MaxLength))
+                
+            #     # Extrude Height
+            #     extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(AppConfig.LayerDepth * 2))
+                
+            #     # Create the extrusion.
+            #     extrudes.add(extrudeInput)
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
+
+# Redefine the function to generate unique values without using numpy
+def create_random_array_size_8(size: int, multiple: int = 8, min_multiple: int = 1, max_multiple: int = 10):
+    values = set()
+    while len(values) < size:
+        # Generate a unique value that is a multiple of 8, increasing range for uniqueness
+        value = multiple * random.randint(min_multiple, max_multiple)
+        values.add(value)
+    return sorted(list(values))
 
 def draw_border(component, originalWidth, originalHeight, borderDepth, borderWidth, name, offset=0.0):
     sketch = create_sketch(component, name, offset)
@@ -148,7 +205,7 @@ def create_seed_of_life(component: adsk.fusion.Component, radius=8.0, layer_dept
         angle_mult = 30
 
         # Main code to create the Seed of Life and extrude
-        for i in range(n):  # Creating 3 layers
+        for i in range(n): 
             sketch = create_sketch(component, 'seed-of-life-' + str(i + 1), layer_offset + layer_depth * i)
             draw_seed_of_life_pattern(sketch, radius - i * (radius_diff * 2), 0, 0, angle_mult * i)
             
