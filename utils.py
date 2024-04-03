@@ -1,8 +1,8 @@
+import random
 import adsk.core, adsk.fusion
 import datetime
 import os
 
-EXTRUDE = True
 FP_TOLERANCE = 1e-2 # 0.01 Precision for floating point comparison
 
 def create_offset_plane(rootComp, offset):
@@ -54,12 +54,9 @@ def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[ads
     Returns:
     - The body created by the extrusion based on the specified area and depth.
     """
-    if not EXTRUDE:
-        return
-    
+    extrudes = component.features.extrudeFeatures
     for profile in profiles:
         if abs(profile.areaProperties().area - area) < FP_TOLERANCE:
-            extrudes = component.features.extrudeFeatures
             extInput = extrudes.createInput(profile, operation=operation)
             extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
             extrude = extrudes.add(extInput)
@@ -67,6 +64,28 @@ def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[ads
             body.name = name
             return body
     raise ValueError('Failed to find the profile for extrusion')
+
+def extrude_thin_one(component: adsk.fusion.Component, profile: adsk.fusion.Profile, depth, name, strokeWeight: int, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation):
+    """
+    Creates a thin extrusion based on the specified depth for the given profile.
+    
+    Parameters:
+    - rootComp: The root component to which the extrusion is added.
+    - profiles: The profiles to thin extrude.
+    - depth: The depth of the extrusion.
+    - bodyName: The name of the body created by the extrusion.
+    
+    Returns:
+    - The body created by the extrusion based on the specified depth.
+    """
+    extrudes = component.features.extrudeFeatures
+    extrudeInput = extrudes.createInput(profile, operation=operation)
+    extrudeInput.setThinExtrude(adsk.fusion.ThinExtrudeWallLocation.Side1, adsk.core.ValueInput.createByReal(strokeWeight))
+    extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
+    extrude = extrudes.add(extrudeInput)
+    body = extrude.bodies.item(0)
+    body.name = name
+    return body
 
 def create_component(root_component: adsk.fusion.Component, name) -> adsk.fusion.Component:
     # Create a new component
@@ -88,3 +107,12 @@ def log(value):
         print("Values written to logfile.txt successfully.")
     except Exception as e:
         print("An error occurred while writing to logfile.txt:", str(e))
+        
+# Redefine the function to generate unique values without using numpy
+def create_array_random_unique_multiples(size: int, multiple: int = 8, min_multiple: int = 1, max_multiple: int = 10):
+    values = set()
+    while len(values) < size:
+        # Generate a unique value that is a multiple of 8, increasing range for uniqueness
+        value = multiple * random.randint(min_multiple, max_multiple)
+        values.add(value)
+    return sorted(list(values))

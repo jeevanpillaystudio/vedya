@@ -2,7 +2,7 @@ import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
 from .shapes import draw_astroid, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, calculate_three_point_rectangle_area, draw_seed_of_life_pattern, create_seed
-from .utils import create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, log
+from .utils import create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_thin_one, log
 
 # structurally
 # 1 layer; each having 4 sub-layers
@@ -72,15 +72,18 @@ def run(context):
             
             sketch = create_sketch(main_comp, 'angled-rectangles-outer', offset=AppConfig.LayerDepth)
             draw_rotated_rectangle(sketch=sketch, width=64.0, height=64.0)
-            extrude_thin(component=main_comp, sketch=sketch, strokeWeight=0.64, depth=1.28)
+            for profile in sketch.profiles:
+                extrude_thin_one(component=main_comp, profile=profile, depth=1.28, strokeWeight=0.64, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             
             sketch = create_sketch(main_comp, 'angled-rectangles-middle', offset=AppConfig.LayerDepth)
             draw_rotated_rectangle(sketch=sketch, width=64.0 - 16.0, height=64.0 - 16.0) 
-            extrude_thin(component=main_comp, sketch=sketch, strokeWeight=0.64, depth=1.28)
+            for profile in sketch.profiles:
+                extrude_thin_one(component=main_comp, profile=profile, depth=1.28, strokeWeight=0.64, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
 
             sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=AppConfig.LayerDepth)            
             draw_rotated_rectangle(sketch=sketch, width=32.0, height=32.0)
-            extrude_thin(component=main_comp, sketch=sketch, strokeWeight=0.64, depth=1.28)
+            for profile in sketch.profiles:
+                extrude_thin_one(component=main_comp, profile=profile, depth=1.28, strokeWeight=0.64, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             
             sketch = create_sketch(main_comp, 'astroid-64', offset=AppConfig.LayerDepth)
             draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=64.0, scaleY=64.0, strokeWeight=1.28)
@@ -109,7 +112,7 @@ def run(context):
             seed_of_life_comp = create_component(root_component=root_comp, name="seed-of-life")
            
             # create seed of life
-            for (_, radius) in enumerate(create_random_array_size_8(random.randint(2, 4))):
+            for (_, radius) in enumerate(create_array_random_unique_multiples(random.randint(2, 4))):
                 n = random.randint(1, 2)
                 create_seed_of_life(seed_of_life_comp, radius=radius, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=n)
                 log(f"seed-of-life: {n} circles with radius: {radius}")
@@ -127,15 +130,6 @@ def run(context):
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
-
-# Redefine the function to generate unique values without using numpy
-def create_random_array_size_8(size: int, multiple: int = 8, min_multiple: int = 1, max_multiple: int = 10):
-    values = set()
-    while len(values) < size:
-        # Generate a unique value that is a multiple of 8, increasing range for uniqueness
-        value = multiple * random.randint(min_multiple, max_multiple)
-        values.add(value)
-    return sorted(list(values))
 
 def draw_border(component, originalWidth, originalHeight, borderDepth, borderWidth, name, offset=0.0):
     sketch = create_sketch(component, name, offset)
@@ -190,48 +184,13 @@ def draw_border(component, originalWidth, originalHeight, borderDepth, borderWid
                 extrudes.add(extrudeInput)
 
 def create_seed_of_life(component: adsk.fusion.Component, radius=8.0, layer_depth=0.1, layer_offset=0.0, radius_diff=0.1, strokeWeight=0.05, extrudeHeight=0.1, n=2):
-    try:
-        sketches = component.sketches
-        extrudes = component.features.extrudeFeatures
-                
-        # angle multiplier
-        angle_mult = 30
-
-        # Main code to create the Seed of Life and extrude
-        for i in range(n): 
-            sketch = create_sketch(component, 'seed-of-life-' + str(i + 1), layer_offset + layer_depth * i)
-            draw_seed_of_life_pattern(sketch, radius - i * (radius_diff * 2), 0, 0, angle_mult * i)
-            
-            # Thin Extrude the Seed of Life 
-            for profile in sketch.profiles:
-                # Thin Extrude
-                extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.JoinFeatureOperation)
-                
-                # Set the extrude to be a thin extrusion with a specified thickness.
-                extrudeInput.setThinExtrude(adsk.fusion.ThinExtrudeWallLocation.Side1, adsk.core.ValueInput.createByReal(strokeWeight))
-                
-                # Extrude Height
-                extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrudeHeight))
-                
-                # Create the extrusion.
-                extrudes.add(extrudeInput)
-
-    except:
-        raise Exception('Failed:\n{}'.format(traceback.format_exc()))
+    for i in range(n): 
+        sketch = create_sketch(component, 'seed-of-life-' + str(i + 1), layer_offset + layer_depth * i)
+        draw_seed_of_life_pattern(sketch, radius - i * (radius_diff * 2), 0, 0, 30 * i)
+        for profile in sketch.profiles:
+            extrude_thin_one(component, profile, extrudeHeight, "seed-of-life-" + str(i + 1), strokeWeight, adsk.fusion.FeatureOperations.JoinFeatureOperation)
 
 def create_inverted_triangle(component, side_length, center_x=0, center_y=0, n=3, layer_depth=0.1, extrudeHeight=0.1, layer_offset=0.0):
-    """
-    Creates inverted triangles with two options: fill-based or stroke-based.
-    For stroke-based, it draws smaller triangles inside the larger triangles and extrudes the space between them.
-    
-    Parameters:
-    - component: The root component in which the sketches are to be created.
-    - side_length: The length of the side of the triangles.
-    - center_x, center_y: The center position of the composite shape.
-    - n: The number of layers to create.
-    - layer_depth: The depth between each layer.
-    - type: The type of triangles to create ('fill' or 'stroke').
-    """
     sketches = component.sketches
     extrudes = component.features.extrudeFeatures
     
@@ -309,18 +268,3 @@ def create_inverted_triangle(component, side_length, center_x=0, center_y=0, n=3
     sketch = sketches.add(offsetPlane)
     sketch.name = 'layer-1'
     create_triangles(sketch, side_length, center_x, center_y, 'stroke')
-    
-def extrude_thin(component: adsk.fusion.Component, sketch: adsk.fusion.Sketch, strokeWeight, depth):
-    extrudes = component.features.extrudeFeatures
-    for profile in sketch.profiles:
-        # Thin Extrude
-        extrudeInput = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-        
-        # Set the extrude to be a thin extrusion with a specified thickness.
-        extrudeInput.setThinExtrude(adsk.fusion.ThinExtrudeWallLocation.Side1, adsk.core.ValueInput.createByReal(strokeWeight))
-        
-        # Extrude Height
-        extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
-        
-        # Create the extrusion.
-        extrudes.add(extrudeInput)
