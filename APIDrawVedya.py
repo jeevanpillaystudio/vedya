@@ -1,8 +1,10 @@
+from dataclasses import dataclass
 import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
 from .shapes import draw_astroid, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, calculate_three_point_rectangle_area, draw_seed_of_life_pattern, create_seed
 from .utils import create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_thin_one, log
+from enum import Enum
 
 # structurally
 # 1 layer; each having 4 sub-layers
@@ -62,15 +64,15 @@ class KailashConfig():
     def __init__(self):
         pass
     KailashIntersectExtrudeArea = 2177.7064808571517 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
-    
+ 
 class SeedOfLifeConfig():
     def __init__(self):
         pass
-    MinRandomMultiple = 1
-    MaxRandomMultiple = 1
+    MinRandomMultiple = 2
+    MaxRandomMultiple = 4
     
     MinNumLayers = 1
-    MaxNumLayers = 1
+    MaxNumLayers = 2
 
 def run(context):
     ui = None
@@ -163,12 +165,12 @@ def run(context):
             extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
            
             # # random cuts for funsies; happens only 30% of the time
-            if random.random() < 0.1:
-                # only inside inner rotated rectangle
-                sketch = create_sketch(seed_of_life_comp, 'intersect-with-random-core-shape', offset=AppConfig.LayerDepth)
-                draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth) # for removing the outside of the rotated rectangle
-                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
-                extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_three_point_rectangle_area(DiagonalRectangleConfig.InnerDiagonalRectangleWidth, DiagonalRectangleConfig.InnerDiagonalRectangleHeight), depth=AppConfig.LayerDepth, name='intersect-with-random-core-shape', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
+            # if random.random() < 0.1:
+            #     # only inside inner rotated rectangle
+            #     sketch = create_sketch(seed_of_life_comp, 'intersect-with-random-core-shape', offset=AppConfig.LayerDepth)
+            #     draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth) # for removing the outside of the rotated rectangle
+            #     draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
+            #     extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_three_point_rectangle_area(DiagonalRectangleConfig.InnerDiagonalRectangleWidth, DiagonalRectangleConfig.InnerDiagonalRectangleHeight), depth=AppConfig.LayerDepth, name='intersect-with-random-core-shape', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
                 
             # cut kailash intersection 
             try:
