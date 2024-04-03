@@ -68,11 +68,16 @@ class KailashConfig():
 class SeedOfLifeConfig():
     def __init__(self):
         pass
-    MinRandomMultiple = 2
-    MaxRandomMultiple = 4
+    MinRandomMultiple = 1
+    MaxRandomMultiple = 1
     
     MinNumLayers = 1
-    MaxNumLayers = 2
+    MaxNumLayers = 1
+    
+    StrokeWeight = 0.16
+    
+    NumLayerRepeat = 4
+    RadiusReduceDistance = 0.2
 
 def run(context):
     ui = None
@@ -155,23 +160,47 @@ def run(context):
            
             # create seed of life
             for (_, radius) in enumerate(create_array_random_unique_multiples(random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple))):
+                # select number of layers to create for each generation
                 n = random.randint(SeedOfLifeConfig.MinNumLayers, SeedOfLifeConfig.MaxNumLayers)
-                create_seed_of_life(seed_of_life_comp, radius=radius, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=n)
+                
+                # extrusion height; each layer has the same distance between them
+                extrude_height_per_layer = AppConfig.LayerDepth / SeedOfLifeConfig.NumLayerRepeat
+                
+                # repeat x many times; this gives the "depth" effect
+                for j in range(SeedOfLifeConfig.NumLayerRepeat):
+                    
+                    # each seed of life generated here
+                    for i in range(n):
+                        # the statart of the seed-of-life layer + the offset of the each sub-layer
+                        plane_offset = AppConfig.LayerDepth + extrude_height_per_layer * j
+                        
+                        # sketch
+                        sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(i + 1), plane_offset)
+                        
+                        # radius difference each layer is based on j. this is the thing that gives it the "depth" effect
+                        r = radius - SeedOfLifeConfig.RadiusReduceDistance * j
+                        
+                        # draw
+                        draw_seed_of_life_pattern(sketch, r, 0, 0, 30 * i)
+                        
+                        # extrude
+                        for profile in sketch.profiles:
+                            extrude_thin_one(component=seed_of_life_comp, profile=profile, depth=extrude_height_per_layer, name=str(radius) + "-seed-of-life-" + str(i + 1), strokeWeight=SeedOfLifeConfig.StrokeWeight, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
+                
+                # log the seed of life
                 log(f"seed-of-life: {n} circles with radius: {radius}")
 
+            return
+
+
             # cut a hole in the center
-            sketch = create_sketch(seed_of_life_comp, 'cut-hole', offset=AppConfig.LayerDepth)
-            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            try:
+                sketch = create_sketch(seed_of_life_comp, 'cut-hole', offset=AppConfig.LayerDepth)
+                draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+                extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            except:
+                log("cut-hole: none to cut")
            
-            # # random cuts for funsies; happens only 30% of the time
-            # if random.random() < 0.1:
-            #     # only inside inner rotated rectangle
-            #     sketch = create_sketch(seed_of_life_comp, 'intersect-with-random-core-shape', offset=AppConfig.LayerDepth)
-            #     draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth) # for removing the outside of the rotated rectangle
-            #     draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
-            #     extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_three_point_rectangle_area(DiagonalRectangleConfig.InnerDiagonalRectangleWidth, DiagonalRectangleConfig.InnerDiagonalRectangleHeight), depth=AppConfig.LayerDepth, name='intersect-with-random-core-shape', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
-                
             # cut kailash intersection 
             try:
                 sketch = create_sketch(seed_of_life_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth)
@@ -262,11 +291,11 @@ def draw_border(component, originalWidth, originalHeight, borderDepth, borderWid
                 extrudes.add(extrudeInput)
 
 def create_seed_of_life(component: adsk.fusion.Component, radius=8.0, layer_depth=0.1, layer_offset=0.0, radius_diff=0.1, strokeWeight=0.05, extrudeHeight=0.1, n=2):
-    for i in range(n): 
-        sketch = create_sketch(component, 'seed-of-life-' + str(i + 1), layer_offset + layer_depth * i)
-        draw_seed_of_life_pattern(sketch, radius - i * (radius_diff * 2), 0, 0, 30 * i)
-        for profile in sketch.profiles:
-            extrude_thin_one(component, profile, extrudeHeight, str(radius) + "-seed-of-life-" + str(i + 1), strokeWeight, adsk.fusion.FeatureOperations.JoinFeatureOperation)
+    # for i in range(n): 
+    sketch = create_sketch(component, 'seed-of-life-' + str(i + 1), layer_offset + layer_depth * i)
+    draw_seed_of_life_pattern(sketch, radius - i * (radius_diff * 2), 0, 0, 30 * i)
+    for profile in sketch.profiles:
+        extrude_thin_one(component, profile, extrudeHeight, str(radius) + "-seed-of-life-" + str(i + 1), strokeWeight, adsk.fusion.FeatureOperations.JoinFeatureOperation)
 
 def create_inverted_triangle(component, side_length, center_x=0, center_y=0, n=3, layer_depth=0.1, extrudeHeight=0.1, layer_offset=0.0):
     sketches = component.sketches
