@@ -75,10 +75,10 @@ class SeedOfLifeConfig():
     MaxNumLayers = 1
     
     AngleDifference = 30
-    StrokeWeight = 0.16
+    StrokeWeight = 0.32
     
     NumLayerRepeat = 4
-    RadiusReduceDistance = 0.2
+    RadiusReduceDistance = 0.32
 
 def run(context):
     ui = None
@@ -158,8 +158,12 @@ def run(context):
         # Structural Component - Seed of Life
         if not component_exist(root_comp, 'seed-of-life'):
             seed_of_life_comp = create_component(root_component=root_comp, name="seed-of-life")
-           
-            # create seed of life
+            
+            # draw from middle
+            center_x = 0
+            center_y = 0
+            
+            # iterate
             for (_, radius) in enumerate(create_array_random_unique_multiples(random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple))):
                 # select number of layers to create for each generation
                 n = random.randint(SeedOfLifeConfig.MinNumLayers, SeedOfLifeConfig.MaxNumLayers)
@@ -175,18 +179,23 @@ def run(context):
                         # the statart of the seed-of-life layer + the offset of the each sub-layer
                         plane_offset = AppConfig.LayerDepth + extrude_height_per_layer * j
                         
-                        # sketch
-                        sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(i + 1), plane_offset)
-                        
-                        # radius difference each layer is based on j. this is the thing that gives it the "depth" effect
+                        # radius, strokeWeight difference each layer is based on j. this is the thing that gives it the "depth" effect
                         r = radius - SeedOfLifeConfig.RadiusReduceDistance * j
+                        sw = SeedOfLifeConfig.StrokeWeight
+                        
+                        # center circle
+                        sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + '-center', plane_offset)
+                        draw_circle(sketch, r, center_x, center_y)
+                        extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], depth=extrude_height_per_layer, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
                         
                         # draw
-                        draw_seed_of_life_pattern(sketch, r, 0, 0, SeedOfLifeConfig.AngleDifference * i)
-                        
-                        # extrude
-                        for profile in sketch.profiles:
-                            extrude_thin_one(component=seed_of_life_comp, profile=profile, depth=extrude_height_per_layer, name=str(radius) + "-seed-of-life-" + str(i + 1), strokeWeight=SeedOfLifeConfig.StrokeWeight, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
+                        for i in range(6):
+                            angle = math.radians(i * 60)
+                            x = center_x + r * math.cos(angle)
+                            y = center_y + r * math.sin(angle)
+                            sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + "-" + str(angle), plane_offset)
+                            draw_circle(sketch, r, x, y)
+                            extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], depth=extrude_height_per_layer, name='seed-of-life-' + str(r) + "-" + str(sw), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
                 
                 # log the seed of life
                 log(f"seed-of-life: {n} circles with radius: {radius}")
