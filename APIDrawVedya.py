@@ -74,6 +74,7 @@ class SeedOfLifeConfig():
     MinNumLayers = 1
     MaxNumLayers = 1
     
+    AngleDifference = 30
     StrokeWeight = 0.16
     
     NumLayerRepeat = 4
@@ -181,7 +182,7 @@ def run(context):
                         r = radius - SeedOfLifeConfig.RadiusReduceDistance * j
                         
                         # draw
-                        draw_seed_of_life_pattern(sketch, r, 0, 0, 30 * i)
+                        draw_seed_of_life_pattern(sketch, r, 0, 0, SeedOfLifeConfig.AngleDifference * i)
                         
                         # extrude
                         for profile in sketch.profiles:
