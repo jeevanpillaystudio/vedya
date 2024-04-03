@@ -101,7 +101,8 @@ def log(value):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_message = f"{timestamp} INFO: {str(value)}\n"
         
-        with open(os.environ.get('LOGFILEPATH'), "a") as file:
+        # Write the log message to the a file
+        with open("/Users/jeevanpillay/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/APIDrawVedya/logfile.txt", "a") as file:
             file.write(log_message)
         
         print("Values written to logfile.txt successfully.")

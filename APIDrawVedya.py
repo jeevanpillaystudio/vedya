@@ -26,12 +26,48 @@ class AppConfig():
     MaxLength = 128.0
     LayerDepth = 1.28
     Seed = create_seed()
+
+class DiagonalRectangleConfig():
+    def __init__(self):
+        pass
+    def __str__(self) -> str:
+        return f"DiagonalRectangleConfig: NumPoints={self.NumPoints}, StrokeWeight={self.StrokeWeight}, OuterDiagonalRectangleWidth={self.OuterDiagonalRectangleWidth}, OuterDiagonalRectangleHeight={self.OuterDiagonalRectangleHeight}, MiddleDiagonalRectangleWidth={self.MiddleDiagonalRectangleWidth}, MiddleDiagonalRectangleHeight={self.MiddleDiagonalRectangleHeight}, InnerDiagonalRectangleWidth={self.InnerDiagonalRectangleWidth}, InnerDiagonalRectangleHeight={self.InnerDiagonalRectangleHeight}"
+    OuterDiagonalRectangleWidth = 64.0
+    OuterDiagonalRectangleHeight = 64.0
     
+    MiddleDiagonalRectangleWidth = 64.0 - 16.0
+    MiddleDiagonalRectangleHeight = 64.0 - 16.0
+    
+    InnerDiagonalRectangleWidth = 32.0
+    InnerDiagonalRectangleHeight = 32.0
+ 
 class AstroidConfig():
     def __init__(self):
         pass
+    def __str__(self) -> str:
+        return f"AstroidConfig: NumPoints={self.NumPoints}, N={self.N}, OuterAstroidRadius={self.OuterAstroidRadius}, InnerAstroidRadius={self.InnerAstroidRadius}"
     N = 2/3
     NumPoints = 128
+    
+    OuterAstroidRadius = 64.0
+    OuterStrokeWeight = 1.28
+    
+    InnerAstroidRadius = 32.0 + 8.0
+    InnerStrokeWeight = 1.28
+
+class KailashConfig():
+    def __init__(self):
+        pass
+    KailashIntersectExtrudeArea = 2177.7064808571517 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
+    
+class SeedOfLifeConfig():
+    def __init__(self):
+        pass
+    MinRandom = 2
+    MaxRandomMultiple = 2
+    
+    MinNumLayers = 1
+    MaxNumLayers = 1
 
 def run(context):
     ui = None
@@ -71,27 +107,27 @@ def run(context):
             main_comp = create_component(root_component=root_comp, name="core")
             
             sketch = create_sketch(main_comp, 'angled-rectangles-outer', offset=AppConfig.LayerDepth)
-            draw_rotated_rectangle(sketch=sketch, width=64.0, height=64.0)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
             for profile in sketch.profiles:
                 extrude_thin_one(component=main_comp, profile=profile, depth=1.28, strokeWeight=0.64, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             
             sketch = create_sketch(main_comp, 'angled-rectangles-middle', offset=AppConfig.LayerDepth)
-            draw_rotated_rectangle(sketch=sketch, width=64.0 - 16.0, height=64.0 - 16.0) 
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight) 
             for profile in sketch.profiles:
                 extrude_thin_one(component=main_comp, profile=profile, depth=1.28, strokeWeight=0.64, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
 
             sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=AppConfig.LayerDepth)            
-            draw_rotated_rectangle(sketch=sketch, width=32.0, height=32.0)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
             for profile in sketch.profiles:
                 extrude_thin_one(component=main_comp, profile=profile, depth=1.28, strokeWeight=0.64, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             
             sketch = create_sketch(main_comp, 'astroid-64', offset=AppConfig.LayerDepth)
-            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=64.0, scaleY=64.0, strokeWeight=1.28)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(64.0) - calculate_astroid_area(64.0 - 1.28), depth=1.28, name='astroid-64')
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterStrokeWeight)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius) - calculate_astroid_area(AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterStrokeWeight), depth=1.28, name='astroid-64')
 
             sketch = create_sketch(main_comp, 'astroid-32', offset=AppConfig.LayerDepth)
-            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=32.0 + 8.0, scaleY=32.0 + 8.0, strokeWeight=1.28)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(32.0 + 8.0) - calculate_astroid_area(32.0 + 8.0 - 1.28), depth=1.28, name='astroid-32')
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerStrokeWeight)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius) - calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerStrokeWeight), depth=1.28, name='astroid-32')
             
             
         # Structural Component - Kailash Terrain Generation Sketch
@@ -100,12 +136,19 @@ def run(context):
         if not component_exist(root_comp, 'kailash'):
             kailash_comp = create_component(root_component=root_comp, name="kailash")
             sketch = create_sketch(kailash_comp, 'kailash-terrain', offset=AppConfig.LayerDepth)
+            
+            draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth) 
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight) 
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterStrokeWeight)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerStrokeWeight) 
            
-            draw_rotated_rectangle(sketch=sketch, width=64.0, height=64.0) 
-            draw_rotated_rectangle(sketch=sketch, width=64.0 - 16.0, height=64.0 - 16.0) 
-            draw_rotated_rectangle(sketch=sketch, width=32.0, height=32.0)
-            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=64.0, scaleY=64.0, strokeWeight=1.28)
-            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=32.0 + 8.0, scaleY=32.0 + 8.0, strokeWeight=1.28) 
+            outer_right_angle_pieces = (calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth) - calculate_rectangle_area(DiagonalRectangleConfig.OuterDiagonalRectangleWidth, DiagonalRectangleConfig.OuterDiagonalRectangleHeight)) / 4
+            log(f"kailash-outer-right-angle-pieces: {outer_right_angle_pieces}")
+            
+            for profile in sketch.profiles:
+                log(f"kailash-profiles: {profile.areaProperties().area}")
             
         # Structural Component - Seed of Life
         if not component_exist(root_comp, 'seed-of-life'):
@@ -113,7 +156,7 @@ def run(context):
            
             # create seed of life
             for (_, radius) in enumerate(create_array_random_unique_multiples(random.randint(2, 4))):
-                n = random.randint(1, 2)
+                n = random.randint(SeedOfLifeConfig.MinNumLayers, SeedOfLifeConfig.MaxNumLayers)
                 create_seed_of_life(seed_of_life_comp, radius=radius, layer_depth=0.0, layer_offset=AppConfig.LayerDepth, radius_diff=0.0, strokeWeight=0.16, extrudeHeight=AppConfig.LayerDepth, n=n)
                 log(f"seed-of-life: {n} circles with radius: {radius}")
 
@@ -127,6 +170,13 @@ def run(context):
             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength * 4, width=AppConfig.MaxWidth * 4)
             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
             extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength * 4, AppConfig.MaxWidth * 4) - calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), depth=AppConfig.LayerDepth, name='cut-out-of-bounds', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            
+            sketch = create_sketch(seed_of_life_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterStrokeWeight)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerStrokeWeight) 
+            extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, depth=AppConfig.LayerDepth, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -188,7 +238,7 @@ def create_seed_of_life(component: adsk.fusion.Component, radius=8.0, layer_dept
         sketch = create_sketch(component, 'seed-of-life-' + str(i + 1), layer_offset + layer_depth * i)
         draw_seed_of_life_pattern(sketch, radius - i * (radius_diff * 2), 0, 0, 30 * i)
         for profile in sketch.profiles:
-            extrude_thin_one(component, profile, extrudeHeight, "seed-of-life-" + str(i + 1), strokeWeight, adsk.fusion.FeatureOperations.JoinFeatureOperation)
+            extrude_thin_one(component, profile, extrudeHeight, str(radius) + "-seed-of-life-" + str(i + 1), strokeWeight, adsk.fusion.FeatureOperations.JoinFeatureOperation)
 
 def create_inverted_triangle(component, side_length, center_x=0, center_y=0, n=3, layer_depth=0.1, extrudeHeight=0.1, layer_offset=0.0):
     sketches = component.sketches
