@@ -1,7 +1,7 @@
 import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
-from .shapes import draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed
+from .shapes import create_power_series_multiples, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed
 from .utils import create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_thin_one, log
 
 # structurally
@@ -61,7 +61,7 @@ class AstroidConfig():
 class KailashConfig():
     def __init__(self):
         pass
-    KailashIntersectExtrudeArea = 2177.7064808571517 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
+    KailashIntersectExtrudeArea = 2130.679120238867 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
  
 class SeedOfLifeConfig():
     def __init__(self):
@@ -75,7 +75,7 @@ class SeedOfLifeConfig():
     AngleDifference = 30
     StrokeWeight = 0.32
     
-    RepeatValues = [1, 2, 4] # the values of the iterator repeat can only be either 1, 2 or 4 times.
+    RepeatValues = create_power_series_multiples(3) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
     RadiusReduceDistance = 0.32
 
 def run(context):
@@ -213,36 +213,25 @@ def run(context):
             # cut kailash intersection 
             try:
                 sketch = create_sketch(seed_of_life_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth)
-                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
+                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight)
                 draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
                 draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
                 draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerAstroidStrokeWeight) 
+                
+                for profile in sketch.profiles:
+                    log(f"cut-kailash-intersection: {profile.areaProperties().area}")
+                
                 extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, depth=AppConfig.LayerDepth, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
             except:
                 log("cut-kailash-intersection: none to cut")
 
-            # refill the middle & inner diagonal rectangle -- accidently cut from the kailash intersection            
-            try:
-                sketch = create_sketch(seed_of_life_comp, 'middle-diagonal-rectangle-refill', offset=AppConfig.LayerDepth)
-                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
-                for profile in sketch.profiles:
-                    extrude_thin_one(component=seed_of_life_comp, profile=profile, depth=1.28, strokeWeight=DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, name="extrude-thin-refill", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-                    
-                sketch = create_sketch(seed_of_life_comp, 'inner-diagonal-rectangle-refill', offset=AppConfig.LayerDepth)
-                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
-                for profile in sketch.profiles:
-                    extrude_thin_one(component=seed_of_life_comp, profile=profile, depth=1.28, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="extrude-thin-refill", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-            except:
-                log("middle-diagonal-rectangle-refill: none to refill")
-            
             # cut all the circles that is out of bounds
             try:
-                sketch = create_sketch(seed_of_life_comp, 'cut-out-of-bounds', offset=AppConfig.LayerDepth)
-                draw_rectangle(sketch=sketch, length=AppConfig.MaxLength * 4, width=AppConfig.MaxWidth * 4)
+                sketch = create_sketch(seed_of_life_comp, 'intersect-only-in-bounds', offset=AppConfig.LayerDepth)
                 draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-                extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength * 4, AppConfig.MaxWidth * 4) - calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), depth=AppConfig.LayerDepth, name='cut-out-of-bounds', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+                extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), depth=AppConfig.LayerDepth, name='intersect-only-in-bounds', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
             except:
-                log("cut-out-of-bounds: none to cut")
+                log("intersect-only-in-bounds: none to cut")
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
