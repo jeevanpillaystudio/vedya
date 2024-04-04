@@ -110,10 +110,25 @@ def log(value):
         print("An error occurred while writing to logfile.txt:", str(e))
         
 # Redefine the function to generate unique values without using numpy
+import random
+
 def create_array_random_unique_multiples(size: int, multiple: int = 8, min_multiple: int = 1, max_multiple: int = 10):
+    """
+    Generate a list of random unique multiples of a given number.
+
+    Args:
+        size (int): The number of unique multiples to generate.
+        multiple (int, optional): The base number to generate multiples of. Defaults to 8.
+        min_multiple (int, optional): The minimum multiplier for generating multiples. Defaults to 1.
+        max_multiple (int, optional): The maximum multiplier for generating multiples. Defaults to 10.
+
+    Returns:
+        list: A sorted list of unique multiples of the given number.
+        e.g create_array_random_unique_multiples(5, 8, 1, 10) -> [8, 16, 24, 32, 40]
+    """
     values = set()
     while len(values) < size:
-        # Generate a unique value that is a multiple of 8, increasing range for uniqueness
+        # Generate a unique value that is a multiple of the given number, increasing range for uniqueness
         value = multiple * random.randint(min_multiple, max_multiple)
         values.add(value)
     return sorted(list(values))
