@@ -1,10 +1,8 @@
-from dataclasses import dataclass
 import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
-from .shapes import draw_astroid, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, calculate_three_point_rectangle_area, draw_seed_of_life_pattern, create_seed
+from .shapes import draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed
 from .utils import create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_thin_one, log
-from enum import Enum
 
 # structurally
 # 1 layer; each having 4 sub-layers
@@ -68,16 +66,16 @@ class KailashConfig():
 class SeedOfLifeConfig():
     def __init__(self):
         pass
-    MinRandomMultiple = 1
-    MaxRandomMultiple = 1
+    MinRandomMultiple = 2
+    MaxRandomMultiple = 4
     
     MinNumLayers = 1
-    MaxNumLayers = 1
+    MaxNumLayers = 2
     
     AngleDifference = 30
     StrokeWeight = 0.32
     
-    NumLayerRepeat = 4
+    RepeatValues = [1, 2, 4] # the values of the iterator repeat can only be either 1, 2 or 4 times.
     RadiusReduceDistance = 0.32
 
 def run(context):
@@ -168,28 +166,32 @@ def run(context):
                 # select number of layers to create for each generation
                 n = random.randint(SeedOfLifeConfig.MinNumLayers, SeedOfLifeConfig.MaxNumLayers)
                 
-                # extrusion height; each layer has the same distance between them
-                extrude_height_per_layer = AppConfig.LayerDepth / SeedOfLifeConfig.NumLayerRepeat
+                # repeats
+                repeat = random.choice(SeedOfLifeConfig.RepeatValues)
                 
-                # repeat x many times; this gives the "depth" effect
-                for j in range(SeedOfLifeConfig.NumLayerRepeat):
+                # extrusion height; each layer has the same distance between them
+                extrude_height_per_layer = AppConfig.LayerDepth / repeat
+                
+                # repeat j many times; this gives the "depth" effect
+                for j in range(repeat):
                     
                     # each seed of life generated here
                     for i in range(n):
                         # the statart of the seed-of-life layer + the offset of the each sub-layer
                         plane_offset = AppConfig.LayerDepth + extrude_height_per_layer * j
                         
-                        # radius, strokeWeight difference each layer is based on j. this is the thing that gives it the "depth" effect
+                        # radius, strokeWeight difference each layer is based on j; gives it the "depth" effect
                         r = radius - SeedOfLifeConfig.RadiusReduceDistance * j
-                        sw = SeedOfLifeConfig.StrokeWeight
+                        sw = SeedOfLifeConfig.StrokeWeight # @todo needs rework!
                         
                         # center circle
                         sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + '-center', plane_offset)
                         draw_circle(sketch, r, center_x, center_y)
                         extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], depth=extrude_height_per_layer, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
                         
-                        # draw
+                        # draw; this is a standard seed of life algorithm.
                         for i in range(6):
+                            # radiant angle; see obsidian://open?vault=Obsidian%20Vault&file=personal%2Fart-composition%2Fimages%2Feducation-radiant-circle-measure.png
                             angle = math.radians(i * 60)
                             x = center_x + r * math.cos(angle)
                             y = center_y + r * math.sin(angle)
@@ -199,9 +201,6 @@ def run(context):
                 
                 # log the seed of life
                 log(f"seed-of-life: {n} circles with radius: {radius}")
-
-            return
-
 
             # cut a hole in the center
             try:
@@ -299,13 +298,6 @@ def draw_border(component, originalWidth, originalHeight, borderDepth, borderWid
                 distance = adsk.core.ValueInput.createByReal(borderDepth)  # Depth of the extrusion for each border
                 extrudeInput.setDistanceExtent(False, distance)
                 extrudes.add(extrudeInput)
-
-def create_seed_of_life(component: adsk.fusion.Component, radius=8.0, layer_depth=0.1, layer_offset=0.0, radius_diff=0.1, strokeWeight=0.05, extrudeHeight=0.1, n=2):
-    # for i in range(n): 
-    sketch = create_sketch(component, 'seed-of-life-' + str(i + 1), layer_offset + layer_depth * i)
-    draw_seed_of_life_pattern(sketch, radius - i * (radius_diff * 2), 0, 0, 30 * i)
-    for profile in sketch.profiles:
-        extrude_thin_one(component, profile, extrudeHeight, str(radius) + "-seed-of-life-" + str(i + 1), strokeWeight, adsk.fusion.FeatureOperations.JoinFeatureOperation)
 
 def create_inverted_triangle(component, side_length, center_x=0, center_y=0, n=3, layer_depth=0.1, extrudeHeight=0.1, layer_offset=0.0):
     sketches = component.sketches
