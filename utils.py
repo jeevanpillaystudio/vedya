@@ -87,10 +87,10 @@ def extrude_thin_one(component: adsk.fusion.Component, profile: adsk.fusion.Prof
     body.name = name
     return body
 
-def create_component(root_component: adsk.fusion.Component, name) -> adsk.fusion.Component:
+def create_component(root_component: adsk.fusion.Component, component_name) -> adsk.fusion.Component:
     # Create a new component
     newComp = root_component.occurrences.addNewComponent(adsk.core.Matrix3D.create())
-    newComp.component.name = name
+    newComp.component.name = component_name
     return newComp.component
 
 def component_exist(root_component: adsk.fusion.Component, name) -> bool:

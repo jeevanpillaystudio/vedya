@@ -12,6 +12,16 @@ from .utils import create_array_random_unique_multiples, create_offset_plane, cr
 # total depth = 5.12cm
 # base = 6.4cm - 5.12cm = 1.28cm
 
+class ScaleConfig():
+    def __init__(self):
+        pass
+    
+    Print3D = True
+    ScaleFactor: float = 8.0 if Print3D else 1.0
+    
+    def __str__(self) -> str:
+        return f"ScaleConfig: ScaleFactor={self.ScaleFactor}"
+        
 class AppConfig():
     """
     List of the configurations for the creation
@@ -20,30 +30,32 @@ class AppConfig():
         pass
     def __str__(self) -> str:
         return f"AppConfig: HoleRadius={self.HoleRadius}, Extrude={self.Extrude}, MaxWidth={self.MaxWidth}, MaxLength={self.MaxLength}, LayerDepth={self.LayerDepth}, Seed={self.Seed}"
-    HoleRadius = 8.0
     Extrude = True
-    MaxWidth = 128.0
-    MaxLength = 128.0
-    LayerDepth = 1.28
+    
+    HoleRadius = 8.0 / ScaleConfig.ScaleFactor
+    MaxWidth = 128.0 / ScaleConfig.ScaleFactor
+    MaxLength = 128.0 / ScaleConfig.ScaleFactor
+    LayerDepth = 1.28 / ScaleConfig.ScaleFactor
+    
     Seed = create_seed()
-
+    
 class DiagonalRectangleConfig():
     def __init__(self):
         pass
     def __str__(self) -> str:
         return f"DiagonalRectangleConfig: NumPoints={self.NumPoints}, StrokeWeight={self.StrokeWeight}, OuterDiagonalRectangleWidth={self.OuterDiagonalRectangleWidth}, OuterDiagonalRectangleHeight={self.OuterDiagonalRectangleHeight}, MiddleDiagonalRectangleWidth={self.MiddleDiagonalRectangleWidth}, MiddleDiagonalRectangleHeight={self.MiddleDiagonalRectangleHeight}, InnerDiagonalRectangleWidth={self.InnerDiagonalRectangleWidth}, InnerDiagonalRectangleHeight={self.InnerDiagonalRectangleHeight}"
-    OuterDiagonalRectangleWidth = 64.0
-    OuterDiagonalRectangleHeight = 64.0
-    OuterDiagonalRectangleStrokeWeight = 0.64
+    OuterDiagonalRectangleWidth = 64.0 / ScaleConfig.ScaleFactor
+    OuterDiagonalRectangleHeight = 64.0 / ScaleConfig.ScaleFactor
+    OuterDiagonalRectangleStrokeWeight = 0.64 / ScaleConfig.ScaleFactor
     
-    MiddleDiagonalRectangleWidth = 64.0 - 16.0
-    MiddleDiagonalRectangleHeight = 64.0 - 16.0
-    MiddleDiagonalRectangleStrokeWeight = 0.64
+    MiddleDiagonalRectangleWidth = (64.0 - 16.0) / ScaleConfig.ScaleFactor
+    MiddleDiagonalRectangleHeight = (64.0 - 16.0) / ScaleConfig.ScaleFactor
+    MiddleDiagonalRectangleStrokeWeight = 0.64 / ScaleConfig.ScaleFactor
     
-    InnerDiagonalRectangleWidth = 32.0
-    InnerDiagonalRectangleHeight = 32.0
-    InnerDiagonalRectangleStrokeWeight = 0.64
- 
+    InnerDiagonalRectangleWidth = 32.0 / ScaleConfig.ScaleFactor
+    InnerDiagonalRectangleHeight = 32.0 / ScaleConfig.ScaleFactor
+    InnerDiagonalRectangleStrokeWeight = 0.64 / ScaleConfig.ScaleFactor 
+    
 class AstroidConfig():
     def __init__(self):
         pass
@@ -52,32 +64,31 @@ class AstroidConfig():
     N = 2/3
     NumPoints = 128
     
-    OuterAstroidRadius = 64.0
-    OuterAstroidStrokeWeight = 1.28
+    OuterAstroidRadius = 64.0 / ScaleConfig.ScaleFactor
+    OuterAstroidStrokeWeight = 1.28 / ScaleConfig.ScaleFactor
     
-    InnerAstroidRadius = 32.0 + 8.0
-    InnerAstroidStrokeWeight = 1.28
-
+    InnerAstroidRadius = (32.0 + 8.0) / ScaleConfig.ScaleFactor
+    InnerAstroidStrokeWeight = 1.28 / ScaleConfig.ScaleFactor
+    
 class KailashConfig():
     def __init__(self):
         pass
-    KailashIntersectExtrudeArea = 2130.679120238867 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
- 
+    KailashIntersectExtrudeArea = 2130.679120238867 / ScaleConfig.ScaleFactor ** 2 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
+
 class SeedOfLifeConfig():
     def __init__(self):
         pass
     MinRandomMultiple = 2
     MaxRandomMultiple = 4
-    
     MinNumLayers = 1
     MaxNumLayers = 2
+    RepeatValues = create_power_series_multiples(3) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
     
     AngleDifference = 30
-    StrokeWeight = 0.32
     
-    RepeatValues = create_power_series_multiples(3) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
-    RadiusReduceDistance = 0.32
-
+    StrokeWeight = 0.32 / ScaleConfig.ScaleFactor
+    RadiusReduceDistance = 0.32 / ScaleConfig.ScaleFactor
+    
 def run(context):
     ui = None
     try:
@@ -99,21 +110,21 @@ def run(context):
         root_comp: adsk.fusion.Component = design.rootComponent
         
         # Structural Component - Background
-        if not component_exist(root_comp, 'bg'):
-            core_structural_comp = create_component(root_component=root_comp, name="bg")
+        if not component_exist(root_comp, create_component_name('bg')):
+            core_structural_comp = create_component(root_component=root_comp, component_name=create_component_name("bg"))
             sketch = create_sketch(core_structural_comp, 'bg-rect', offset=0.0)
             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
             draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
             extrude_profile_by_area(component=core_structural_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth) - calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='bg-rect')
-
+        
         # Structural Component - Border
-        if not component_exist(root_comp, 'border'):
-            border_comp = create_component(root_component=root_comp, name="border")
+        if not component_exist(root_comp, create_component_name('border')):
+            border_comp = create_component(root_component=root_comp, component_name=create_component_name("border"))
             draw_border(component=border_comp, originalWidth=AppConfig.MaxLength, originalHeight=AppConfig.MaxWidth, borderDepth=AppConfig.LayerDepth * 4, borderWidth=AppConfig.LayerDepth, name='border', offset=0.0)
         
         # Structural Component - Main Design
-        if not component_exist(root_comp, 'core'):
-            main_comp = create_component(root_component=root_comp, name="core")
+        if not component_exist(root_comp, create_component_name('core')):
+            main_comp = create_component(root_component=root_comp, component_name=create_component_name("core"))
             
             sketch = create_sketch(main_comp, 'angled-rectangles-outer', offset=AppConfig.LayerDepth)
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
@@ -142,8 +153,8 @@ def run(context):
         # Structural Component - Kailash Terrain Generation Sketch
         # Note: This is a placeholder for the actual terrain generation code. Requires manual intervention using STL files & Fusion Forms.
         # Guide: https://www.youtube.com/watch?v=Ea_YC4Jh0Sw
-        if not component_exist(root_comp, 'kailash'):
-            kailash_comp = create_component(root_component=root_comp, name="kailash")
+        if not component_exist(root_comp, create_component_name('kailash')):
+            kailash_comp = create_component(root_component=root_comp, component_name=create_component_name("kailash"))
             sketch = create_sketch(kailash_comp, 'kailash-terrain', offset=AppConfig.LayerDepth)
             
             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth) 
@@ -154,8 +165,8 @@ def run(context):
             draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerAstroidStrokeWeight) 
             
         # Structural Component - Seed of Life
-        if not component_exist(root_comp, 'seed-of-life'):
-            seed_of_life_comp = create_component(root_component=root_comp, name="seed-of-life")
+        if not component_exist(root_comp, create_component_name('seed-of-life')):
+            seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life"))
             
             # draw from middle
             center_x = 0
@@ -366,3 +377,8 @@ def create_inverted_triangle(component, side_length, center_x=0, center_y=0, n=3
     sketch = sketches.add(offsetPlane)
     sketch.name = 'layer-1'
     create_triangles(sketch, side_length, center_x, center_y, 'stroke')
+    
+def create_component_name(name):
+    if ScaleConfig.Print3D:
+        return f"3d-{name}"
+    return f"{name}"
