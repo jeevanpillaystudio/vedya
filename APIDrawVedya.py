@@ -129,17 +129,17 @@ def run(context):
             sketch = create_sketch(main_comp, 'angled-rectangles-outer', offset=AppConfig.LayerDepth)
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
             for profile in sketch.profiles:
-                extrude_thin_one(component=main_comp, profile=profile, depth=AppConfig.LayerDepth, strokeWeight=DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth, strokeWeight=DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             
             sketch = create_sketch(main_comp, 'angled-rectangles-middle', offset=AppConfig.LayerDepth)
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight) 
             for profile in sketch.profiles:
-                extrude_thin_one(component=main_comp, profile=profile, depth=AppConfig.LayerDepth, strokeWeight=DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth, strokeWeight=DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
 
             sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=AppConfig.LayerDepth)            
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
             for profile in sketch.profiles:
-                extrude_thin_one(component=main_comp, profile=profile, depth=AppConfig.LayerDepth, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             
             sketch = create_sketch(main_comp, 'astroid-64', offset=AppConfig.LayerDepth)
             draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
@@ -152,7 +152,7 @@ def run(context):
             # @todo convert this use Side1 and Side2, and remove 0.64 / 8 hack 
             sketch = create_sketch(main_comp, 'hole-thin-circle', offset=AppConfig.LayerDepth)
             draw_circle(sketch=sketch, radius=AppConfig.HoleRadius + 0.64 / 8)
-            extrude_thin_one(component=main_comp, profile=sketch.profiles[0], depth=AppConfig.LayerDepth, strokeWeight=0.64 / 8, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            extrude_thin_one(component=main_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth, strokeWeight=0.64 / 8, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             
             
         # Structural Component - Kailash Terrain Generation Sketch
@@ -183,29 +183,29 @@ def run(context):
                 n = random.randint(SeedOfLifeConfig.MinNumLayers, SeedOfLifeConfig.MaxNumLayers)
                 
                 # repeats
-                repeat = random.choice(SeedOfLifeConfig.RepeatValues)
+                # repeat = random.choice(SeedOfLifeConfig.RepeatValues)
+                repeat = 2
                 
                 # extrusion height; each layer has the same distance between them
                 extrude_height_per_layer = AppConfig.LayerDepth / repeat
                 
                 # repeat j many times; this gives the "depth" effect
                 for j in range(repeat):
-                    log(f"seed-of-life: {n} circles with radius: {radius} and repeat: {repeat}")
-                    
                     # each seed of life generated here
                     for i in range(n):
                         # the statart of the seed-of-life layer + the offset of the each sub-layer
-                        plane_offset = AppConfig.LayerDepth + extrude_height_per_layer * j
+                        plane_offset = AppConfig.LayerDepth 
                         
-                        # radius, strokeWeight difference each layer is based on j; gives it the "depth" effect
-                        r = radius - SeedOfLifeConfig.RadiusReduceDistance * j
-                        sw = SeedOfLifeConfig.StrokeWeight * (repeat - j) # @todo needs rework!
-                        log(f"seed-of-life: {n} circles with radius: {r} and strokeWeight: {sw}")
+                        # radius, strokeWeight, extrudeHeight difference each layer is based on j; gives it the "depth" effect
+                        r = radius - (SeedOfLifeConfig.RadiusReduceDistance * j) / 2
+                        eh = extrude_height_per_layer * (j + 1)
+                        sw = SeedOfLifeConfig.StrokeWeight
+                        log(f"seed-of-life: {n} circles with radius: {r} and strokeWeight: {sw} and extrudeHeight: {eh}")
                         
                         # center circle
                         sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + '-center', plane_offset)
                         draw_circle(sketch, r, center_x, center_y)
-                        extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], depth=extrude_height_per_layer, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
+                        extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
                         
                         # draw; this is a standard seed of life algorithm.
                         for i in range(6):
@@ -215,7 +215,7 @@ def run(context):
                             y = center_y + r * math.sin(angle)
                             sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + "-" + str(angle), plane_offset)
                             draw_circle(sketch, r, x, y)
-                            extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], depth=extrude_height_per_layer, name='seed-of-life-' + str(r) + "-" + str(sw), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
+                            extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-' + str(r) + "-" + str(sw), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
                 
                 # log the seed of life
                 log(f"seed-of-life: {n} circles with radius: {radius}")
