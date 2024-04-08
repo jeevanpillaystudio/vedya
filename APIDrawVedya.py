@@ -120,7 +120,7 @@ def run(context):
         # Structural Component - Border
         if not component_exist(root_comp, create_component_name('border')):
             border_comp = create_component(root_component=root_comp, component_name=create_component_name("border"))
-            draw_border(component=border_comp, originalWidth=AppConfig.MaxLength, originalHeight=AppConfig.MaxWidth, borderDepth=AppConfig.LayerDepth, borderWidth=AppConfig.LayerDepth, name='border', offset=0.0)
+            draw_border(component=border_comp, originalWidth=AppConfig.MaxLength, originalHeight=AppConfig.MaxWidth, borderDepth=AppConfig.LayerDepth * 2, borderWidth=AppConfig.LayerDepth, name='border', offset=0.0)
         
         # Structural Component - Core Design
         if not component_exist(root_comp, create_component_name('core')):
