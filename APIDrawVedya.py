@@ -82,7 +82,7 @@ class SeedOfLifeConfig():
     MaxRandomMultiple = 4
     MinNumLayers = 1
     MaxNumLayers = 2
-    RepeatValues = create_power_series_multiples(3) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
+    RepeatValues = create_power_series_multiples(1) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
     
     AngleDifference = 30
     
@@ -183,8 +183,7 @@ def run(context):
                 n = random.randint(SeedOfLifeConfig.MinNumLayers, SeedOfLifeConfig.MaxNumLayers)
                 
                 # repeats
-                # repeat = random.choice(SeedOfLifeConfig.RepeatValues)
-                repeat = 2
+                repeat = random.choice(SeedOfLifeConfig.RepeatValues)
                 
                 # extrusion height; each layer has the same distance between them
                 extrude_height_per_layer = AppConfig.LayerDepth / repeat
