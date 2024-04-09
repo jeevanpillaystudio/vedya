@@ -86,8 +86,8 @@ class SeedOfLifeConfig():
     
     AngleDifference = 30
     
-    StrokeWeight = 0.64 / ScaleConfig.ScaleFactor # @todo change to 0.32
-    RadiusReduceDistance = 0.64 / ScaleConfig.ScaleFactor # @todo change to 0.32
+    StrokeWeight = 0.32 / ScaleConfig.ScaleFactor
+    RadiusReduceDistance = 0.32 / ScaleConfig.ScaleFactor
     
 def run(context):
     ui = None
