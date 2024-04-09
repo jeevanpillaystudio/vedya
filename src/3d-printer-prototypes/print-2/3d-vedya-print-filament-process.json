@@ -1,0 +1,13 @@
+{
+    "from": "User",
+    "inherits": "0.20mm Standard @BBL X1C",
+    "is_custom_defined": "0",
+    "min_bead_width": "70%",
+    "min_feature_size": "10%",
+    "name": "vedya-print-2",
+    "print_settings_id": "vedya-print-2",
+    "version": "1.8.0.25",
+    "wall_distribution_count": "4",
+    "wall_generator": "arachne",
+    "wall_loops": "4"
+}
