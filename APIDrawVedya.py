@@ -137,7 +137,7 @@ def run(context):
         if not component_exist(root_comp, create_component_name('border')):
             border_comp = create_component(root_component=root_comp, component_name=create_component_name("border"))
             sketch = create_sketch(border_comp, 'border', offset=0.0)
-            draw_rectangle(sketch=sketch, length=AppConfig.MaxLength + AppConfig.BorderWidth, width=AppConfig.MaxWidth + AppConfig.BorderWidth)
+            draw_rectangle(sketch=sketch, length=AppConfig.MaxLength + AppConfig.BorderWidth * 2, width=AppConfig.MaxWidth + AppConfig.BorderWidth * 2)
             extrude_thin_one(component=border_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.BorderDepth, strokeWeight=AppConfig.BorderWidth, name='border', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         
         # Structural Component - Core Design
@@ -194,34 +194,6 @@ def run(context):
                 # repeat j many times; this gives the "depth" effect
                 for j in range(depth_repeat):
                     create_seed_of_life(seed_of_life_comp, center_x, center_y, initial_radius, j, extrude_height_per_layer)
-
-            # Structural Component - Kailash Terrain Generation Sketch
-            # Note: This is a placeholder for the actual terrain generation code. Requires manual intervention using STL files & Fusion Forms.
-            # Guide: https://www.youtube.com/watch?v=Ea_YC4Jh0Sw
-            if not component_exist(seed_of_life_comp, create_component_name('cut-kailash-terrain')):
-                try:
-                    kailash_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("cut-kailash-terrain"))
-                    sketch = create_sketch(kailash_comp, 'cut-kailash-terrain', offset=AppConfig.LayerDepth)
-                    
-                    draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight) 
-                    draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
-                    draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
-                    draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
-                    draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerAstroidStrokeWeight) 
-                    
-                    extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, depth=AppConfig.LayerDepth, name='cut-kailash-terrain')
-                except:
-                    log("cut-kailash-terrain: none to cut")
-            
-            # Structural Component - Middle Hole 
-            if not component_exist(seed_of_life_comp, create_component_name('cut-hole')):
-                try:
-                    cut_hole_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("cut-hole"))
-                    sketch = create_sketch(cut_hole_comp, 'cut-hole', offset=AppConfig.LayerDepth)
-                    draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-                    extrude_profile_by_area(component=cut_hole_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-                except Exception as e:
-                    log("cut-hole: none to cut", e)
                 
         if not component_exist(root_comp, create_component_name('torus')):
             torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
@@ -241,7 +213,40 @@ def run(context):
             extrude_height = AppConfig.LayerDepth / 2
             outer_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer" + str(radius) + "-" + str(iterations)))
             create_torus(root_component=outer_torus_component, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=stroke_weight, extrude_height=extrude_height, layer_offset=AppConfig.LayerDepth) 
-            
+        
+        # Structural Component - Kailash Terrain Generation Sketch
+        # Note: This is a placeholder for the actual terrain generation code. Requires manual intervention using STL files & Fusion Forms.
+        # Guide: https://www.youtube.com/watch?v=Ea_YC4Jh0Sw
+        if not component_exist(root_comp, create_component_name('cut-kailash-intersection')):
+            try:
+                kailash_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-kailash-intersection"))
+                sketch = create_sketch(kailash_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth)
+                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight)
+                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
+                draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
+                draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerAstroidStrokeWeight) 
+                extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, depth=AppConfig.LayerDepth, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            except:
+                log("cut-kailash-intersection: none to cut")
+                
+        # Structural Component - Middle Hole 
+        if not component_exist(root_comp, create_component_name('cut-hole')):
+            try:
+                cut_hole_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-hole"))
+                sketch = create_sketch(cut_hole_comp, 'cut-hole', offset=AppConfig.LayerDepth)
+                draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+                extrude_profile_by_area(component=cut_hole_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            except:
+                log("cut-hole: none to cut")
+                
+        # cut all the circles that is out of bounds
+        if not component_exist(root_comp, create_component_name('intersect-only-in-bounds')):
+            try:
+                sketch = create_sketch(root_comp, 'intersect-only-in-bounds', offset=AppConfig.LayerDepth)
+                draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
+                extrude_profile_by_area(component=root_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), depth=AppConfig.LayerDepth, name='intersect-only-in-bounds', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
+            except:
+                log("intersect-only-in-bounds: none to cut")
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
