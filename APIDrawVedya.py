@@ -1,3 +1,4 @@
+from enum import Enum
 import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
@@ -21,6 +22,12 @@ class ScaleConfig():
     
     def __str__(self) -> str:
         return f"ScaleConfig: ScaleFactor={self.ScaleFactor}"
+    
+class DesignMode:
+    def __init__(self):
+        pass
+    DirectDesign = adsk.fusion.DesignTypes.DirectDesignType
+    ParametricDesign = adsk.fusion.DesignTypes.ParametricDesignType
         
 class AppConfig():
     """
@@ -41,7 +48,8 @@ class AppConfig():
     BorderDepth = (1.28 * 2) / ScaleConfig.ScaleFactor
     
     Seed = create_seed()
-    
+    DesignMode = DesignMode.DirectDesign
+ 
 class DiagonalRectangleConfig():
     def __init__(self):
         pass
@@ -99,11 +107,15 @@ def run(context):
         app = adsk.core.Application.get()
         ui  = app.userInterface
         design = app.activeProduct
-        
-        # Check if the design is not in "Design" mode.
+            
+        # check if the design is not in "Design" mode.
         if not design:
             ui.messageBox('It is not supported in current workspace, please switch to DESIGN workspace and try again.')
             return
+    
+        # select design mode
+        design.designType = AppConfig.DesignMode
+        log(f'Design Mode: {AppConfig.DesignMode}')
         
         # Log the seed for reproducibility
         app_config = AppConfig()
@@ -272,12 +284,18 @@ def create_seed_of_life(root_component, center_x, center_y, radius, j, extrude_h
         angle = math.radians(i * 60)
         x = center_x + r * math.cos(angle)
         y = center_y + r * math.sin(angle)
+
+        # draw
+        if AppConfig.DesignMode == DesignMode.DirectDesign:
+            sketch = create_sketch(root_component, 'seed-of-life-' + str(r) + "-" + str(angle), plane_offset)
+            draw_circle(sketch, r, x, y)
+            extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-' + str(r) + "-" + str(angle), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)        
+        elif AppConfig.DesignMode == DesignMode.ParametricDesign:
+            copy_body(root_component, initial_body, name='seed-of-life-' + str(r) + "-" + str(angle))
+            move_body(root_component, x, y, initial_body)
+        else:
+            raise Exception("DesignMode not supported")
         
-        # copy body
-        real_body = copy_body(root_component=root_component, body=initial_body, name='seed-of-life-' + str(r) + "-" + str(angle))
-        
-        # move body
-        move_body(root_component, x, y, real_body)
 
 @timer
 def create_torus(root_component: adsk.fusion.Component, center_x, center_y, radius, iterations, stroke_weight, extrude_height, layer_offset):
@@ -298,15 +316,21 @@ def create_torus(root_component: adsk.fusion.Component, center_x, center_y, radi
     
     # draw; this is a standard torus algorithm.
     for i in range(iterations):
+        # radiant angle; see obsidian://open?vault=Obsidian%20Vault&file=personal%2Fart-composition%2Fimages%2Feducation-radiant-circle-measure.png
         angle = math.radians(i * angle_per_iteration)
         x = center_x + r * math.cos(angle)
         y = center_y + r * math.sin(angle)
         
-        # copy body
-        real_body = copy_body(root_component=root_component, body=throwaway_body, name='torus-inner-circle-' + str(r) + "-" + str(angle))
-        
-        # move body
-        move_body(root_component, x, y, real_body)
+        # draw
+        if AppConfig.DesignMode == DesignMode.DirectDesign:
+            real_sketch = create_sketch(root_component, 'torus-inner-circle-' + str(r) + "-" + str(angle), layer_offset)
+            draw_circle(real_sketch, r, x, y)
+            extrude_thin_one(component=root_component, profile=real_sketch.profiles[0], extrudeHeight=extrude_height, strokeWeight=stroke_weight, name='torus-inner-circle-' + str(r) + "-" + str(angle), operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation) 
+        elif AppConfig.DesignMode == DesignMode.ParametricDesign:
+            real_body = copy_body(root_component=root_component, body=throwaway_body, name='torus-inner-circle-' + str(r) + "-" + str(angle))
+            move_body(root_component, x, y, real_body)
+        else:
+            raise Exception("DesignMode not supported")
                     
     # log the seed of life
     log(f"torus: {iterations} circles with radius: {r}")
