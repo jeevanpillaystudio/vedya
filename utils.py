@@ -139,7 +139,7 @@ def timer(func):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
-        log(f"Function '{func.__name__}' took {end_time - start_time} seconds to run.")
+        log(f"TIMER '{func.__name__}' took {end_time - start_time} seconds to run.")
         return result
     return wrapper
 

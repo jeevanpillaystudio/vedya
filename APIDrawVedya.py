@@ -85,7 +85,7 @@ class SeedOfLifeConfig():
     MaxRandomMultiple = 4
     MinNumLayers = 1
     MaxNumLayers = 2
-    RepeatValues = create_power_series_multiples(3) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
+    DepthRepeatValues = create_power_series_multiples(3) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
     
     AngleDifference = 30
     
@@ -113,56 +113,29 @@ def run(context):
         root_comp: adsk.fusion.Component = design.rootComponent
         
         # Structural Component - Seed of Life
-        # if not component_exist(root_comp, create_component_name('seed-of-life')):
-            # seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life"))
+        if not component_exist(root_comp, create_component_name('seed-of-life')):
+            seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life"))
             
-            # # draw from middle
-            # center_x = 0
-            # center_y = 0
+            # draw from middle
+            center_x = 0
+            center_y = 0
             
-            # # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
-            # for (_, radius) in enumerate(create_array_random_unique_multiples(size=random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple), multiple=1, min_multiple=1, max_multiple=10)):
-            #     # select number of layers to create for each generation
-            #     n = random.randint(SeedOfLifeConfig.MinNumLayers, SeedOfLifeConfig.MaxNumLayers)
+            # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
+            for (_, initial_radius) in enumerate(create_array_random_unique_multiples(size=random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple), multiple=1, min_multiple=1, max_multiple=10)):
+                # repeats
+                depth_repeat = random.choice(SeedOfLifeConfig.DepthRepeatValues)
                 
-            #     # repeats
-            #     repeat = random.choice(SeedOfLifeConfig.RepeatValues)
+                # extrusion height; each layer has the same distance between them
+                extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
                 
-            #     # extrusion height; each layer has the same distance between them
-            #     extrude_height_per_layer = AppConfig.LayerDepth / repeat
+                # log
+                log(f"INIT seed-of-life: depth-repeat {depth_repeat}, initial-radius: {initial_radius}, extrude-height-per-layer: {extrude_height_per_layer}")
                 
-            #     # repeat j many times; this gives the "depth" effect
-            #     for j in range(repeat):
-            #         # each seed of life generated here
-            #         for i in range(n):
-            #             # the statart of the seed-of-life layer + the offset of the each sub-layer
-            #             plane_offset = AppConfig.LayerDepth 
-                        
-            #             # radius, strokeWeight, extrudeHeight difference each layer is based on j; gives it the "depth" effect
-            #             r = radius - (SeedOfLifeConfig.RadiusReduceDistance * j) / 2
-            #             eh = extrude_height_per_layer * (j + 1)
-            #             sw = SeedOfLifeConfig.StrokeWeight
-            #             log(f"seed-of-life: {n} circles with radius: {r} and strokeWeight: {sw} and extrudeHeight: {eh}")
-                        
-            #             # center circle
-            #             sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + '-center', plane_offset)
-            #             draw_circle(sketch, r, center_x, center_y)
-            #             extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-                        
-            #             # draw; this is a standard seed of life algorithm.
-            #             for i in range(6):
-            #                 # radiant angle; see obsidian://open?vault=Obsidian%20Vault&file=personal%2Fart-composition%2Fimages%2Feducation-radiant-circle-measure.png
-            #                 angle = math.radians(i * 60)
-            #                 x = center_x + r * math.cos(angle)
-            #                 y = center_y + r * math.sin(angle)
-            #                 sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + "-" + str(angle), plane_offset)
-            #                 draw_circle(sketch, r, x, y)
-            #                 extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-' + str(r) + "-" + str(sw), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-                
-            #     # log the seed of life
-            #     log(f"seed-of-life: {n} circles with radius: {radius}")
+                # repeat j many times; this gives the "depth" effect
+                for j in range(depth_repeat):
+                    create_seed_of_life(seed_of_life_comp, center_x, center_y, initial_radius, j, extrude_height_per_layer)
 
-            # # cut middle diagonal 
+            # cut middle diagonal 
             # try:
             #     sketch = create_sketch(seed_of_life_comp, 'cut-middle-diagonal', offset=AppConfig.LayerDepth)
             #     draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
@@ -239,11 +212,11 @@ def run(context):
             
             # inner torus
             iterations = 16
-            radius = 16.0 / ScaleConfig.ScaleFactor
+            initial_radius = 16.0 / ScaleConfig.ScaleFactor
             stroke_weight = 0.64 / ScaleConfig.ScaleFactor / 2
             extrude_height = AppConfig.LayerDepth / 4
-            inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(iterations)))
-            create_torus(root_component=inner_torus_component, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=stroke_weight, extrude_height=extrude_height, layer_offset=AppConfig.LayerDepth)
+            inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-inner-" + str(initial_radius) + "-" + str(iterations)))
+            create_torus(root_component=inner_torus_component, center_x=0, center_y=0, radius=initial_radius, iterations=iterations, stroke_weight=stroke_weight, extrude_height=extrude_height, layer_offset=AppConfig.LayerDepth)
             
             # outer torus
             # iterations = 16
@@ -276,6 +249,35 @@ def run(context):
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
+@timer
+def create_seed_of_life(root_component, center_x, center_y, radius, j, extrude_height_per_layer):
+    # the statart of the seed-of-life layer + the offset of the each sub-layer
+    plane_offset = AppConfig.LayerDepth 
+                
+    # radius, strokeWeight, extrudeHeight difference each layer is based on j; gives it the "depth" effect
+    r = radius - (SeedOfLifeConfig.RadiusReduceDistance * j) / 2
+    eh = extrude_height_per_layer * (j + 1)
+    sw = SeedOfLifeConfig.StrokeWeight
+    log(f"CREATE seed-of-life-inner: radius: {r} and strokeWeight: {sw} and extrudeHeight: {eh}")
+                
+    # draw the center circle
+    sketch = create_sketch(root_component, 'seed-of-life-' + str(r) + '-center', plane_offset)
+    draw_circle(sketch, r, center_x, center_y)
+    initial_body = extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+    initial_body.name = 'seed-of-life-center-' + str(r)
+    
+    # draw; this is a standard seed of life algorithm.
+    for i in range(6):
+        # radiant angle; see obsidian://open?vault=Obsidian%20Vault&file=personal%2Fart-composition%2Fimages%2Feducation-radiant-circle-measure.png
+        angle = math.radians(i * 60)
+        x = center_x + r * math.cos(angle)
+        y = center_y + r * math.sin(angle)
+        
+        # copy body
+        real_body = copy_body(root_component=root_component, body=initial_body, name='seed-of-life-' + str(r) + "-" + str(angle))
+        
+        # move body
+        move_body(root_component, x, y, real_body)
 
 @timer
 def create_torus(root_component: adsk.fusion.Component, center_x, center_y, radius, iterations, stroke_weight, extrude_height, layer_offset):
@@ -303,7 +305,7 @@ def create_torus(root_component: adsk.fusion.Component, center_x, center_y, radi
         # copy body
         real_body = copy_body(root_component=root_component, body=throwaway_body, name='torus-inner-circle-' + str(r) + "-" + str(angle))
         
-        # collection to move
+        # move body
         move_body(root_component, x, y, real_body)
                     
     # log the seed of life
