@@ -78,14 +78,13 @@ class KailashConfig():
         pass
     KailashIntersectExtrudeArea = 2130.679120238867 / ScaleConfig.ScaleFactor ** 2 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
     AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea = 1.2765358608164958
+    OuterDiagonalCutWithAstroidExtrudeArea = 12.375340707128288
 
 class SeedOfLifeConfig():
     def __init__(self):
         pass
     MinRandomMultiple = 2
     MaxRandomMultiple = 4
-    MinNumLayers = 1
-    MaxNumLayers = 2
     DepthRepeatValues = create_power_series_multiples(3) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
     
     AngleDifference = 30
@@ -165,6 +164,37 @@ def run(context):
             draw_circle(sketch=sketch, radius=AppConfig.HoleRadius + 0.64 / 8)
             extrude_thin_one(component=main_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth, strokeWeight=0.64 / 8, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             
+        # Structural Component - Seed of Life
+        if not component_exist(root_comp, create_component_name('seed-of-life')):
+            seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life"))
+            
+            # draw from middle
+            center_x = 0
+            center_y = 0
+            
+            # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
+            for (_, initial_radius) in enumerate(create_array_random_unique_multiples(size=random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple), multiple=8 / ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=10)):
+                # repeats
+                depth_repeat = random.choice(SeedOfLifeConfig.DepthRepeatValues)
+                
+                # extrusion height; each layer has the same distance between them
+                extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
+                
+                # log
+                log(f"INIT seed-of-life: depth-repeat {depth_repeat}, initial-radius: {initial_radius}, extrude-height-per-layer: {extrude_height_per_layer}")
+                
+                # repeat j many times; this gives the "depth" effect
+                for j in range(depth_repeat):
+                    create_seed_of_life(seed_of_life_comp, center_x, center_y, initial_radius, j, extrude_height_per_layer)
+                    
+                    
+            # cut with OuterDiagonalCutWithAstroidExtrudeArea
+            sketch = create_sketch(seed_of_life_comp, 'seed-of-life-outer-cut', offset=AppConfig.LayerDepth)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
+            extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=KailashConfig.OuterDiagonalCutWithAstroidExtrudeArea, depth=AppConfig.LayerDepth, name='seed-of-life-outer-cut', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+                    
         # Structural Component - Interstellar Tesellation
         if not component_exist(root_comp, create_component_name('interstellar-tesellation')):
             interstellar_tesellation_comp = create_component(root_component=root_comp, component_name=create_component_name("interstellar-tesellation"))
@@ -188,30 +218,32 @@ def run(context):
             draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
             extrude_profile_by_area(component=interstellar_tesellation_comp, profiles=sketch.profiles, area=KailashConfig.AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea, depth=AppConfig.LayerDepth, name='interstellar-tesellation-astroid-outer-cut', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-        
-        # Structural Component - Seed of Life
-        if not component_exist(root_comp, create_component_name('seed-of-life')):
-            seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life"))
-            
-            # draw from middle
-            center_x = 0
-            center_y = 0
+                    
+        # Structural Component - Corner Seed of Life
+        if not component_exist(root_comp, create_component_name('corner-seed-of-life')):
+            corner_seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("corner-seed-of-life"))
             
             # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
-            for (_, initial_radius) in enumerate(create_array_random_unique_multiples(size=random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple), multiple=1, min_multiple=1, max_multiple=10)):
-                # repeats
-                depth_repeat = random.choice(SeedOfLifeConfig.DepthRepeatValues)
+            for (_, initial_radius) in enumerate(create_array_random_unique_multiples(size=random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple), multiple=8 / ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=4)):
                 
-                # extrusion height; each layer has the same distance between them
-                extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
-                
-                # log
-                log(f"INIT seed-of-life: depth-repeat {depth_repeat}, initial-radius: {initial_radius}, extrude-height-per-layer: {extrude_height_per_layer}")
-                
-                # repeat j many times; this gives the "depth" effect
-                for j in range(depth_repeat):
-                    create_seed_of_life(seed_of_life_comp, center_x, center_y, initial_radius, j, extrude_height_per_layer)
-                
+                for i in range(4):
+                    # start at each corner of the bg
+                    center_x = AppConfig.MaxLength / 2 if i % 2 == 0 else -AppConfig.MaxLength / 2
+                    center_y = AppConfig.MaxWidth / 2 if i < 2 else -AppConfig.MaxWidth / 2
+                    
+                    # repeats
+                    depth_repeat = random.choice(SeedOfLifeConfig.DepthRepeatValues)
+                    
+                    # extrusion height; each layer has the same distance between them
+                    extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
+                    
+                    # log
+                    log(f"INIT corner-seed-of-life: depth-repeat {depth_repeat}, initial-radius: {initial_radius}, extrude-height-per-layer: {extrude_height_per_layer}")
+                    
+                    # repeat j many times; this gives the "depth" effect
+                    for j in range(depth_repeat):
+                        create_seed_of_life(corner_seed_of_life_comp, center_x, center_y, initial_radius, j, extrude_height_per_layer)
+            
         if not component_exist(root_comp, create_component_name('torus')):
             torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
             
@@ -234,36 +266,33 @@ def run(context):
         # Structural Component - Kailash Terrain Generation Sketch
         # Note: This is a placeholder for the actual terrain generation code. Requires manual intervention using STL files & Fusion Forms.
         # Guide: https://www.youtube.com/watch?v=Ea_YC4Jh0Sw
-        if not component_exist(root_comp, create_component_name('cut-kailash-intersection')):
-            try:
-                kailash_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-kailash-intersection"))
-                sketch = create_sketch(kailash_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth)
-                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight)
-                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
-                draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
-                draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerAstroidStrokeWeight) 
-                extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, depth=AppConfig.LayerDepth, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-            except:
-                log("cut-kailash-intersection: none to cut")
+        try:
+            kailash_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-kailash-intersection"))
+            sketch = create_sketch(kailash_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerAstroidStrokeWeight) 
+            extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, depth=AppConfig.LayerDepth, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+        except:
+            log("cut-kailash-intersection: none to cut")
                 
-        # Structural Component - Middle Hole 
-        if not component_exist(root_comp, create_component_name('cut-hole')):
-            try:
-                cut_hole_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-hole"))
-                sketch = create_sketch(cut_hole_comp, 'cut-hole', offset=AppConfig.LayerDepth)
-                draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-                extrude_profile_by_area(component=cut_hole_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-            except:
-                log("cut-hole: none to cut")
+        try:
+            cut_hole_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-hole"))
+            sketch = create_sketch(cut_hole_comp, 'cut-hole', offset=AppConfig.LayerDepth)
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+            extrude_profile_by_area(component=cut_hole_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+        except:
+            log("cut-hole: none to cut")
                 
-        # cut all the circles that is out of bounds
-        if not component_exist(root_comp, create_component_name('intersect-only-in-bounds')):
-            try:
-                sketch = create_sketch(root_comp, 'intersect-only-in-bounds', offset=AppConfig.LayerDepth)
-                draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-                extrude_profile_by_area(component=root_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), depth=AppConfig.LayerDepth, name='intersect-only-in-bounds', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
-            except:
-                log("intersect-only-in-bounds: none to cut")
+        # intersect only in bounds
+        try:
+            intersect_only_in_bounds_comp = create_component(root_component=root_comp, component_name=create_component_name("intersect-only-in-bounds"))
+            sketch = create_sketch(intersect_only_in_bounds_comp, 'intersect-only-in-bounds', offset=AppConfig.LayerDepth)
+            draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
+            extrude_profile_by_area(component=intersect_only_in_bounds_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), depth=AppConfig.LayerDepth, name='intersect-only-in-bounds', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
+        except:
+            log("intersect-only-in-bounds: none to cut")
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
