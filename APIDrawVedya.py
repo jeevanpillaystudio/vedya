@@ -5,14 +5,6 @@ import adsk.core, adsk.fusion, adsk.cam, traceback
 from .shapes import calculate_three_point_rectangle_area, create_power_series_multiples, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed
 from .utils import copy_body, create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_thin_one, log, move_body, scale_body, timer
 
-# structurally
-# 1 layer; each having 4 sub-layers
-# 1 sub-layer == 0.32cm
-# 1 layer == 1.28cm
-# total layers = 4
-# total depth = 5.12cm
-# base = 6.4cm - 5.12cm = 1.28cm
-
 class ScaleConfig():
     def __init__(self):
         pass
@@ -85,6 +77,7 @@ class KailashConfig():
     def __init__(self):
         pass
     KailashIntersectExtrudeArea = 2130.679120238867 / ScaleConfig.ScaleFactor ** 2 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
+    AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea = 1.2765358608164958
 
 class SeedOfLifeConfig():
     def __init__(self):
@@ -171,6 +164,30 @@ def run(context):
             sketch = create_sketch(main_comp, 'hole-thin-circle', offset=AppConfig.LayerDepth)
             draw_circle(sketch=sketch, radius=AppConfig.HoleRadius + 0.64 / 8)
             extrude_thin_one(component=main_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth, strokeWeight=0.64 / 8, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            
+        # Structural Component - Interstellar Tesellation
+        if not component_exist(root_comp, create_component_name('interstellar-tesellation')):
+            interstellar_tesellation_comp = create_component(root_component=root_comp, component_name=create_component_name("interstellar-tesellation"))
+            
+            # draw from middle
+            center_x = 0
+            center_y = 0
+            depth_repeat = 6
+            extrude_height_per_layer = AppConfig.LayerDepth / 2
+            
+            for j in range(depth_repeat):
+                layer_offset = ((j + 1) * 4)
+                
+                # create center brace around outer diagonal rectangle
+                sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-center-brace', offset=AppConfig.LayerDepth)
+                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth - (DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight * layer_offset), height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight - (DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight * layer_offset))
+                extrude_thin_one(component=interstellar_tesellation_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight, name='interstellar-tesellation-center-brace', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                
+            # cut with AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea
+            sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-astroid-outer-cut', offset=AppConfig.LayerDepth)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
+            extrude_profile_by_area(component=interstellar_tesellation_comp, profiles=sketch.profiles, area=KailashConfig.AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea, depth=AppConfig.LayerDepth, name='interstellar-tesellation-astroid-outer-cut', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         
         # Structural Component - Seed of Life
         if not component_exist(root_comp, create_component_name('seed-of-life')):

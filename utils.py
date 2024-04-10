@@ -41,7 +41,7 @@ def create_sketch(rootComp, name, offset=0):
     sketch.name = name
     return sketch
 
-def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, depth, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation):
+def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, depth, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation) -> adsk.core.ObjectCollection:
     """
     Creates an extrusion based on the specified area and depth for the given profiles.
     
@@ -55,6 +55,7 @@ def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[ads
     Returns:
     - The body created by the extrusion based on the specified area and depth.
     """
+    bodies = adsk.core.ObjectCollection.create()
     extrudes = component.features.extrudeFeatures
     for profile in profiles:
         if abs(profile.areaProperties().area - area) < FP_TOLERANCE:
@@ -63,10 +64,12 @@ def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[ads
             extrude = extrudes.add(extInput)
             body = extrude.bodies.item(0)
             body.name = name
-            return body
+            bodies.add(body)
+    if bodies.count > 0:
+        return bodies
     raise ValueError('Failed to find the profile for extrusion')
 
-def extrude_thin_one(component: adsk.fusion.Component, profile: adsk.fusion.Profile, extrudeHeight, name, strokeWeight: int, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation):
+def extrude_thin_one(component: adsk.fusion.Component, profile: adsk.fusion.Profile, extrudeHeight, name, strokeWeight: int, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side: adsk.fusion.ThinExtrudeWallLocation=adsk.fusion.ThinExtrudeWallLocation.Side1):
     """
     Creates a thin extrusion based on the specified depth for the given profile.
     
@@ -81,7 +84,7 @@ def extrude_thin_one(component: adsk.fusion.Component, profile: adsk.fusion.Prof
     """
     extrudes = component.features.extrudeFeatures
     extrudeInput = extrudes.createInput(profile, operation=operation)
-    extrudeInput.setThinExtrude(adsk.fusion.ThinExtrudeWallLocation.Side1, adsk.core.ValueInput.createByReal(strokeWeight))
+    extrudeInput.setThinExtrude(side, adsk.core.ValueInput.createByReal(strokeWeight))
     extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrudeHeight))
     extrude = extrudes.add(extrudeInput)
     body = extrude.bodies.item(0)
