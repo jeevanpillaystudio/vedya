@@ -2,7 +2,7 @@ import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
 from .shapes import calculate_three_point_rectangle_area, create_power_series_multiples, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed
-from .utils import create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_thin_one, log
+from .utils import copy_body, create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_thin_one, log, move_body, scale_body, timer
 
 # structurally
 # 1 layer; each having 4 sub-layers
@@ -92,16 +92,6 @@ class SeedOfLifeConfig():
     StrokeWeight = 0.32 / ScaleConfig.ScaleFactor
     RadiusReduceDistance = 0.32 / ScaleConfig.ScaleFactor
     
-class TorusConfig():
-    def __init__(self):
-        pass
-    def __str__(self) -> str:
-        return f"TorusConfig: Radius={self.Radius}, StrokeWeight={self.StrokeWeight}"
-    
-    # (radius, iteration, extrudeHeight, holeRadius)
-    Configurations = [((32.0) / ScaleConfig.ScaleFactor, 16, AppConfig.LayerDepth / ScaleConfig.ScaleFactor, 16.0 / ScaleConfig.ScaleFactor), (16.0 / ScaleConfig.ScaleFactor, 16, AppConfig.LayerDepth / 4 / ScaleConfig.ScaleFactor, AppConfig.HoleRadius / ScaleConfig.ScaleFactor)]
-    StrokeWeight = 0.64 / ScaleConfig.ScaleFactor
-    
 def run(context):
     ui = None
     try:
@@ -123,64 +113,64 @@ def run(context):
         root_comp: adsk.fusion.Component = design.rootComponent
         
         # Structural Component - Seed of Life
-        if not component_exist(root_comp, create_component_name('seed-of-life')):
-            seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life"))
+        # if not component_exist(root_comp, create_component_name('seed-of-life')):
+            # seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life"))
             
-            # draw from middle
-            center_x = 0
-            center_y = 0
+            # # draw from middle
+            # center_x = 0
+            # center_y = 0
             
-            # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
-            for (_, radius) in enumerate(create_array_random_unique_multiples(size=random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple), multiple=1, min_multiple=1, max_multiple=10)):
-                # select number of layers to create for each generation
-                n = random.randint(SeedOfLifeConfig.MinNumLayers, SeedOfLifeConfig.MaxNumLayers)
+            # # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
+            # for (_, radius) in enumerate(create_array_random_unique_multiples(size=random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple), multiple=1, min_multiple=1, max_multiple=10)):
+            #     # select number of layers to create for each generation
+            #     n = random.randint(SeedOfLifeConfig.MinNumLayers, SeedOfLifeConfig.MaxNumLayers)
                 
-                # repeats
-                repeat = random.choice(SeedOfLifeConfig.RepeatValues)
+            #     # repeats
+            #     repeat = random.choice(SeedOfLifeConfig.RepeatValues)
                 
-                # extrusion height; each layer has the same distance between them
-                extrude_height_per_layer = AppConfig.LayerDepth / repeat
+            #     # extrusion height; each layer has the same distance between them
+            #     extrude_height_per_layer = AppConfig.LayerDepth / repeat
                 
-                # repeat j many times; this gives the "depth" effect
-                for j in range(repeat):
-                    # each seed of life generated here
-                    for i in range(n):
-                        # the statart of the seed-of-life layer + the offset of the each sub-layer
-                        plane_offset = AppConfig.LayerDepth 
+            #     # repeat j many times; this gives the "depth" effect
+            #     for j in range(repeat):
+            #         # each seed of life generated here
+            #         for i in range(n):
+            #             # the statart of the seed-of-life layer + the offset of the each sub-layer
+            #             plane_offset = AppConfig.LayerDepth 
                         
-                        # radius, strokeWeight, extrudeHeight difference each layer is based on j; gives it the "depth" effect
-                        r = radius - (SeedOfLifeConfig.RadiusReduceDistance * j) / 2
-                        eh = extrude_height_per_layer * (j + 1)
-                        sw = SeedOfLifeConfig.StrokeWeight
-                        log(f"seed-of-life: {n} circles with radius: {r} and strokeWeight: {sw} and extrudeHeight: {eh}")
+            #             # radius, strokeWeight, extrudeHeight difference each layer is based on j; gives it the "depth" effect
+            #             r = radius - (SeedOfLifeConfig.RadiusReduceDistance * j) / 2
+            #             eh = extrude_height_per_layer * (j + 1)
+            #             sw = SeedOfLifeConfig.StrokeWeight
+            #             log(f"seed-of-life: {n} circles with radius: {r} and strokeWeight: {sw} and extrudeHeight: {eh}")
                         
-                        # center circle
-                        sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + '-center', plane_offset)
-                        draw_circle(sketch, r, center_x, center_y)
-                        extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            #             # center circle
+            #             sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + '-center', plane_offset)
+            #             draw_circle(sketch, r, center_x, center_y)
+            #             extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
                         
-                        # draw; this is a standard seed of life algorithm.
-                        for i in range(6):
-                            # radiant angle; see obsidian://open?vault=Obsidian%20Vault&file=personal%2Fart-composition%2Fimages%2Feducation-radiant-circle-measure.png
-                            angle = math.radians(i * 60)
-                            x = center_x + r * math.cos(angle)
-                            y = center_y + r * math.sin(angle)
-                            sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + "-" + str(angle), plane_offset)
-                            draw_circle(sketch, r, x, y)
-                            extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-' + str(r) + "-" + str(sw), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            #             # draw; this is a standard seed of life algorithm.
+            #             for i in range(6):
+            #                 # radiant angle; see obsidian://open?vault=Obsidian%20Vault&file=personal%2Fart-composition%2Fimages%2Feducation-radiant-circle-measure.png
+            #                 angle = math.radians(i * 60)
+            #                 x = center_x + r * math.cos(angle)
+            #                 y = center_y + r * math.sin(angle)
+            #                 sketch = create_sketch(seed_of_life_comp, 'seed-of-life-' + str(r) + "-" + str(angle), plane_offset)
+            #                 draw_circle(sketch, r, x, y)
+            #                 extrude_thin_one(component=seed_of_life_comp, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-' + str(r) + "-" + str(sw), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
                 
-                # log the seed of life
-                log(f"seed-of-life: {n} circles with radius: {radius}")
+            #     # log the seed of life
+            #     log(f"seed-of-life: {n} circles with radius: {radius}")
 
-            # cut middle diagonal 
-            try:
-                sketch = create_sketch(seed_of_life_comp, 'cut-middle-diagonal', offset=AppConfig.LayerDepth)
-                draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
-                extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth) - calculate_three_point_rectangle_area(DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, DiagonalRectangleConfig.MiddleDiagonalRectangleHeight), depth=AppConfig.LayerDepth, name='cut-middle-diagonal', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
+            # # cut middle diagonal 
+            # try:
+            #     sketch = create_sketch(seed_of_life_comp, 'cut-middle-diagonal', offset=AppConfig.LayerDepth)
+            #     draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
+            #     draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
+            #     extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth) - calculate_three_point_rectangle_area(DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, DiagonalRectangleConfig.MiddleDiagonalRectangleHeight), depth=AppConfig.LayerDepth, name='cut-middle-diagonal', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
                 
-            except:
-                log("cut-middle-diagonal: none to cut")
+            # except:
+            #     log("cut-middle-diagonal: none to cut")
         
         # Structural Component - Background
         if not component_exist(root_comp, create_component_name('bg')):
@@ -248,20 +238,20 @@ def run(context):
             torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
             
             # inner torus
-            iterations = 32
+            iterations = 16
             radius = 16.0 / ScaleConfig.ScaleFactor
             stroke_weight = 0.64 / ScaleConfig.ScaleFactor / 2
             extrude_height = AppConfig.LayerDepth / 4
-            inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-inner" + str(radius) + "-" + str(iterations)))
+            inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(iterations)))
             create_torus(root_component=inner_torus_component, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=stroke_weight, extrude_height=extrude_height, layer_offset=AppConfig.LayerDepth)
             
             # outer torus
-            iterations = 16
-            radius = 32.0 / ScaleConfig.ScaleFactor
-            stroke_weight = 0.64 / ScaleConfig.ScaleFactor
-            extrude_height = AppConfig.LayerDepth / 2
-            outer_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer" + str(radius) + "-" + str(iterations)))
-            create_torus(root_component=outer_torus_component, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=stroke_weight, extrude_height=extrude_height, layer_offset=AppConfig.LayerDepth) 
+            # iterations = 16
+            # radius = 32.0 / ScaleConfig.ScaleFactor
+            # stroke_weight = 0.64 / ScaleConfig.ScaleFactor
+            # extrude_height = AppConfig.LayerDepth / 2
+            # outer_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer" + str(radius) + "-" + str(iterations)))
+            # create_torus(root_component=outer_torus_component, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=stroke_weight, extrude_height=extrude_height, layer_offset=AppConfig.LayerDepth) 
             
             # cut a hole in the center
             try:
@@ -286,10 +276,19 @@ def run(context):
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
-def create_torus(root_component, center_x, center_y, radius, iterations, stroke_weight, extrude_height, layer_offset):
-    sketch = create_sketch(root_component, 'torus-outer-circle' + str(radius) + "-" + str(iterations), offset=layer_offset)
+
+@timer
+def create_torus(root_component: adsk.fusion.Component, center_x, center_y, radius, iterations, stroke_weight, extrude_height, layer_offset):
+    sketch = create_sketch(root_component, 'torus-outer-circle-' + str(radius) + "-" + str(iterations), offset=layer_offset)
+    
+    # draw the outer circle
     draw_circle(sketch, radius, center_x, center_y)
-    extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=extrude_height, strokeWeight=stroke_weight, name='torus-outer-circle' + str(radius) + "-" + str(iterations), operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+    initial_body = extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=extrude_height, strokeWeight=stroke_weight, name='torus-outer-circle' + str(radius) + "-" + str(iterations), operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+    initial_body.name = 'torus-outer-circle' + str(radius) + "-" + str(iterations)
+    
+    # draw throwaway circle (remove at the end) with scale non-uniform; x, y = 0.5
+    throwaway_body = copy_body(root_component, initial_body, name='torus-outer-circle-throwaway-' + str(radius) + "-" + str(iterations))
+    scale_body(root_component=root_component, body=throwaway_body, scale_x=0.5, scale_y=0.5, scale_z=1, sketch_pt=sketch.sketchPoints.item(0))
                 
     # create the torus
     angle_per_iteration = 360 / iterations
@@ -300,13 +299,15 @@ def create_torus(root_component, center_x, center_y, radius, iterations, stroke_
         angle = math.radians(i * angle_per_iteration)
         x = center_x + r * math.cos(angle)
         y = center_y + r * math.sin(angle)
-        sketch = create_sketch(root_component, 'torus-circle-' + str(r) + "-" + str(angle), offset=AppConfig.LayerDepth)
-        draw_circle(sketch, r, x, y)
-        extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=extrude_height, strokeWeight=stroke_weight, name='torus-' + str(r) + "-" + str(angle), operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+        
+        # copy body
+        real_body = copy_body(root_component=root_component, body=throwaway_body, name='torus-inner-circle-' + str(r) + "-" + str(angle))
+        
+        # collection to move
+        move_body(root_component, x, y, real_body)
                     
     # log the seed of life
     log(f"torus: {iterations} circles with radius: {r}")
-
 
 def create_inverted_triangle(component, side_length, center_x=0, center_y=0, n=3, layer_depth=0.1, extrudeHeight=0.1, layer_offset=0.0):
     sketches = component.sketches

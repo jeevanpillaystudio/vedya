@@ -2,6 +2,7 @@ import random
 import adsk.core, adsk.fusion
 import datetime
 import os
+import time
 
 FP_TOLERANCE = 1e-2 # 0.01 Precision for floating point comparison
 
@@ -102,7 +103,7 @@ def log(value):
         log_message = f"{timestamp} INFO: {str(value)}\n"
         
         # Write the log message to the a file
-        with open("/Users/jeevanpillay/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/APIDrawVedya/logfile.txt", "a") as file:
+        with open("/Users/jeevanpillay/Documents - triangle/Developer/Repository/@jeevanpillaystudio/vedya/logfile.txt", "a") as file:
             file.write(log_message)
         
         print("Values written to logfile.txt successfully.")
@@ -132,3 +133,57 @@ def create_array_random_unique_multiples(size: int, multiple: int = 8, min_multi
         value = multiple * random.randint(min_multiple, max_multiple)
         values.add(value)
     return sorted(list(values))
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        log(f"Function '{func.__name__}' took {end_time - start_time} seconds to run.")
+        return result
+    return wrapper
+
+def scale_body(root_component: adsk.fusion.Component, body: adsk.fusion.BRepBody, scale_x: float = 1, scale_y: float = 1, scale_z: float = 1, sketch_pt: adsk.fusion.SketchPoint = None):
+    # init
+    bodies = adsk.core.ObjectCollection.create()
+    bodies.add(body)
+        
+    # init values    
+    scale_factor = adsk.core.ValueInput.createByReal(1) # @todo auto set to 1; doesn't have to be.
+    
+    # create the scale feature
+    scale_feature = root_component.features.scaleFeatures
+    scale_feature_input = scale_feature.createInput(bodies, sketch_pt, scale_factor)
+    
+    # set scale to be non-uniform
+    xScale = adsk.core.ValueInput.createByReal(scale_x)
+    yScale = adsk.core.ValueInput.createByReal(scale_y)
+    zScale = adsk.core.ValueInput.createByReal(scale_z)
+    scale_feature_input.setToNonUniform(xScale, yScale, zScale)
+    
+    # scale
+    scale = scale_feature.add(scale_feature_input)
+    
+    return scale
+    
+def move_body(root_component: adsk.fusion.Component, x, y, body: adsk.fusion.BRepBody):
+    # init
+    bodies = adsk.core.ObjectCollection.create()
+    bodies.add(body)
+        
+    # move body transforms
+    vector = adsk.core.Vector3D.create(x, y, 0)
+    transform = adsk.core.Matrix3D.create()
+    transform.translation = vector
+        
+    # create the move feature
+    move_feature = root_component.features.moveFeatures
+    move_feature_input = move_feature.createInput2(bodies)
+    move_feature_input.defineAsFreeMove(transform)
+    move_feature.add(move_feature_input)
+
+def copy_body(root_component, body, name) -> adsk.fusion.BRepBody:
+    copied_body = root_component.features.copyPasteBodies.add(body)
+    real_body = copied_body.bodies.item(0)
+    real_body.name = name
+    return real_body
