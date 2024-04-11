@@ -246,41 +246,18 @@ def run(context):
             
         if not component_exist(root_comp, create_component_name('torus')):
             torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
-            
-            # inner torus
-            # iterations = 16
-            # initial_radius = 16.0 / ScaleConfig.ScaleFactor
-            # # stroke_weight = 0.64 / ScaleConfig.ScaleFactor / 2
-            # stroke_weight = 0.64 / ScaleConfig.ScaleFactor
-            # # extrude_height = AppConfig.LayerDepth / 4
-            # extrude_height = AppConfig.LayerDepth
-            # inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-inner-" + str(initial_radius) + "-" + str(iterations)))
-            # create_torus(root_component=inner_torus_component, center_x=0, center_y=0, radius=initial_radius, iterations=iterations, stroke_weight=stroke_weight, extrude_height=extrude_height, layer_offset=AppConfig.LayerDepth)
-            
-            # outer torus
+           
+            # inner torus 
             iterations = 16
             radius = 32.0 / ScaleConfig.ScaleFactor
             stroke_weight = 0.64 / ScaleConfig.ScaleFactor
-            outer_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer-" + str(radius) + "-" + str(iterations)))
+            inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer-" + str(radius) + "-" + str(iterations)))
             depth_repeat = 4
-            start_layer_offset = AppConfig.LayerDepth 
+            start_layer_offset = AppConfig.LayerDepth
             extrude_height = AppConfig.LayerDepth / depth_repeat
-
-            for i in range(depth_repeat):
-                # layer offset (runs reverse)
-                layer_offset = start_layer_offset + extrude_height * i
-                
-                # stroke weight starts depth_repeat times and reduces each round
-                sw = stroke_weight * (depth_repeat - i)
-                
-                # radius same
-                r = radius
-                
-                # create inner comp
-                torus_inner_component = create_component(root_component=outer_torus_component, component_name=create_component_name("torus-inner-" + str(r) + "-" + str(sw)))
-                
-                # create
-                create_torus(root_component=torus_inner_component, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height, layer_offset=layer_offset) 
+            for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight):
+                torus_inner_component = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
+                create_torus(root_component=torus_inner_component, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height, layer_offset=layer_offset)
          
         try:
             cut_hole_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-hole"))
@@ -399,3 +376,14 @@ def create_component_name(name):
     if ScaleConfig.Print3D:
         return f"3d-{name}"
     return f"{name}"
+
+
+def depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight):
+    for i in range(depth_repeat):
+        # layer offset (runs reverse)
+        layer_offset = start_layer_offset + extrude_height * i
+
+        # stroke weight starts depth_repeat times and reduces each round
+        sw = stroke_weight * (depth_repeat - i)
+
+        yield layer_offset, sw
