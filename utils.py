@@ -41,7 +41,7 @@ def create_sketch(rootComp, name, offset=0):
     sketch.name = name
     return sketch
 
-def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, depth, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation) -> adsk.core.ObjectCollection:
+def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, extrude_height, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation) -> adsk.core.ObjectCollection:
     """
     Creates an extrusion based on the specified area and depth for the given profiles.
     
@@ -60,7 +60,7 @@ def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[ads
     for profile in profiles:
         if abs(profile.areaProperties().area - area) < FP_TOLERANCE:
             extInput = extrudes.createInput(profile, operation=operation)
-            extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth))
+            extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrude_height))
             extrude = extrudes.add(extInput)
             body = extrude.bodies.item(0)
             body.name = name

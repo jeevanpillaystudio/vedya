@@ -130,7 +130,7 @@ def run(context):
             sketch = create_sketch(core_structural_comp, 'bg-rect', offset=0.0)
             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
             draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            extrude_profile_by_area(component=core_structural_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth) - calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth, name='bg-rect')
+            extrude_profile_by_area(component=core_structural_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth) - calculate_circle_area(AppConfig.HoleRadius), extrude_height=AppConfig.LayerDepth, name='bg-rect')
             
         # Structural Component - Border
         if not component_exist(root_comp, create_component_name('border')):
@@ -156,20 +156,16 @@ def run(context):
             sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=AppConfig.LayerDepth)            
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
             for profile in sketch.profiles:
-                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="extrude-thin", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             
             sketch = create_sketch(main_comp, 'astroid-64', offset=AppConfig.LayerDepth)
             draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius) - calculate_astroid_area(AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight), depth=AppConfig.LayerDepth, name='astroid-64')
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius) - calculate_astroid_area(AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight), extrude_height=AppConfig.LayerDepth * 2, name='astroid-64')
 
             sketch = create_sketch(main_comp, 'astroid-32', offset=AppConfig.LayerDepth)
             draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerAstroidStrokeWeight)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius) - calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), depth=AppConfig.LayerDepth, name='astroid-32')
-            
-            # @todo convert this use Side1 and Side2, and remove 0.64 / 8 hack 
-            sketch = create_sketch(main_comp, 'hole-thin-circle', offset=AppConfig.LayerDepth)
-            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius + 0.64 / 8)
-            extrude_thin_one(component=main_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth, strokeWeight=0.64 / 8, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius) - calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), extrude_height=AppConfig.LayerDepth * 2, name='astroid-32')
+
             
         # Structural Component - Seed of Life
         if not component_exist(root_comp, create_component_name('seed-of-life')):
@@ -216,28 +212,28 @@ def run(context):
             # extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=KailashConfig.OuterDiagonalCutWithAstroidExtrudeArea, depth=AppConfig.LayerDepth, name='seed-of-life-outer-cut', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
                     
         # Structural Component - Interstellar Tesellation
-        # if not component_exist(root_comp, create_component_name('interstellar-tesellation')):
-        #     interstellar_tesellation_comp = create_component(root_component=root_comp, component_name=create_component_name("interstellar-tesellation"))
+        if not component_exist(root_comp, create_component_name('interstellar-tesellation')):
+            interstellar_tesellation_comp = create_component(root_component=root_comp, component_name=create_component_name("interstellar-tesellation"))
             
-        #     # draw from middle
-        #     center_x = 0
-        #     center_y = 0
-        #     depth_repeat = 6
-        #     extrude_height_per_layer = AppConfig.LayerDepth / 2
+            # draw from middle
+            center_x = 0
+            center_y = 0
+            depth_repeat = 6
+            extrude_height_per_layer = AppConfig.LayerDepth / 2
             
-        #     for j in range(depth_repeat):
-        #         layer_offset = ((j + 1) * 4)
+            for j in range(depth_repeat):
+                layer_offset = ((j + 1) * 4)
                 
-        #         # create center brace around outer diagonal rectangle
-        #         sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-center-brace', offset=AppConfig.LayerDepth)
-        #         draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth - (DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight * layer_offset), height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight - (DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight * layer_offset))
-        #         extrude_thin_one(component=interstellar_tesellation_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight, name='interstellar-tesellation-center-brace', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                # create center brace around outer diagonal rectangle
+                sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-center-brace', offset=AppConfig.LayerDepth)
+                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth - (DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight * layer_offset), height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight - (DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight * layer_offset))
+                extrude_thin_one(component=interstellar_tesellation_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight, name='interstellar-tesellation-center-brace', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
                 
-        #     # cut with AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea
-        #     sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-astroid-outer-cut', offset=AppConfig.LayerDepth)
-        #     draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
-        #     draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
-        #     extrude_profile_by_area(component=interstellar_tesellation_comp, profiles=sketch.profiles, area=KailashConfig.AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea, depth=AppConfig.LayerDepth, name='interstellar-tesellation-astroid-outer-cut', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            # cut with AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea
+            sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-astroid-outer-cut', offset=AppConfig.LayerDepth)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
+            extrude_profile_by_area(component=interstellar_tesellation_comp, profiles=sketch.profiles, area=KailashConfig.AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea, extrude_height=AppConfig.LayerDepth, name='interstellar-tesellation-astroid-outer-cut', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
                     
         # Structural Component - Corner Seed of Life
         # if not component_exist(root_comp, create_component_name('corner-seed-of-life')):
@@ -273,17 +269,31 @@ def run(context):
             stroke_weight = 0.64 / ScaleConfig.ScaleFactor
             inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer-" + str(radius) + "-" + str(iterations)))
             depth_repeat = 4
-            start_layer_offset = AppConfig.LayerDepth
+            start_layer_offset = AppConfig.LayerDepth * 2
             extrude_height = AppConfig.LayerDepth / depth_repeat
             for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight):
                 seed_of_life_inner_layer_comp = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
                 create_torus(root_component=seed_of_life_inner_layer_comp, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height, layer_offset=layer_offset)
          
         try:
-            cut_hole_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-hole"))
-            sketch = create_sketch(cut_hole_comp, 'cut-hole', offset=AppConfig.LayerDepth)
+            middle_circle_comp = create_component(root_component=root_comp, component_name=create_component_name("middle_circle_comp"))
+
+            sketch = create_sketch(middle_circle_comp, 'cut-hole', offset=AppConfig.LayerDepth)
             draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            extrude_profile_by_area(component=cut_hole_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), depth=AppConfig.LayerDepth * 2, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            extrude_profile_by_area(component=middle_circle_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), extrude_height=AppConfig.LayerDepth * 2, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            
+            sketch = create_sketch(middle_circle_comp, 'hole-thin-circle', offset=AppConfig.LayerDepth)
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius * 2)
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+            extrude_profile_by_area(component=middle_circle_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius * 2) - calculate_circle_area(AppConfig.HoleRadius), extrude_height=AppConfig.LayerDepth * 4, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            
+            sketch = create_sketch(middle_circle_comp, 'inner-circle', offset=AppConfig.LayerDepth)
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+            extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=0.64 / ScaleConfig.ScaleFactor, name='inner-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side2)
+            
+            sketch = create_sketch(middle_circle_comp, 'outer-circle', offset=AppConfig.LayerDepth)
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius * 2)
+            extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=0.64 / ScaleConfig.ScaleFactor, name='outer-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1)
         except:
             log("cut-hole: none to cut")
             
@@ -297,17 +307,16 @@ def run(context):
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
             draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
             draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius, strokeWeight=AstroidConfig.InnerAstroidStrokeWeight) 
-            extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, depth=AppConfig.LayerDepth, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, extrude_height=AppConfig.LayerDepth * 2, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         except:
             log("cut-kailash-intersection: none to cut")
-                
                 
         # intersect only in bounds
         try:
             intersect_only_in_bounds_comp = create_component(root_component=root_comp, component_name=create_component_name("intersect-only-in-bounds"))
             sketch = create_sketch(intersect_only_in_bounds_comp, 'intersect-only-in-bounds', offset=AppConfig.LayerDepth)
             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-            extrude_profile_by_area(component=intersect_only_in_bounds_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), depth=AppConfig.LayerDepth, name='intersect-only-in-bounds', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
+            extrude_profile_by_area(component=intersect_only_in_bounds_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=AppConfig.LayerDepth * 2, name='intersect-only-in-bounds', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
         except:
             log("intersect-only-in-bounds: none to cut")
     except:
@@ -341,6 +350,7 @@ def create_seed_of_life(root_component: adsk.fusion.Component, center_x, center_
             draw_circle(sketch, r, x, y)
             extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-' + str(r) + "-" + str(angle), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=side)        
         elif AppConfig.DesignMode == DesignMode.ParametricDesign:
+            # @todo add depth effect using "side" param
             real_body = copy_body(root_component, initial_body, name='seed-of-life-' + str(r) + "-" + str(angle))
             move_body(root_component, x, y, real_body)
         else:
