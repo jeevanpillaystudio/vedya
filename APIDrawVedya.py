@@ -85,12 +85,19 @@ class SeedOfLifeConfig():
         pass
     MinRandomMultiple = 2
     MaxRandomMultiple = 4
-    DepthRepeatValues = create_power_series_multiples(1) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
+    # DepthRepeatValues = create_power_series_multiples(3) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
+    DepthRepeatValues = [4]
     
     AngleDifference = 30
     
-    StrokeWeight = 0.32 / ScaleConfig.ScaleFactor
-    RadiusReduceDistance = 0.32 / ScaleConfig.ScaleFactor
+    StrokeWeight = 0.64 / ScaleConfig.ScaleFactor
+    
+class DepthEffect():
+    def __init__(self):
+        pass
+    Side1 = adsk.fusion.ThinExtrudeWallLocation.Side1
+    Side2 = adsk.fusion.ThinExtrudeWallLocation.Side2
+    Center = adsk.fusion.ThinExtrudeWallLocation.Center
 
 @timer 
 def run(context):
@@ -173,20 +180,33 @@ def run(context):
             center_y = 0
             
             # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
-            for (_, initial_radius) in enumerate(create_array_random_unique_multiples(size=random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple), multiple=8 / ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=10)):
+            for (_, radius) in enumerate(create_array_random_unique_multiples(size=random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple), multiple=8 / ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=10)):
+                
+                # start layer offse
+                start_layer_offset = AppConfig.LayerDepth
+                
                 # repeats
                 depth_repeat = random.choice(SeedOfLifeConfig.DepthRepeatValues)
                 
                 # extrusion height; each layer has the same distance between them
                 extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
                 
+                # sw
+                stroke_weight = SeedOfLifeConfig.StrokeWeight
+                
+                # depth effect (random)
+                side = random.choice([DepthEffect.Side1, DepthEffect.Side2, DepthEffect.Center])
+                
+                # comp
+                seed_of_life_inner_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("seed-of-inner-" + str(radius) + "-" + str(depth_repeat) + "-" + str(extrude_height_per_layer) + "-" + str(stroke_weight) + "-" + str(side)))
+                
                 # log
-                log(f"INIT seed-of-life: depth-repeat {depth_repeat}, initial-radius: {initial_radius}, extrude-height-per-layer: {extrude_height_per_layer}")
+                log(f"INIT seed-of-life: depth-repeat {depth_repeat}, initial-radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {stroke_weight}")
                 
                 # repeat j many times; this gives the "depth" effect
-                for j in range(depth_repeat):
-                    create_seed_of_life(seed_of_life_comp, center_x, center_y, initial_radius, j, extrude_height_per_layer)
-                    
+                for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight):
+                    seed_of_life_inner_layer_comp = create_component(root_component=seed_of_life_inner_comp, component_name=create_component_name("seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)))
+                    create_seed_of_life(root_component=seed_of_life_inner_layer_comp, center_x=center_x, center_y=center_y, radius=radius, extrude_height=extrude_height_per_layer, stroke_weight=sw, layer_offset=layer_offset, side=side)
                     
             # # cut with OuterDiagonalCutWithAstroidExtrudeArea
             # sketch = create_sketch(seed_of_life_comp, 'seed-of-life-outer-cut', offset=AppConfig.LayerDepth)
@@ -256,8 +276,8 @@ def run(context):
             start_layer_offset = AppConfig.LayerDepth
             extrude_height = AppConfig.LayerDepth / depth_repeat
             for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight):
-                torus_inner_component = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
-                create_torus(root_component=torus_inner_component, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height, layer_offset=layer_offset)
+                seed_of_life_inner_layer_comp = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
+                create_torus(root_component=seed_of_life_inner_layer_comp, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height, layer_offset=layer_offset)
          
         try:
             cut_hole_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-hole"))
@@ -295,18 +315,15 @@ def run(context):
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
 @timer
-def create_seed_of_life(root_component: adsk.fusion.Component, center_x, center_y, radius, j, extrude_height_per_layer):
-    # the statart of the seed-of-life layer + the offset of the each sub-layer
-    plane_offset = AppConfig.LayerDepth 
-                
-    # radius, strokeWeight, extrudeHeight difference each layer is based on j; gives it the "depth" effect
-    r = radius - (SeedOfLifeConfig.RadiusReduceDistance * j) / 2
-    eh = extrude_height_per_layer * (j + 1)
-    sw = SeedOfLifeConfig.StrokeWeight
-    log(f"CREATE seed-of-life-inner: radius: {r} and strokeWeight: {sw} and extrudeHeight: {eh}")
+def create_seed_of_life(root_component: adsk.fusion.Component, center_x, center_y, radius, extrude_height, stroke_weight, layer_offset, side):
+    # radius, stroke-weight, extrude-height difference each layer is based on j; gives it the "depth" effect
+    r = radius
+    sw = stroke_weight
+    eh = extrude_height
+    log(f"CREATE seed-of-life-inner: radius: {r} and stroke-weight: {sw} and extrude-height: {eh}")
                 
     # draw the center circle
-    sketch = create_sketch(root_component, 'seed-of-life-' + str(r) + '-center', plane_offset)
+    sketch = create_sketch(root_component, 'seed-of-life-' + str(r) + '-center', layer_offset)
     draw_circle(sketch, r, center_x, center_y)
     initial_body = extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
     initial_body.name = 'seed-of-life-center-' + str(r)
@@ -320,9 +337,9 @@ def create_seed_of_life(root_component: adsk.fusion.Component, center_x, center_
 
         # draw
         if AppConfig.DesignMode == DesignMode.DirectDesign:
-            sketch = create_sketch(root_component, 'seed-of-life-' + str(r) + "-" + str(angle), plane_offset)
+            sketch = create_sketch(root_component, 'seed-of-life-' + str(r) + "-" + str(angle), layer_offset)
             draw_circle(sketch, r, x, y)
-            extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-' + str(r) + "-" + str(angle), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)        
+            extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-' + str(r) + "-" + str(angle), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=side)        
         elif AppConfig.DesignMode == DesignMode.ParametricDesign:
             real_body = copy_body(root_component, initial_body, name='seed-of-life-' + str(r) + "-" + str(angle))
             move_body(root_component, x, y, real_body)
