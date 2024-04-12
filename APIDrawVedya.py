@@ -1,9 +1,8 @@
-from enum import Enum
 import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
-from .shapes import calculate_three_point_rectangle_area, create_power_series_multiples, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed
-from .utils import copy_body, create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_thin_one, log, move_body, scale_body, timer
+from .shapes import draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed, draw_tesseract_projection
+from .utils import copy_body, create_array_random_unique_multiples, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_thin_one, log, move_body, scale_body, timer, depth_repeat_iterator
 
 class ScaleConfig():
     def __init__(self):
@@ -416,64 +415,3 @@ def create_component_name(name):
     if ScaleConfig.Print3D:
         return f"3d-{name}"
     return f"{name}"
-
-
-def depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight):
-    for i in range(depth_repeat):
-        # layer offset (runs reverse)
-        layer_offset = start_layer_offset + extrude_height * i
-
-        # stroke weight starts depth_repeat times and reduces each round
-        sw = stroke_weight * (depth_repeat - i)
-
-        yield layer_offset, sw
-        
-def draw_tesseract_projection(sketch, center_x, center_y, size):
-    # Define the vertices of the outer cube
-    outer_cube_points = []
-    for dx in [-1, 1]:
-        for dy in [-1, 1]:
-            for dz in [-1, 1]:
-                x = center_x + size * dx / 2
-                y = center_y + size * dy / 2
-                z = size * dz / 2
-                outer_cube_points.append([x, y, z])
-
-    # Define the vertices of the inner cube (scaled down version of the outer cube)
-    inner_cube_points = []
-    scale_factor = 0.5  # Scaling down the inner cube by a factor (e.g., half the size of the outer cube)
-    for point in outer_cube_points:
-        x, y, z = point
-        x = center_x + (x - center_x) * scale_factor
-        y = center_y + (y - center_y) * scale_factor
-        z = z * scale_factor
-        inner_cube_points.append([x, y, z])
-
-    # Draw the outer cube
-    for i in range(8):
-        start_point = outer_cube_points[i]
-        for j in range(i + 1, 8):
-            end_point = outer_cube_points[j]
-            # Only connect vertices that share two coordinates (this forms the edges of a cube)
-            if sum(1 for start, end in zip(start_point, end_point) if start == end) == 2:
-                sketch.sketchCurves.sketchLines.addByTwoPoints(
-                    adsk.core.Point3D.create(*start_point[:-1]),  # Ignoring Z for 2D projection
-                    adsk.core.Point3D.create(*end_point[:-1])
-                )
-
-    # Draw the inner cube and connect corresponding vertices to the outer cube
-    for i in range(8):
-        start_point_outer = outer_cube_points[i]
-        start_point_inner = inner_cube_points[i]
-        sketch.sketchCurves.sketchLines.addByTwoPoints(
-            adsk.core.Point3D.create(*start_point_outer[:-1]),  # Ignoring Z for 2D projection
-            adsk.core.Point3D.create(*start_point_inner[:-1])
-        )
-        for j in range(i + 1, 8):
-            end_point_inner = inner_cube_points[j]
-            # Only connect vertices that share two coordinates (this forms the edges of a cube)
-            if sum(1 for start, end in zip(start_point_inner, end_point_inner) if start == end) == 2:
-                sketch.sketchCurves.sketchLines.addByTwoPoints(
-                    adsk.core.Point3D.create(*start_point_inner[:-1]),  # Ignoring Z for 2D projection
-                    adsk.core.Point3D.create(*end_point_inner[:-1])
-                )

@@ -190,3 +190,13 @@ def copy_body(root_component, body, name) -> adsk.fusion.BRepBody:
     real_body = copied_body.bodies.item(0)
     real_body.name = name
     return real_body
+
+def depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight):
+    for i in range(depth_repeat):
+        # layer offset (runs reverse)
+        layer_offset = start_layer_offset + extrude_height * i
+
+        # stroke weight starts depth_repeat times and reduces each round
+        sw = stroke_weight * (depth_repeat - i)
+
+        yield layer_offset, sw
