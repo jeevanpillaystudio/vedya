@@ -252,6 +252,41 @@ def run(context):
             for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight):
                 seed_of_life_inner_layer_comp = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
                 create_torus(root_component=seed_of_life_inner_layer_comp, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height, layer_offset=layer_offset)
+        try:
+            # Drawing a Tesseract structure
+            tesseract_comp = create_component(root_component=root_comp, component_name=create_component_name("tesseract"))
+           
+            # depth repeat
+            depth_repeat = 4
+            
+            # size
+            size = (128.0 - 4.0) / ScaleConfig.ScaleFactor
+            
+            # extrude height
+            extrude_height = AppConfig.LayerDepth / depth_repeat
+            
+            # stroke weight
+            stroke_weight = 0.64 / ScaleConfig.ScaleFactor
+            
+            # start layer offset
+            start_layer_offset = AppConfig.LayerDepth
+             
+            # depth effect
+            for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight):
+                # tesseract
+                sketch = create_sketch(tesseract_comp, 'tesseract-sketch', offset=layer_offset)
+                draw_tesseract_projection(sketch, center_x=0, center_y=0, size=size)
+
+                # extrude
+                for profile in sketch.profiles:
+                    extrude_thin_one(component=tesseract_comp, profile=profile, extrudeHeight=extrude_height, strokeWeight=sw, name='tesseract', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
+                    
+                # outer rect
+                sketch = create_sketch(tesseract_comp, 'tesseract-outer-rect', offset=layer_offset)
+                draw_rectangle(sketch=sketch, length=size, width=size)
+                extrude_thin_one(component=tesseract_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height, strokeWeight=sw, name='tesseract-outer-rect', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation, side=DepthEffect.Side2)
+        except:
+            log("tesseract: none to draw")
          
         try:
             middle_circle_comp = create_component(root_component=root_comp, component_name=create_component_name("middle_circle_comp"))
@@ -392,3 +427,53 @@ def depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stro
         sw = stroke_weight * (depth_repeat - i)
 
         yield layer_offset, sw
+        
+def draw_tesseract_projection(sketch, center_x, center_y, size):
+    # Define the vertices of the outer cube
+    outer_cube_points = []
+    for dx in [-1, 1]:
+        for dy in [-1, 1]:
+            for dz in [-1, 1]:
+                x = center_x + size * dx / 2
+                y = center_y + size * dy / 2
+                z = size * dz / 2
+                outer_cube_points.append([x, y, z])
+
+    # Define the vertices of the inner cube (scaled down version of the outer cube)
+    inner_cube_points = []
+    scale_factor = 0.5  # Scaling down the inner cube by a factor (e.g., half the size of the outer cube)
+    for point in outer_cube_points:
+        x, y, z = point
+        x = center_x + (x - center_x) * scale_factor
+        y = center_y + (y - center_y) * scale_factor
+        z = z * scale_factor
+        inner_cube_points.append([x, y, z])
+
+    # Draw the outer cube
+    for i in range(8):
+        start_point = outer_cube_points[i]
+        for j in range(i + 1, 8):
+            end_point = outer_cube_points[j]
+            # Only connect vertices that share two coordinates (this forms the edges of a cube)
+            if sum(1 for start, end in zip(start_point, end_point) if start == end) == 2:
+                sketch.sketchCurves.sketchLines.addByTwoPoints(
+                    adsk.core.Point3D.create(*start_point[:-1]),  # Ignoring Z for 2D projection
+                    adsk.core.Point3D.create(*end_point[:-1])
+                )
+
+    # Draw the inner cube and connect corresponding vertices to the outer cube
+    for i in range(8):
+        start_point_outer = outer_cube_points[i]
+        start_point_inner = inner_cube_points[i]
+        sketch.sketchCurves.sketchLines.addByTwoPoints(
+            adsk.core.Point3D.create(*start_point_outer[:-1]),  # Ignoring Z for 2D projection
+            adsk.core.Point3D.create(*start_point_inner[:-1])
+        )
+        for j in range(i + 1, 8):
+            end_point_inner = inner_cube_points[j]
+            # Only connect vertices that share two coordinates (this forms the edges of a cube)
+            if sum(1 for start, end in zip(start_point_inner, end_point_inner) if start == end) == 2:
+                sketch.sketchCurves.sketchLines.addByTwoPoints(
+                    adsk.core.Point3D.create(*start_point_inner[:-1]),  # Ignoring Z for 2D projection
+                    adsk.core.Point3D.create(*end_point_inner[:-1])
+                )
