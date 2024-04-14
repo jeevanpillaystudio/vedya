@@ -1,8 +1,8 @@
 import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
-from .shapes import draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed, draw_tesseract_projection
-from .utils import copy_body, create_array_random_unique_multiples, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_thin_one, log, move_body, scale_body, timer, depth_repeat_iterator
+from .shapes import calculate_three_point_rectangle_area, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed, draw_tesseract_projection
+from .utils import combine_body, copy_body, create_array_random_unique_multiples, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_single_profile_by_area, extrude_thin_one, log, move_body, scale_body, timer, depth_repeat_iterator
 
 class ScaleConfig():
     def __init__(self):
@@ -85,7 +85,7 @@ class SeedOfLifeConfig():
     MinRandomMultiple = 2
     MaxRandomMultiple = 4
     # DepthRepeatValues = create_power_series_multiples(3) # the values of the iterator repeat can only be either 1, 2 or 4 times; e.g [1, 2, 4]
-    DepthRepeatValues = [4]
+    DepthRepeatValues = [1]
     
     AngleDifference = 30
     
@@ -116,9 +116,12 @@ def run(context):
         design.designType = AppConfig.DesignMode
         log(f'Design Mode: {AppConfig.DesignMode}')
         
-        # Log the seed for reproducibility
+        # log the configurations
         app_config = AppConfig()
         log(app_config)
+        
+        # set seed
+        random.seed(AppConfig.Seed)
 
         # Get the root component of the active design
         root_comp: adsk.fusion.Component = design.rootComponent
@@ -136,7 +139,7 @@ def run(context):
             border_comp = create_component(root_component=root_comp, component_name=create_component_name("border"))
             sketch = create_sketch(border_comp, 'border', offset=0.0)
             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength + AppConfig.BorderWidth * 2, width=AppConfig.MaxWidth + AppConfig.BorderWidth * 2)
-            extrude_thin_one(component=border_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.BorderDepth, strokeWeight=AppConfig.BorderWidth, name='border', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            extrude_thin_one(component=border_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.BorderDepth * 2, strokeWeight=AppConfig.BorderWidth, name='border', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         
         # Structural Component - Core Design
         if not component_exist(root_comp, create_component_name('core')):
@@ -198,12 +201,31 @@ def run(context):
                 # log
                 log(f"INIT seed-of-life: depth-repeat {depth_repeat}, initial-radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {stroke_weight}")
                 
+                # random choice of operation
+                operation_random_choice = random.choice([adsk.fusion.FeatureOperations.CutFeatureOperation])
+                
                 # repeat j many times; this gives the "depth" effect
                 for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight):
                     seed_of_life_inner_layer_comp = create_component(root_component=seed_of_life_inner_comp, component_name=create_component_name("seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)))
                     create_seed_of_life(root_component=seed_of_life_inner_layer_comp, center_x=center_x, center_y=center_y, radius=radius, extrude_height=extrude_height_per_layer, stroke_weight=sw, layer_offset=layer_offset, side=side)
                     
-            # # cut with OuterDiagonalCutWithAstroidExtrudeArea
+                    # partition
+                    sketch = create_sketch(seed_of_life_inner_layer_comp, 'seed-of-life-inner-layer-partition', offset=AppConfig.LayerDepth)
+                    draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
+                    draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight) 
+                    cut_bodies = extrude_profile_by_area(component=seed_of_life_inner_layer_comp, profiles=sketch.profiles, area=calculate_three_point_rectangle_area(DiagonalRectangleConfig.OuterDiagonalRectangleWidth, DiagonalRectangleConfig.OuterDiagonalRectangleHeight) - calculate_three_point_rectangle_area(DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, DiagonalRectangleConfig.MiddleDiagonalRectangleHeight), extrude_height=extrude_height_per_layer, name='seed-of-life-inner-layer-partition', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                    combine_body(seed_of_life_inner_layer_comp, seed_of_life_inner_layer_comp.bRepBodies.item(0), cut_bodies, operation=operation_random_choice)
+                    
+                    # inverse half of the time
+                    # if random.random() > 0.5:
+                    #     all_bodies = adsk.core.ObjectCollection.create()
+                    #     for body in seed_of_life_inner_layer_comp.bRepBodies:
+                    #         all_bodies.add(body)
+                    #     sketch = create_sketch(seed_of_life_inner_layer_comp, 'seed-of-life-inverse', offset=AppConfig.LayerDepth)
+                    #     draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
+                    #     invert_body = extrude_single_profile_by_area(component=seed_of_life_inner_layer_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height_per_layer, name='seed-of-life-inverse', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                    #     combine_body(seed_of_life_inner_layer_comp, invert_body, all_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation) 
+                       
             # sketch = create_sketch(seed_of_life_comp, 'seed-of-life-outer-cut', offset=AppConfig.LayerDepth)
             # draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
             # draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
@@ -262,7 +284,7 @@ def run(context):
             size = (128.0 - 4.0) / ScaleConfig.ScaleFactor
             
             # extrude height
-            extrude_height = AppConfig.LayerDepth / depth_repeat
+            extrude_height = (AppConfig.LayerDepth * 2) / depth_repeat
             
             # stroke weight
             stroke_weight = 0.64 / ScaleConfig.ScaleFactor
@@ -342,11 +364,11 @@ def create_seed_of_life(root_component: adsk.fusion.Component, center_x, center_
     sw = stroke_weight
     eh = extrude_height
     log(f"CREATE seed-of-life-inner: radius: {r} and stroke-weight: {sw} and extrude-height: {eh}")
-                
+   
     # draw the center circle
     sketch = create_sketch(root_component, 'seed-of-life-' + str(r) + '-center', layer_offset)
     draw_circle(sketch, r, center_x, center_y)
-    initial_body = extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+    initial_body = extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-center-' + str(r), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
     initial_body.name = 'seed-of-life-center-' + str(r)
     
     # draw; this is a standard seed of life algorithm.
@@ -360,7 +382,7 @@ def create_seed_of_life(root_component: adsk.fusion.Component, center_x, center_
         if AppConfig.DesignMode == DesignMode.DirectDesign:
             sketch = create_sketch(root_component, 'seed-of-life-' + str(r) + "-" + str(angle), layer_offset)
             draw_circle(sketch, r, x, y)
-            extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-' + str(r) + "-" + str(angle), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=side)        
+            extrude_thin_one(component=root_component, profile=sketch.profiles[0], extrudeHeight=eh, name='seed-of-life-' + str(r) + "-" + str(angle), strokeWeight=sw, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation, side=side)        
         elif AppConfig.DesignMode == DesignMode.ParametricDesign:
             # @todo add depth effect using "side" param
             real_body = copy_body(root_component, initial_body, name='seed-of-life-' + str(r) + "-" + str(angle))

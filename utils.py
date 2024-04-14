@@ -69,6 +69,31 @@ def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[ads
         return bodies
     raise ValueError('Failed to find the profile for extrusion')
 
+def extrude_single_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, extrude_height, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation) -> adsk.fusion.BRepBody:
+    """
+    Creates an extrusion based on the specified area and depth for the given profile.
+    
+    Parameters:
+    - rootComp: The root component to which the extrusion is added.
+    - profile: The profile to search for the specified area.
+    - area: The area to search for in the profile.
+    - depth: The depth of the extrusion.
+    - bodyName: The name of the body created by the extrusion.
+    
+    Returns:
+    - The body created by the extrusion based on the specified area and depth.
+    """
+    extrudes = component.features.extrudeFeatures
+    for profile in profiles:
+        if abs(profile.areaProperties().area - area) < FP_TOLERANCE:
+            extInput = extrudes.createInput(profile, operation=operation)
+            extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrude_height))
+            extrude = extrudes.add(extInput)
+            body = extrude.bodies.item(0)
+            body.name = name
+            return body
+    raise ValueError('Failed to find the profile for extrusion')
+
 def extrude_thin_one(component: adsk.fusion.Component, profile: adsk.fusion.Profile, extrudeHeight, name, strokeWeight: int, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side: adsk.fusion.ThinExtrudeWallLocation=adsk.fusion.ThinExtrudeWallLocation.Side1):
     """
     Creates a thin extrusion based on the specified depth for the given profile.
@@ -191,6 +216,14 @@ def copy_body(root_component, body, name) -> adsk.fusion.BRepBody:
     real_body.name = name
     return real_body
 
+def combine_body(root_component: adsk.fusion.Component, target_body: adsk.fusion.BRepBody, tool_bodies: adsk.core.ObjectCollection, operation = adsk.fusion.FeatureOperations.CutFeatureOperation):
+    combine_feature = root_component.features.combineFeatures
+    combine_feature_input = root_component.features.combineFeatures.createInput(target_body, tool_bodies)
+    combine_feature_input.operation = operation
+    combine_feature_input.isKeepToolBodies = False
+    combine_feature_input.isNewComponent = False
+    combine_feature.add(combine_feature_input)
+    
 def depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight):
     for i in range(depth_repeat):
         # layer offset (runs reverse)
