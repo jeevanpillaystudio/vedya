@@ -41,6 +41,7 @@ class AppConfig():
     
     Seed = create_seed()
     DesignMode = DesignMode.DirectDesign
+    SlicerRecursiveDepthLimit = 4
  
 class DiagonalRectangleConfig():
     def __init__(self):
@@ -310,8 +311,7 @@ def run(context):
             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
             invert_body = extrude_single_profile_by_area(component=seed_of_life_inner_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height_per_layer, name='seed-of-life-inverse', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
             combine_body(seed_of_life_inner_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-        return  
-                
+
         # # Structural Component - Seed of Life
         # if not component_exist(root_comp, create_component_name('seed-of-life')):
         #     seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life"))
@@ -450,16 +450,7 @@ def slicer(root_component: adsk.fusion.Component,design: adsk.core.Product, slic
     slicer_comp = create_component(root_component, create_component_name('slicer'))
     
     # Gather all bodies from the root component and its subcomponents
-    all_bodies = adsk.core.ObjectCollection.create()
-    for occurance in root_component.occurrences:
-        for body in occurance.component.bRepBodies:
-            all_bodies.add(body)
-            
-            
-        # iterate any levels of subcomponents
-        for sub_occurance in occurance.component.occurrences:
-            for body in sub_occurance.component.bRepBodies:
-                all_bodies.add(body)
+    all_bodies = aggregate_all_bodies(root_component)
     
     # Combine the rest of the bodies with the main body
     tool_bodies = adsk.core.ObjectCollection.create()
@@ -477,6 +468,24 @@ def slicer(root_component: adsk.fusion.Component,design: adsk.core.Product, slic
     
     # slice the body
     slice_body(slicer_comp, first_body, sliced_layer_depth, sliced_layer_count)
+
+def aggregate_all_bodies(component: adsk.fusion.Component, all_bodies: adsk.core.ObjectCollection = None, depth_limit: int = -1):
+    if all_bodies is None:
+        all_bodies = adsk.core.ObjectCollection.create()
+    
+    # Add all bodies from the current component
+    for body in component.bRepBodies:
+        all_bodies.add(body)
+
+    # Check if the depth limit has been reached
+    if depth_limit == 0:
+        return all_bodies
+
+    # Recursively process all subcomponents, decreasing depth limit by 1 with each call
+    for occurrence in component.occurrences:
+        aggregate_all_bodies(occurrence.component, all_bodies, depth_limit - 1 if depth_limit > 0 else -1)
+
+    return all_bodies
     
 @timer
 def slice_body(slicer_component: adsk.fusion.Component, body: adsk.fusion.BRepBody, sliced_layer_depth: float, sliced_layer_count: float):
