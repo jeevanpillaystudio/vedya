@@ -6,7 +6,7 @@ import time
 
 FP_TOLERANCE = 1e-2 # 0.01 Precision for floating point comparison
 
-def create_offset_plane(rootComp, offset):
+def create_offset_plane(rootComp: adsk.fusion.Component, offset: float, name: str = "") -> adsk.fusion.ConstructionPlane:
     """
     Creates an offset plane from the XY plane based on the specified offset.
 
@@ -23,6 +23,8 @@ def create_offset_plane(rootComp, offset):
     offsetValue = adsk.core.ValueInput.createByReal(offset)
     planeInput.setByOffset(xyPlane, offsetValue)
     offsetPlane = planes.add(planeInput)
+    if name:
+        offsetPlane.name = name
     return offsetPlane
 
 def create_sketch(rootComp, name, offset=0):

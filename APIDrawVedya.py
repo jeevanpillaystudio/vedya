@@ -2,7 +2,7 @@ import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
 from .shapes import calculate_three_point_rectangle_area, draw_astroid, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed, draw_tesseract_projection
-from .utils import combine_body, copy_body, create_array_random_unique_multiples, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_single_profile_by_area, extrude_thin_one, log, move_body, scale_body, timer, depth_repeat_iterator
+from .utils import combine_body, copy_body, create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_single_profile_by_area, extrude_thin_one, log, move_body, scale_body, timer, depth_repeat_iterator
 
 class ScaleConfig():
     def __init__(self):
@@ -64,7 +64,7 @@ class AstroidConfig():
     def __str__(self) -> str:
         return f"AstroidConfig: NumPoints={self.NumPoints}, N={self.N}, OuterAstroidRadius={self.OuterAstroidRadius}, InnerAstroidRadius={self.InnerAstroidRadius}"
     N = 2/3
-    NumPoints = 256
+    NumPoints = 128
     
     OuterAstroidRadius = 64.0 / ScaleConfig.ScaleFactor
     OuterAstroidStrokeWeight = 1.28 / ScaleConfig.ScaleFactor
@@ -127,6 +127,10 @@ def run(context):
         # Get the root component of the active design
         root_comp: adsk.fusion.Component = design.rootComponent
         
+        # Slicer
+        # slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
+        # return
+        
         # Structural Component - Background
         if not component_exist(root_comp, create_component_name('bg')):
             core_structural_comp = create_component(root_component=root_comp, component_name=create_component_name("bg"))
@@ -136,11 +140,11 @@ def run(context):
             extrude_profile_by_area(component=core_structural_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth) - calculate_circle_area(AppConfig.HoleRadius), extrude_height=AppConfig.LayerDepth, name='bg-rect')
             
         # Structural Component - Border
-        if not component_exist(root_comp, create_component_name('border')):
-            border_comp = create_component(root_component=root_comp, component_name=create_component_name("border"))
-            sketch = create_sketch(border_comp, 'border', offset=0.0)
-            draw_rectangle(sketch=sketch, length=AppConfig.MaxLength + AppConfig.BorderWidth * 2, width=AppConfig.MaxWidth + AppConfig.BorderWidth * 2)
-            extrude_thin_one(component=border_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.BorderDepth * 2, strokeWeight=AppConfig.BorderWidth, name='border', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+        # if not component_exist(root_comp, create_component_name('border')):
+        #     border_comp = create_component(root_component=root_comp, component_name=create_component_name("border"))
+        #     sketch = create_sketch(border_comp, 'border', offset=0.0)
+        #     draw_rectangle(sketch=sketch, length=AppConfig.MaxLength + AppConfig.BorderWidth * 2, width=AppConfig.MaxWidth + AppConfig.BorderWidth * 2)
+        #     extrude_thin_one(component=border_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.BorderDepth * 2, strokeWeight=AppConfig.BorderWidth, name='border', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         
         # Structural Component - Core Design
         if not component_exist(root_comp, create_component_name('core')):
@@ -163,29 +167,30 @@ def run(context):
                 extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, name="angled-rectangles-middle", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
 
             # draw the rotated rectangle inner
-            sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)            
-            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
-            for profile in sketch.profiles:
-                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="angled-rectangles-inner", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            # sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)            
+            # draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
+            # for profile in sketch.profiles:
+            #     extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="angled-rectangles-inner", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
 
-            # draw the astroid 64 
-            sketch = create_sketch(main_comp, 'astroid-64-outer', offset=AppConfig.LayerDepth + AppConfig.LayerDepth / 2)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-outer')
+            # # draw the astroid 64 
+            # sketch = create_sketch(main_comp, 'astroid-64-outer', offset=AppConfig.LayerDepth + AppConfig.LayerDepth / 2)
+            # draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius)
+            # extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-outer')
 
-            sketch = create_sketch(main_comp, 'astroid-64-inner', offset=AppConfig.LayerDepth * 2)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2, scaleY=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-inner')
+            # sketch = create_sketch(main_comp, 'astroid-64-inner', offset=AppConfig.LayerDepth * 2)
+            # draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2, scaleY=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2)
+            # extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-inner')
             
-            # draw the astroid 32
-            sketch = create_sketch(main_comp, 'astroid-32-inner', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-inner')
+            # # draw the astroid 32
+            # sketch = create_sketch(main_comp, 'astroid-32-inner', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)
+            # draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius)
+            # extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-inner')
             
-            sketch = create_sketch(main_comp, 'astroid-32-outer', offset=AppConfig.LayerDepth * 3)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-outer')
+            # sketch = create_sketch(main_comp, 'astroid-32-outer', offset=AppConfig.LayerDepth * 3)
+            # draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2)
+            # extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-outer')
             
+        # return
         # Structural Component - Tesseract Projection
         if not component_exist(root_comp, create_component_name('core-tesseract')):
             try:
@@ -251,7 +256,7 @@ def run(context):
             # draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
             # draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
             # extrude_profile_by_area(component=interstellar_tesellation_comp, profiles=sketch.profiles, area=KailashConfig.AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea, extrude_height=AppConfig.LayerDepth, name='interstellar-tesellation-astroid-outer-cut', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-            
+
         if not component_exist(root_comp, create_component_name('seed-of-life-layer-0')):
             seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life-layer-0"))
             
@@ -352,20 +357,20 @@ def run(context):
             # draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
             # extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=KailashConfig.OuterDiagonalCutWithAstroidExtrudeArea, depth=AppConfig.LayerDepth, name='seed-of-life-outer-cut', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         
-        if not component_exist(root_comp, create_component_name('torus')):
-            torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
+        # if not component_exist(root_comp, create_component_name('torus')):
+        #     torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
            
-            # inner torus 
-            iterations = 16
-            radius = (16.0 + 4.0) / ScaleConfig.ScaleFactor
-            stroke_weight = 0.64 / ScaleConfig.ScaleFactor
-            inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer-" + str(radius) + "-" + str(iterations)))
-            depth_repeat = 4
-            start_layer_offset = AppConfig.LayerDepth * 3
-            extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
-            for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight):
-                seed_of_life_inner_layer_comp = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
-                create_torus(root_component=seed_of_life_inner_layer_comp, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height_per_layer, layer_offset=layer_offset)
+        #     # inner torus 
+        #     iterations = 16
+        #     radius = (16.0 + 4.0) / ScaleConfig.ScaleFactor
+        #     stroke_weight = 0.64 / ScaleConfig.ScaleFactor
+        #     inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer-" + str(radius) + "-" + str(iterations)))
+        #     depth_repeat = 4
+        #     start_layer_offset = AppConfig.LayerDepth * 3
+        #     extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
+        #     for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight):
+        #         seed_of_life_inner_layer_comp = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
+        #         create_torus(root_component=seed_of_life_inner_layer_comp, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height_per_layer, layer_offset=layer_offset)
                 
          
         try:
@@ -418,7 +423,83 @@ def run(context):
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
-
+  
+@timer      
+def slicer(root_component: adsk.fusion.Component,design: adsk.core.Product, sliced_layer_depth: float, sliced_layer_count: float):
+    # Ensure design is set to parametric
+    design.designType = adsk.fusion.DesignTypes.ParametricDesignType
+    
+    # Create a new component for the slicing operation
+    slicer_comp = create_component(root_component, create_component_name('slicer'))
+    
+    # Gather all bodies from the root component and its subcomponents
+    all_bodies = adsk.core.ObjectCollection.create()
+    for occ in root_component.occurrences:
+        for body in occ.component.bRepBodies:
+            all_bodies.add(body)
+    
+    # Combine the rest of the bodies with the main body
+    tool_bodies = adsk.core.ObjectCollection.create()
+    for i in range(all_bodies.count):
+        body_copy = copy_body(slicer_comp, all_bodies.item(i), 'slicer-body-' + str(i))
+        tool_bodies.add(body_copy)
+    
+    # Perform the combination
+    first_body = tool_bodies.item(0)
+    tool_bodies.removeByIndex(0)
+    combine_body(slicer_comp, first_body, tool_bodies, adsk.fusion.FeatureOperations.JoinFeatureOperation)
+    
+    # rename
+    first_body.name = 'slicer-body-root'
+    
+    # slice the body
+    slice_body(slicer_comp, first_body, sliced_layer_depth, sliced_layer_count)
+    
+@timer
+def slice_body(slicer_component: adsk.fusion.Component, body: adsk.fusion.BRepBody, sliced_layer_depth: float, sliced_layer_count: float):
+    log(f"slice_body: body: {body.name}, sliced_layer_depth: {sliced_layer_depth}, sliced_layer_count: {sliced_layer_count}")
+    
+    # Get the bounding box of the body
+    bounding_box = body.boundingBox
+    min_point = bounding_box.minPoint
+    max_point = bounding_box.maxPoint
+    
+    # Calculate the dimensions
+    height = max_point.z - min_point.z
+    
+    # Calculate the number of slices and the height of each slice
+    slice_height = sliced_layer_depth
+    slice_count = int(min(sliced_layer_count, math.floor(height / slice_height)))
+    
+    # Log the details (assumed log function exists or use print instead)
+    print(f"slice_body: height: {height}, slice_count: {slice_count}, slice_height: {slice_height}")
+    
+    # Iterate to create each slice
+    for i in range(slice_count):
+        # Calculate the offset for the current plane
+        offset = min_point.z + ((i + 1) * slice_height)
+        
+        # Create an offset plane at the calculated position
+        offset_plane = create_offset_plane(slicer_component, offset, name=f'plane-slice-{i}')
+        
+        # log
+        log(f"slice_body: offset_plane: {offset_plane.name}, offset: {offset}")
+        
+        # Split the body using the created plane
+        
+        split_body_features = slicer_component.features.splitBodyFeatures
+        split_body_input = split_body_features.createInput(body, offset_plane, True)
+        newBodies = split_body_features.add(split_body_input).bodies
+        
+        # Get the new body
+        slice_body = newBodies.item(0)
+        slice_body.name = f'slice-body-{i}'
+        
+        # replace the original body with the new body
+        body = newBodies.item(1)
+        body.name = f'slice-body-remaining'
+        
+            
 @timer
 def create_seed_of_life(root_component: adsk.fusion.Component, center_x, center_y, radius, extrude_height, stroke_weight, layer_offset, side :adsk.fusion.ThinExtrudeWallLocation=adsk.fusion.ThinExtrudeWallLocation.Side1):
     # radius, stroke-weight, extrude-height difference each layer is based on j; gives it the "depth" effect
