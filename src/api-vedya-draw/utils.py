@@ -3,7 +3,7 @@ import adsk.core, adsk.fusion
 import datetime
 import time
 
-FP_TOLERANCE = 1e-1 # 0.1 Precision for floating point comparison
+FP_TOLERANCE = 1e-2 # 0.1 Precision for floating point comparison
 
 def create_offset_plane(rootComp: adsk.fusion.Component, offset: float, name: str = "") -> adsk.fusion.ConstructionPlane:
     """
@@ -42,7 +42,7 @@ def create_sketch(rootComp, name, offset=0):
     sketch.name = name
     return sketch
 
-def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, extrude_height, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation) -> adsk.core.ObjectCollection:
+def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, extrude_height, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, fp_tolerance = FP_TOLERANCE) -> adsk.core.ObjectCollection:
     """
     Creates an extrusion based on the specified area and depth for the given profiles.
     
@@ -59,7 +59,8 @@ def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[ads
     bodies = adsk.core.ObjectCollection.create()
     extrudes = component.features.extrudeFeatures
     for profile in profiles:
-        if abs(profile.areaProperties().area - area) < FP_TOLERANCE:
+        log(f'{profile.areaProperties().area}, {area}, {abs(profile.areaProperties().area - area)}')
+        if abs(profile.areaProperties().area - area) < fp_tolerance or abs(profile.areaProperties().area - area) == 0.0:
             extInput = extrudes.createInput(profile, operation=operation)
             extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrude_height))
             extrude = extrudes.add(extInput)
