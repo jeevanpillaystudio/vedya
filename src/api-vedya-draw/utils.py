@@ -1,7 +1,6 @@
 import random
 import adsk.core, adsk.fusion
 import datetime
-import os
 import time
 
 FP_TOLERANCE = 1e-1 # 0.1 Precision for floating point comparison

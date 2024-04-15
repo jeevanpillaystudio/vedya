@@ -131,7 +131,6 @@ def run(context):
         
         # Slicer
         # slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
-        # return
         
         # Structural Component - Background
         if not component_exist(root_comp, create_component_name('bg')):
