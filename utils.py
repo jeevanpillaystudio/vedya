@@ -4,7 +4,7 @@ import datetime
 import os
 import time
 
-FP_TOLERANCE = 1e-2 # 0.01 Precision for floating point comparison
+FP_TOLERANCE = 1e-1 # 0.1 Precision for floating point comparison
 
 def create_offset_plane(rootComp: adsk.fusion.Component, offset: float, name: str = "") -> adsk.fusion.ConstructionPlane:
     """

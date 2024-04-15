@@ -66,7 +66,7 @@ class AstroidConfig():
     N = 2/3
     NumPoints = 128
     
-    OuterAstroidRadius = 64.0 / ScaleConfig.ScaleFactor
+    OuterAstroidRadius = (64.0 - 5.0) / ScaleConfig.ScaleFactor
     OuterAstroidStrokeWeight = 1.28 / ScaleConfig.ScaleFactor
     
     InnerAstroidRadius = (32.0 + 8.0) / ScaleConfig.ScaleFactor
@@ -128,8 +128,8 @@ def run(context):
         root_comp: adsk.fusion.Component = design.rootComponent
         
         # Slicer
-        # slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
-        # return
+        slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
+        return
         
         # Structural Component - Background
         if not component_exist(root_comp, create_component_name('bg')):
@@ -167,28 +167,28 @@ def run(context):
                 extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, name="angled-rectangles-middle", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
 
             # draw the rotated rectangle inner
-            # sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)            
-            # draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
-            # for profile in sketch.profiles:
-            #     extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="angled-rectangles-inner", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)            
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
+            for profile in sketch.profiles:
+                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="angled-rectangles-inner", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
 
-            # # draw the astroid 64 
-            # sketch = create_sketch(main_comp, 'astroid-64-outer', offset=AppConfig.LayerDepth + AppConfig.LayerDepth / 2)
-            # draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius)
-            # extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-outer')
+            # draw the astroid 64 
+            sketch = create_sketch(main_comp, 'astroid-64-outer', offset=AppConfig.LayerDepth + AppConfig.LayerDepth / 2)
+            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-outer')
 
-            # sketch = create_sketch(main_comp, 'astroid-64-inner', offset=AppConfig.LayerDepth * 2)
-            # draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2, scaleY=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2)
-            # extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-inner')
+            sketch = create_sketch(main_comp, 'astroid-64-inner', offset=AppConfig.LayerDepth * 2)
+            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2, scaleY=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-inner')
             
-            # # draw the astroid 32
-            # sketch = create_sketch(main_comp, 'astroid-32-inner', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)
-            # draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius)
-            # extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-inner')
+            # draw the astroid 32
+            sketch = create_sketch(main_comp, 'astroid-32-inner', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)
+            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-inner')
             
-            # sketch = create_sketch(main_comp, 'astroid-32-outer', offset=AppConfig.LayerDepth * 3)
-            # draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2)
-            # extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-outer')
+            sketch = create_sketch(main_comp, 'astroid-32-outer', offset=AppConfig.LayerDepth * 3)
+            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-outer')
             
         # return
         # Structural Component - Tesseract Projection
@@ -397,20 +397,20 @@ def run(context):
         # Structural Component - Kailash Terrain Generation Sketch
         # Note: This is a placeholder for the actual terrain generation code. Requires manual intervention using STL files & Fusion Forms.
         # Guide: https://www.youtube.com/watch?v=Ea_YC4Jh0Sw
-        try:
-            kailash_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-kailash-intersection"))
-            sketch = create_sketch(kailash_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 4)
-            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight)
-            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2, scaleY=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2)
-            extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, extrude_height=AppConfig.LayerDepth * 4, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-            for profile in sketch.profiles:
-                log(f"cut-kailash-intersection: profile area: {profile.areaProperties().area}")
-        except:
-            log("cut-kailash-intersection: none to cut")
+        # try:
+        #     kailash_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-kailash-intersection"))
+        #     sketch = create_sketch(kailash_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 4)
+        #     draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight)
+        #     draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
+        #     draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius)
+        #     draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2, scaleY=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight * 2)
+        #     draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius)
+        #     draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight * 2)
+        #     extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, extrude_height=AppConfig.LayerDepth * 4, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+        #     for profile in sketch.profiles:
+        #         log(f"cut-kailash-intersection: profile area: {profile.areaProperties().area}")
+        # except:
+        #     log("cut-kailash-intersection: none to cut")
                 
         # intersect only in bounds
         try:
@@ -434,9 +434,15 @@ def slicer(root_component: adsk.fusion.Component,design: adsk.core.Product, slic
     
     # Gather all bodies from the root component and its subcomponents
     all_bodies = adsk.core.ObjectCollection.create()
-    for occ in root_component.occurrences:
-        for body in occ.component.bRepBodies:
+    for occurance in root_component.occurrences:
+        for body in occurance.component.bRepBodies:
             all_bodies.add(body)
+            
+            
+        # iterate any levels of subcomponents
+        for sub_occurance in occurance.component.occurrences:
+            for body in sub_occurance.component.bRepBodies:
+                all_bodies.add(body)
     
     # Combine the rest of the bodies with the main body
     tool_bodies = adsk.core.ObjectCollection.create()
