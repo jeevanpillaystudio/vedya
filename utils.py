@@ -225,13 +225,22 @@ def combine_body(root_component: adsk.fusion.Component, target_body: adsk.fusion
     combine_feature_input.isKeepToolBodies = False
     combine_feature_input.isNewComponent = False
     combine_feature.add(combine_feature_input)
+
+class DepthRepeat:
+    def __init__(self) -> None:
+        pass
+    Increment = 0
+    Decrement = 1
     
-def depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight):
+def depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight, direction=DepthRepeat.Increment):
     for i in range(depth_repeat):
         # layer offset (runs reverse)
         layer_offset = start_layer_offset + extrude_height * i
 
         # stroke weight starts depth_repeat times and reduces each round
-        sw = stroke_weight * (depth_repeat - i)
+        if direction == DepthRepeat.Increment:
+            sw = stroke_weight * (depth_repeat - i)
+        elif direction == DepthRepeat.Decrement:
+            sw = stroke_weight * (i + 1)
 
         yield layer_offset, sw

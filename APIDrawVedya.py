@@ -2,7 +2,7 @@ import random
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
 from .shapes import calculate_three_point_rectangle_area, draw_astroid, draw_astroid_stroke, calculate_astroid_area, draw_circle, calculate_circle_area, calculate_rectangle_area, draw_rectangle, draw_rotated_rectangle, create_seed, draw_tesseract_projection
-from .utils import combine_body, copy_body, create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_single_profile_by_area, extrude_thin_one, log, move_body, scale_body, timer, depth_repeat_iterator
+from .utils import DepthRepeat, combine_body, copy_body, create_array_random_unique_multiples, create_offset_plane, create_sketch, extrude_profile_by_area, component_exist, create_component, extrude_single_profile_by_area, extrude_thin_one, log, move_body, scale_body, timer, depth_repeat_iterator
 import random
 
 class ScaleConfig():
@@ -264,10 +264,16 @@ def run(context):
             seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life-layer-0"))
             
             # join all the bodies
-            all_bodies = adsk.core.ObjectCollection.create()
+            # all_bodies = adsk.core.ObjectCollection.create()
+            
+            # depth repeat
+            depth_repeat = 4
+            
+            # extrude height
+            extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
             
             # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
-            for (_, radius) in enumerate(create_array_random_unique_multiples(size=random.randint(1, 3), multiple=8 / ScaleConfig.ScaleFactor, min_multiple=4, max_multiple=10)):
+            for (_, radius) in enumerate(create_array_random_unique_multiples(size=1, multiple=8 / ScaleConfig.ScaleFactor, min_multiple=4, max_multiple=10)):
                 seed_of_life_layer_0_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("seed-of-life-layer-0-" + str(radius)))
                 
                 # draw from middle
@@ -277,40 +283,41 @@ def run(context):
                 # start layer offset
                 start_layer_offset = AppConfig.LayerDepth
                 
-                # extrusion height
-                extrude_height_per_layer = AppConfig.LayerDepth / 4
-                
                 # stroke weight
-                stroke_weight = create_array_random_unique_multiples(size=1, multiple=0.64 / ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=3)[0]
+                # stroke_weight = create_array_random_unique_multiples(size=1, multiple=0.64 / ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=3)[0]
+                stroke_weight = 0.64 / ScaleConfig.ScaleFactor
                 
-                # create
-                seed_of_life_inner_comp = create_component(root_component=seed_of_life_layer_0_comp, component_name=create_component_name("seed-of-inner-0"))
-                
-                # log
-                log(f"INIT seed-of-life-layer-0: radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {stroke_weight}")
-                
-                # create
-                create_seed_of_life(root_component=seed_of_life_inner_comp, center_x=center_x, center_y=center_y, radius=radius, extrude_height=extrude_height_per_layer, stroke_weight=stroke_weight, layer_offset=start_layer_offset)
-                
-                # join
-                all_bodies.add(seed_of_life_inner_comp.bRepBodies.item(0))
+                # depth iterator
+                for layer_offset, sw in depth_repeat_iterator(depth_repeat=depth_repeat, start_layer_offset=start_layer_offset, extrude_height=extrude_height_per_layer,stroke_weight=stroke_weight, direction=DepthRepeat.Decrement):
+                    seed_of_life_inner_layer_comp = create_component(root_component=seed_of_life_layer_0_comp, component_name=create_component_name("seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)))
+                    log(f"INIT seed-of-life-layer-0: depth-repeat 2, initial-radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {sw}")
+                    create_seed_of_life(root_component=seed_of_life_inner_layer_comp, center_x=center_x, center_y=center_y, radius=radius, extrude_height=extrude_height_per_layer, stroke_weight=sw, layer_offset=layer_offset, side=DepthEffect.Center)
+                    # all_bodies.add(seed_of_life_inner_layer_comp.bRepBodies.item(0))
+                    
+                    # invert the joint body; re should always be in first occurance
+                    invert_bodies = adsk.core.ObjectCollection.create()
+                    invert_bodies.add(seed_of_life_inner_layer_comp.bRepBodies.item(0))
+                    sketch = create_sketch(seed_of_life_inner_layer_comp, 'seed-of-life-inverse', offset=layer_offset)
+                    draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
+                    invert_body = extrude_single_profile_by_area(component=seed_of_life_inner_layer_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height_per_layer, name='seed-of-life-inverse', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                    combine_body(seed_of_life_inner_layer_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
             
             # set root_body and remove
-            root_body = all_bodies.item(0)
-            all_bodies.removeByIndex(0)
+            # root_body = all_bodies.item(0)
+            # all_bodies.removeByIndex(0)
             
-            # join all the bodies from individual layers
-            if all_bodies.count > 0:
-                # combine all the bodies
-                combine_body(seed_of_life_comp, root_body, all_bodies, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation) 
+            # # join all the bodies from individual layers
+            # if all_bodies.count > 0:
+            #     # combine all the bodies
+            #     combine_body(seed_of_life_comp, root_body, all_bodies, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation) 
                 
-            # invert the joint body; re should always be in first occurance
-            invert_bodies = adsk.core.ObjectCollection.create()
-            invert_bodies.add(root_body)    
-            sketch = create_sketch(seed_of_life_inner_comp, 'seed-of-life-inverse', offset=start_layer_offset)
-            draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-            invert_body = extrude_single_profile_by_area(component=seed_of_life_inner_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height_per_layer, name='seed-of-life-inverse', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-            combine_body(seed_of_life_inner_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            # # invert the joint body; re should always be in first occurance
+            # invert_bodies = adsk.core.ObjectCollection.create()
+            # invert_bodies.add(root_body)    
+            # sketch = create_sketch(seed_of_life_inner_comp, 'seed-of-life-inverse', offset=start_layer_offset)
+            # draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
+            # invert_body = extrude_single_profile_by_area(component=seed_of_life_inner_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height_per_layer, name='seed-of-life-inverse', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            # combine_body(seed_of_life_inner_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
 
         # # Structural Component - Seed of Life
         # if not component_exist(root_comp, create_component_name('seed-of-life')):
