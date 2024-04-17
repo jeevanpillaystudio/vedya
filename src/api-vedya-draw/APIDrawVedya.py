@@ -55,7 +55,7 @@ class AppConfig():
     HoleRadius = 8.0 * ScaleConfig.ScaleFactor
     MaxWidth = 128.0 * ScaleConfig.ScaleFactor
     MaxLength = 128.0 * ScaleConfig.ScaleFactor
-    LayerDepth = 1.28 * ScaleConfig.ScaleFactor
+    LayerDepth = (1.28 * 5) * ScaleConfig.ScaleFactor
     
     BorderWidth = 1.28 * ScaleConfig.ScaleFactor
     BorderDepth = (1.28 * 2) * ScaleConfig.ScaleFactor
@@ -230,7 +230,7 @@ def run(context):
                 size = (128.0 - 5.0) * ScaleConfig.ScaleFactor
                 
                 # extrude height
-                extrude_height_per_layer = (AppConfig.LayerDepth * 2) / depth_repeat
+                extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
                 
                 # stroke weight
                 stroke_weight = 0.64 * ScaleConfig.ScaleFactor
@@ -254,6 +254,7 @@ def run(context):
                     extrude_thin_one(component=tesseract_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='tesseract-outer-rect', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation, side=DepthEffect.Side2)
             except:
                 log("tesseract: none to draw")
+        return
                 
         # Structural Component - Interstellar Tesellation
         if not component_exist(root_comp, create_component_name('interstellar-tesellation')):
@@ -276,7 +277,7 @@ def run(context):
                 sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-middle', offset=layer_offset)
                 draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
                 extrude_thin_one(component=interstellar_tesellation_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='interstellar-tesellation-middle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side2)
-                
+            
             # cut with AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea
             # sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-astroid-outer-cut', offset=AppConfig.LayerDepth)
             # draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
@@ -309,7 +310,7 @@ def run(context):
                 
                 # stroke weight
                 # stroke_weight = create_array_random_unique_multiples(size=1, multiple=0.64 * ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=3)[0]
-                stroke_weight = 0.64 * ScaleConfig.ScaleFactor
+                stroke_weight = 1.28 * ScaleConfig.ScaleFactor
                 
                 # depth iterator
                 for layer_offset, sw in depth_repeat_iterator(depth_repeat=depth_repeat, start_layer_offset=start_layer_offset, extrude_height=extrude_height_per_layer,stroke_weight=stroke_weight, direction=DepthRepeat.Decrement):
