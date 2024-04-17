@@ -11,12 +11,27 @@ import random
 # 3. structural empty layer - the layer 8-11
 # 4. layered terrain
 
+class PrintType:
+    def __init__(self) -> None:
+        pass
+    
+    Print3D = 0.125 # 1/8
+    Laser = 0.1875 # 3/16
+    CNC = 1.0 # 1
+    
+    @classmethod
+    def get_attr_name(cls, value):
+        # Find the attribute by its value
+        for attr in dir(cls):
+            if getattr(cls, attr) == value and not attr.startswith('__'):
+                return attr
+        return None
+
 class ScaleConfig():
     def __init__(self):
         pass
     
-    Print3D = True
-    ScaleFactor: float = 8.0 if Print3D else 1.0
+    ScaleFactor: float = PrintType.Laser
     
     def __str__(self) -> str:
         return f"ScaleConfig: ScaleFactor={self.ScaleFactor}"
@@ -37,13 +52,13 @@ class AppConfig():
         return f"AppConfig: HoleRadius={self.HoleRadius}, Extrude={self.Extrude}, MaxWidth={self.MaxWidth}, MaxLength={self.MaxLength}, LayerDepth={self.LayerDepth}, Seed={self.Seed}"
     Extrude = True
     
-    HoleRadius = 8.0 / ScaleConfig.ScaleFactor
-    MaxWidth = 128.0 / ScaleConfig.ScaleFactor
-    MaxLength = 128.0 / ScaleConfig.ScaleFactor
-    LayerDepth = 1.28 / ScaleConfig.ScaleFactor
+    HoleRadius = 8.0 * ScaleConfig.ScaleFactor
+    MaxWidth = 128.0 * ScaleConfig.ScaleFactor
+    MaxLength = 128.0 * ScaleConfig.ScaleFactor
+    LayerDepth = 1.28 * ScaleConfig.ScaleFactor
     
-    BorderWidth = 1.28 / ScaleConfig.ScaleFactor
-    BorderDepth = (1.28 * 2) / ScaleConfig.ScaleFactor
+    BorderWidth = 1.28 * ScaleConfig.ScaleFactor
+    BorderDepth = (1.28 * 2) * ScaleConfig.ScaleFactor
     
     Seed = create_seed()
     DesignMode = DesignMode.DirectDesign
@@ -54,17 +69,17 @@ class DiagonalRectangleConfig():
         pass
     def __str__(self) -> str:
         return f"DiagonalRectangleConfig: NumPoints={self.NumPoints}, StrokeWeight={self.StrokeWeight}, OuterDiagonalRectangleWidth={self.OuterDiagonalRectangleWidth}, OuterDiagonalRectangleHeight={self.OuterDiagonalRectangleHeight}, MiddleDiagonalRectangleWidth={self.MiddleDiagonalRectangleWidth}, MiddleDiagonalRectangleHeight={self.MiddleDiagonalRectangleHeight}, InnerDiagonalRectangleWidth={self.InnerDiagonalRectangleWidth}, InnerDiagonalRectangleHeight={self.InnerDiagonalRectangleHeight}"
-    OuterDiagonalRectangleWidth = 64.0 / ScaleConfig.ScaleFactor
-    OuterDiagonalRectangleHeight = 64.0 / ScaleConfig.ScaleFactor
-    OuterDiagonalRectangleStrokeWeight = 0.64 / ScaleConfig.ScaleFactor
+    OuterDiagonalRectangleWidth = 64.0 * ScaleConfig.ScaleFactor
+    OuterDiagonalRectangleHeight = 64.0 * ScaleConfig.ScaleFactor
+    OuterDiagonalRectangleStrokeWeight = 0.64 * ScaleConfig.ScaleFactor
     
-    MiddleDiagonalRectangleWidth = (64.0 - 16.0) / ScaleConfig.ScaleFactor
-    MiddleDiagonalRectangleHeight = (64.0 - 16.0) / ScaleConfig.ScaleFactor
-    MiddleDiagonalRectangleStrokeWeight = 0.64 / ScaleConfig.ScaleFactor
+    MiddleDiagonalRectangleWidth = (64.0 - 16.0) * ScaleConfig.ScaleFactor
+    MiddleDiagonalRectangleHeight = (64.0 - 16.0) * ScaleConfig.ScaleFactor
+    MiddleDiagonalRectangleStrokeWeight = 0.64 * ScaleConfig.ScaleFactor
     
-    InnerDiagonalRectangleWidth = 32.0 / ScaleConfig.ScaleFactor
-    InnerDiagonalRectangleHeight = 32.0 / ScaleConfig.ScaleFactor
-    InnerDiagonalRectangleStrokeWeight = 0.64 / ScaleConfig.ScaleFactor 
+    InnerDiagonalRectangleWidth = 32.0 * ScaleConfig.ScaleFactor
+    InnerDiagonalRectangleHeight = 32.0 * ScaleConfig.ScaleFactor
+    InnerDiagonalRectangleStrokeWeight = 0.64 * ScaleConfig.ScaleFactor 
     
 class AstroidConfig():
     def __init__(self):
@@ -74,16 +89,16 @@ class AstroidConfig():
     N = 2/3
     NumPoints = 128
     
-    OuterAstroidRadius = (64.0 - 1.28 * 4) / ScaleConfig.ScaleFactor
-    OuterAstroidStrokeWeight = (1.28 / ScaleConfig.ScaleFactor) * 2
+    OuterAstroidRadius = (64.0 - 1.28 * 4) * ScaleConfig.ScaleFactor
+    OuterAstroidStrokeWeight = (1.28 * ScaleConfig.ScaleFactor) * 2
     
-    InnerAstroidRadius = (32.0 + 1.28 * 4) / ScaleConfig.ScaleFactor
-    InnerAstroidStrokeWeight = (1.28 / ScaleConfig.ScaleFactor) * 2
+    InnerAstroidRadius = (32.0 + 1.28 * 4) * ScaleConfig.ScaleFactor
+    InnerAstroidStrokeWeight = (1.28 * ScaleConfig.ScaleFactor) * 2
     
 class KailashConfig():
     def __init__(self):
         pass
-    # KailashIntersectExtrudeArea = 2130.679120238867 / ScaleConfig.ScaleFactor ** 2 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
+    # KailashIntersectExtrudeArea = 2130.679120238867 * ScaleConfig.ScaleFactor ** 2 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
     KailashIntersectExtrudeArea = 24.69811845861016
     AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea = 1.2765358608164958
     OuterDiagonalCutWithAstroidExtrudeArea = 12.375340707128288
@@ -98,7 +113,7 @@ class SeedOfLifeConfig():
     
     AngleDifference = 30
     
-    StrokeWeight = 0.64 / ScaleConfig.ScaleFactor
+    StrokeWeight = 0.64 * ScaleConfig.ScaleFactor
     
 class DepthEffect():
     def __init__(self):
@@ -212,13 +227,13 @@ def run(context):
                 depth_repeat = 4
                 
                 # size
-                size = (128.0 - 5.0) / ScaleConfig.ScaleFactor
+                size = (128.0 - 5.0) * ScaleConfig.ScaleFactor
                 
                 # extrude height
                 extrude_height_per_layer = (AppConfig.LayerDepth * 2) / depth_repeat
                 
                 # stroke weight
-                stroke_weight = 0.64 / ScaleConfig.ScaleFactor
+                stroke_weight = 0.64 * ScaleConfig.ScaleFactor
                 
                 # start layer offset
                 start_layer_offset = AppConfig.LayerDepth
@@ -249,7 +264,7 @@ def run(context):
             center_y = 0
             depth_repeat = 4
             extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
-            stroke_weight = 0.64 / ScaleConfig.ScaleFactor
+            stroke_weight = 0.64 * ScaleConfig.ScaleFactor
             start_layer_offset = AppConfig.LayerDepth + AppConfig.LayerDepth / 2
            
             for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight): 
@@ -282,7 +297,7 @@ def run(context):
             extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
             
             # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
-            for (_, radius) in enumerate(create_array_random_unique_multiples(size=1, multiple=8 / ScaleConfig.ScaleFactor, min_multiple=4, max_multiple=10)):
+            for (_, radius) in enumerate(create_array_random_unique_multiples(size=1, multiple=8 * ScaleConfig.ScaleFactor, min_multiple=4, max_multiple=10)):
                 seed_of_life_layer_0_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("seed-of-life-layer-0-" + str(radius)))
                 
                 # draw from middle
@@ -293,8 +308,8 @@ def run(context):
                 start_layer_offset = AppConfig.LayerDepth
                 
                 # stroke weight
-                # stroke_weight = create_array_random_unique_multiples(size=1, multiple=0.64 / ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=3)[0]
-                stroke_weight = 0.64 / ScaleConfig.ScaleFactor
+                # stroke_weight = create_array_random_unique_multiples(size=1, multiple=0.64 * ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=3)[0]
+                stroke_weight = 0.64 * ScaleConfig.ScaleFactor
                 
                 # depth iterator
                 for layer_offset, sw in depth_repeat_iterator(depth_repeat=depth_repeat, start_layer_offset=start_layer_offset, extrude_height=extrude_height_per_layer,stroke_weight=stroke_weight, direction=DepthRepeat.Decrement):
@@ -316,8 +331,8 @@ def run(context):
            
             # inner torus
             iterations = 16
-            radius = (24.0 - 1.28) / ScaleConfig.ScaleFactor
-            stroke_weight = 0.64 / ScaleConfig.ScaleFactor
+            radius = (24.0 - 1.28) * ScaleConfig.ScaleFactor
+            stroke_weight = 0.64 * ScaleConfig.ScaleFactor
             inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer-" + str(radius) + "-" + str(iterations)))
             depth_repeat = 4
             start_layer_offset = AppConfig.LayerDepth * 3
@@ -340,8 +355,8 @@ def run(context):
                 
                 # add astroid bracing (stroke)
                 sketch = create_sketch(torus_comp, 'torus-astroid-bracing', offset=layer_offset)
-                draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, strokeWeight=0.64 / ScaleConfig.ScaleFactor)
-                extrude_profile_by_area(component=torus_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight) - calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight - 0.64 / ScaleConfig.ScaleFactor), extrude_height=extrude_height_per_layer, name='torus-astroid-bracing', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, strokeWeight=0.64 * ScaleConfig.ScaleFactor)
+                extrude_profile_by_area(component=torus_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight) - calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight - 0.64 * ScaleConfig.ScaleFactor), extrude_height=extrude_height_per_layer, name='torus-astroid-bracing', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
                 
             # combine all the bodies
             all_bodies = aggregate_all_bodies(torus_comp)
@@ -354,7 +369,7 @@ def run(context):
             
             sketch = create_sketch(middle_circle_comp, 'hole-thin-circle', offset=AppConfig.LayerDepth)
             draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 4, strokeWeight=0.64 / ScaleConfig.ScaleFactor, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1)
+            extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 4, strokeWeight=0.64 * ScaleConfig.ScaleFactor, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1)
             
             sketch = create_sketch(middle_circle_comp, 'cut-hole', offset=AppConfig.LayerDepth)
             draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
@@ -362,11 +377,11 @@ def run(context):
             
             # sketch = create_sketch(middle_circle_comp, 'inner-circle', offset=AppConfig.LayerDepth)
             # draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            # extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=0.64 / ScaleConfig.ScaleFactor, name='inner-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side2)
+            # extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=0.64 * ScaleConfig.ScaleFactor, name='inner-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side2)
             
             # sketch = create_sketch(middle_circle_comp, 'outer-circle', offset=AppConfig.LayerDepth)
             # draw_circle(sketch=sketch, radius=AppConfig.HoleRadius * 2)
-            # extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=0.64 / ScaleConfig.ScaleFactor, name='outer-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1)
+            # extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=0.64 * ScaleConfig.ScaleFactor, name='outer-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1)
         except:
             log("cut-hole: none to cut")
             
@@ -568,6 +583,4 @@ def create_torus(root_component: adsk.fusion.Component, center_x, center_y, radi
     log(f"torus: {iterations} circles with radius: {r}")
 
 def create_component_name(name):
-    if ScaleConfig.Print3D:
-        return f"3d-{name}"
-    return f"{name}"
+    return f"{PrintType.get_attr_name(ScaleConfig.ScaleFactor).lower()}-{name}"
