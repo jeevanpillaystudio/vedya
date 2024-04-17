@@ -224,13 +224,13 @@ def run(context):
                 tesseract_comp = create_component(root_component=root_comp, component_name=create_component_name("core-tesseract"))
             
                 # depth repeat
-                depth_repeat = 4
+                depth_repeat = 6
                 
                 # size
-                size = (128.0 - 5.0) * ScaleConfig.ScaleFactor
+                size = (128.0) * ScaleConfig.ScaleFactor
                 
                 # extrude height
-                extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
+                extrude_height_per_layer = (AppConfig.LayerDepth * 3 / 2) / depth_repeat
                 
                 # stroke weight
                 stroke_weight = 0.64 * ScaleConfig.ScaleFactor
@@ -248,10 +248,10 @@ def run(context):
                     for profile in sketch.profiles:
                         extrude_thin_one(component=tesseract_comp, profile=profile, extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='tesseract', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
                         
-                    # outer rect
-                    sketch = create_sketch(tesseract_comp, 'tesseract-outer-rect', offset=layer_offset)
-                    draw_rectangle(sketch=sketch, length=size, width=size)
-                    extrude_thin_one(component=tesseract_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='tesseract-outer-rect', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation, side=DepthEffect.Side2)
+                    # # outer rect
+                    # sketch = create_sketch(tesseract_comp, 'tesseract-outer-rect', offset=layer_offset)
+                    # draw_rectangle(sketch=sketch, length=size, width=size)
+                    # extrude_thin_one(component=tesseract_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='tesseract-outer-rect', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation, side=DepthEffect.Side2)
             except:
                 log("tesseract: none to draw")
         return
