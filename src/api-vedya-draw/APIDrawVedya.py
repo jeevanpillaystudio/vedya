@@ -155,8 +155,8 @@ def run(context):
         # second-layer = 1.28
         # third-layer = 1.28
         # fourth-layer = 1.28
-        # slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 3, sliced_layer_count=6)
-        # return
+        slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
+        return
         
         # Structural Component - Background
         if not component_exist(root_comp, create_component_name('bg')):
