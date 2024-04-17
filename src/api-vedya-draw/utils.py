@@ -71,7 +71,7 @@ def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[ads
         return bodies
     raise ValueError('Failed to find the profile for extrusion')
 
-def extrude_single_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, extrude_height, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation) -> adsk.fusion.BRepBody:
+def extrude_single_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, extrude_height, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, fp_tolerance = FP_TOLERANCE) -> adsk.fusion.BRepBody:
     """
     Creates an extrusion based on the specified area and depth for the given profile.
     
@@ -87,7 +87,7 @@ def extrude_single_profile_by_area(component: adsk.fusion.Component, profiles: l
     """
     extrudes = component.features.extrudeFeatures
     for profile in profiles:
-        if abs(profile.areaProperties().area - area) < FP_TOLERANCE:
+        if abs(profile.areaProperties().area - area) < fp_tolerance:
             extInput = extrudes.createInput(profile, operation=operation)
             extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrude_height))
             extrude = extrudes.add(extInput)

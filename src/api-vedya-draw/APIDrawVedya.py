@@ -9,6 +9,7 @@ import random
 # 1. torus, torus invert
 # 2. seed of life inverted layering
 # 3. structural empty layer - the layer 8-11
+# 4. layered terrain
 
 class ScaleConfig():
     def __init__(self):
@@ -135,7 +136,11 @@ def run(context):
         root_comp: adsk.fusion.Component = design.rootComponent
         
         # Slicer
-        # slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
+        # first-layer = 1.28
+        # second-layer = 1.28
+        # third-layer = 1.28
+        # fourth-layer = 1.28
+        # slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 3, sliced_layer_count=6)
         # return
         
         # Structural Component - Background
@@ -189,13 +194,13 @@ def run(context):
             extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-inner', fp_tolerance=1e-1)
             
             # draw the astroid 32
-            sketch = create_sketch(main_comp, 'astroid-32-inner', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)
+            sketch = create_sketch(main_comp, 'astroid-32-outer', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)
             draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-inner',fp_tolerance=1e-1)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-outer',fp_tolerance=1e-1)
             
-            sketch = create_sketch(main_comp, 'astroid-32-outer', offset=AppConfig.LayerDepth * 3)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-outer', fp_tolerance=1e-1)
+            # sketch = create_sketch(main_comp, 'astroid-32-inner', offset=AppConfig.LayerDepth * 3)
+            # draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
+            # extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-inner', fp_tolerance=1e-1)
         # return
         # Structural Component - Tesseract Projection
         if not component_exist(root_comp, create_component_name('core-tesseract')):
@@ -293,124 +298,67 @@ def run(context):
                 
                 # depth iterator
                 for layer_offset, sw in depth_repeat_iterator(depth_repeat=depth_repeat, start_layer_offset=start_layer_offset, extrude_height=extrude_height_per_layer,stroke_weight=stroke_weight, direction=DepthRepeat.Decrement):
-                    seed_of_life_inner_layer_comp = create_component(root_component=seed_of_life_layer_0_comp, component_name=create_component_name("seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)))
+                    torus_inner_comp = create_component(root_component=seed_of_life_layer_0_comp, component_name=create_component_name("seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)))
                     log(f"INIT seed-of-life-layer-0: depth-repeat 2, initial-radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {sw}")
-                    create_seed_of_life(root_component=seed_of_life_inner_layer_comp, center_x=center_x, center_y=center_y, radius=radius, extrude_height=extrude_height_per_layer, stroke_weight=sw, layer_offset=layer_offset, side=DepthEffect.Center)
+                    create_seed_of_life(root_component=torus_inner_comp, center_x=center_x, center_y=center_y, radius=radius, extrude_height=extrude_height_per_layer, stroke_weight=sw, layer_offset=layer_offset, side=DepthEffect.Center)
                     # all_bodies.add(seed_of_life_inner_layer_comp.bRepBodies.item(0))
                     
                     # invert the joint body; re should always be in first occurance
                     invert_bodies = adsk.core.ObjectCollection.create()
-                    invert_bodies.add(seed_of_life_inner_layer_comp.bRepBodies.item(0))
-                    sketch = create_sketch(seed_of_life_inner_layer_comp, 'seed-of-life-inverse', offset=layer_offset)
+                    invert_bodies.add(torus_inner_comp.bRepBodies.item(0))
+                    sketch = create_sketch(torus_inner_comp, 'seed-of-life-inverse', offset=layer_offset)
                     draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-                    invert_body = extrude_single_profile_by_area(component=seed_of_life_inner_layer_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height_per_layer, name='seed-of-life-inverse', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-                    combine_body(seed_of_life_inner_layer_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+                    invert_body = extrude_single_profile_by_area(component=torus_inner_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height_per_layer, name='seed-of-life-inverse', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                    combine_body(torus_inner_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
             
-            # set root_body and remove
-            # root_body = all_bodies.item(0)
-            # all_bodies.removeByIndex(0)
-            
-            # # join all the bodies from individual layers
-            # if all_bodies.count > 0:
-            #     # combine all the bodies
-            #     combine_body(seed_of_life_comp, root_body, all_bodies, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation) 
-                
-            # # invert the joint body; re should always be in first occurance
-            # invert_bodies = adsk.core.ObjectCollection.create()
-            # invert_bodies.add(root_body)    
-            # sketch = create_sketch(seed_of_life_inner_comp, 'seed-of-life-inverse', offset=start_layer_offset)
-            # draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-            # invert_body = extrude_single_profile_by_area(component=seed_of_life_inner_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height_per_layer, name='seed-of-life-inverse', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-            # combine_body(seed_of_life_inner_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-
-        # # Structural Component - Seed of Life
-        # if not component_exist(root_comp, create_component_name('seed-of-life')):
-        #     seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("seed-of-life"))
-            
-        #     # draw from middle
-        #     center_x = 0
-        #     center_y = 0
-            
-        #     # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
-        #     for (_, radius) in enumerate(create_array_random_unique_multiples(size=random.randint(SeedOfLifeConfig.MinRandomMultiple, SeedOfLifeConfig.MaxRandomMultiple), multiple=8 / ScaleConfig.ScaleFactor, min_multiple=4, max_multiple=10)):
-                
-        #         # start layer offset
-        #         start_layer_offset = AppConfig.LayerDepth
-                
-        #         # repeats
-        #         depth_repeat = random.choice(SeedOfLifeConfig.DepthRepeatValues)
-                
-        #         # extrusion height; each layer has the same distance between them
-        #         extrude_height_per_layer = (AppConfig.LayerDepth) / depth_repeat
-                
-        #         # sw
-        #         stroke_weight = SeedOfLifeConfig.StrokeWeight
-                
-        #         # depth effect (random)
-        #         side = random.choice([DepthEffect.Side1, DepthEffect.Side2, DepthEffect.Center])
-                
-        #         # comp
-        #         seed_of_life_inner_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("seed-of-inner-" + str(radius) + "-" + str(depth_repeat) + "-" + str(extrude_height_per_layer) + "-" + str(stroke_weight) + "-" + str(side)))
-                
-        #         # log
-        #         log(f"INIT seed-of-life: depth-repeat {depth_repeat}, initial-radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {stroke_weight}")
-                
-        #         # random choice of operation
-        #         operation_random_choice = random.choice([adsk.fusion.FeatureOperations.CutFeatureOperation])
-                
-        #         # repeat j many times; this gives the "depth" effect
-        #         for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight):
-        #             seed_of_life_inner_layer_comp = create_component(root_component=seed_of_life_inner_comp, component_name=create_component_name("seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)))
-        #             create_seed_of_life(root_component=seed_of_life_inner_layer_comp, center_x=center_x, center_y=center_y, radius=radius, extrude_height=extrude_height_per_layer, stroke_weight=sw, layer_offset=layer_offset, side=side)
-                    
-        #             # partition
-        #             sketch = create_sketch(seed_of_life_inner_layer_comp, 'seed-of-life-inner-layer-partition', offset=start_layer_offset)
-        #             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
-        #             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight) 
-        #             cut_bodies = extrude_profile_by_area(component=seed_of_life_inner_layer_comp, profiles=sketch.profiles, area=calculate_three_point_rectangle_area(DiagonalRectangleConfig.OuterDiagonalRectangleWidth, DiagonalRectangleConfig.OuterDiagonalRectangleHeight) - calculate_three_point_rectangle_area(DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, DiagonalRectangleConfig.MiddleDiagonalRectangleHeight), extrude_height=extrude_height_per_layer, name='seed-of-life-inner-layer-partition', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-        #             combine_body(seed_of_life_inner_layer_comp, seed_of_life_inner_layer_comp.bRepBodies.item(0), cut_bodies, operation=operation_random_choice)
-                    
-        #             # inverse half of the time
-        #             all_bodies = adsk.core.ObjectCollection.create()
-        #             for body in seed_of_life_inner_layer_comp.bRepBodies:
-        #                 all_bodies.add(body)
-        #             sketch = create_sketch(seed_of_life_inner_layer_comp, 'seed-of-life-inverse', offset=start_layer_offset)
-        #             draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-        #             invert_body = extrude_single_profile_by_area(component=seed_of_life_inner_layer_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height_per_layer, name='seed-of-life-inverse', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
-        #             combine_body(seed_of_life_inner_layer_comp, invert_body, all_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation) 
-                       
-            # sketch = create_sketch(seed_of_life_comp, 'seed-of-life-outer-cut', offset=AppConfig.LayerDepth)
-            # draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
-            # draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
-            # draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
-            # extrude_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=KailashConfig.OuterDiagonalCutWithAstroidExtrudeArea, depth=AppConfig.LayerDepth, name='seed-of-life-outer-cut', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-        
         if not component_exist(root_comp, create_component_name('torus')):
             torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
            
-            # inner torus 
+            # inner torus
             iterations = 16
-            radius = (16.0 + 4.0) / ScaleConfig.ScaleFactor
+            radius = (24.0 - 1.28) / ScaleConfig.ScaleFactor
             stroke_weight = 0.64 / ScaleConfig.ScaleFactor
             inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer-" + str(radius) + "-" + str(iterations)))
             depth_repeat = 4
             start_layer_offset = AppConfig.LayerDepth * 3
-            extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
-            for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight):
-                seed_of_life_inner_layer_comp = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
-                create_torus(root_component=seed_of_life_inner_layer_comp, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height_per_layer, layer_offset=layer_offset)
+            extrude_height_per_layer = AppConfig.LayerDepth / 2 / depth_repeat
+            for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight, direction=DepthRepeat.Decrement):
+                # create the torus
+                torus_inner_comp = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
+                create_torus(root_component=torus_inner_comp, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height_per_layer, layer_offset=layer_offset)
                 
-        
+                # get all bodies
+                invert_bodies = adsk.core.ObjectCollection.create()
+                for body in torus_inner_comp.bRepBodies:
+                    invert_bodies.add(body)
+                
+                # invert the joint body; re should always be in first occurance
+                sketch = create_sketch(torus_comp, 'torus-inverse', offset=layer_offset)
+                draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
+                invert_body = extrude_single_profile_by_area(component=torus_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), extrude_height=extrude_height_per_layer, name='astroid-32-inner', fp_tolerance=1e-1)
+                combine_body(torus_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+                
+                # add astroid bracing (stroke)
+                sketch = create_sketch(torus_comp, 'torus-astroid-bracing', offset=layer_offset)
+                draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, strokeWeight=0.64 / ScaleConfig.ScaleFactor)
+                extrude_profile_by_area(component=torus_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight) - calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight - 0.64 / ScaleConfig.ScaleFactor), extrude_height=extrude_height_per_layer, name='torus-astroid-bracing', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                
+            # combine all the bodies
+            all_bodies = aggregate_all_bodies(torus_comp)
+            root_body = all_bodies.item(0)
+            all_bodies.removeByIndex(0)
+            combine_body(torus_comp, root_body, all_bodies, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
+
         try:
             middle_circle_comp = create_component(root_component=root_comp, component_name=create_component_name("middle_circle_comp"))
-
-            sketch = create_sketch(middle_circle_comp, 'cut-hole', offset=AppConfig.LayerDepth)
-            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            extrude_profile_by_area(component=middle_circle_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), extrude_height=AppConfig.LayerDepth * 4, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
             
             sketch = create_sketch(middle_circle_comp, 'hole-thin-circle', offset=AppConfig.LayerDepth)
             draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
             extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 4, strokeWeight=0.64 / ScaleConfig.ScaleFactor, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1)
+            
+            sketch = create_sketch(middle_circle_comp, 'cut-hole', offset=AppConfig.LayerDepth)
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+            extrude_profile_by_area(component=middle_circle_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), extrude_height=AppConfig.LayerDepth * 4, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
             
             # sketch = create_sketch(middle_circle_comp, 'inner-circle', offset=AppConfig.LayerDepth)
             # draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
@@ -427,7 +375,7 @@ def run(context):
         # Guide: https://www.youtube.com/watch?v=Ea_YC4Jh0Sw
         try:
             kailash_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-kailash-intersection"))
-            sketch = create_sketch(kailash_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 4)
+            sketch = create_sketch(kailash_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight)
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
             draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius)
@@ -436,7 +384,7 @@ def run(context):
             draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
             # for profile in sketch.profiles:
             #     log(f"cut-kailash-intersection: profile area: {profile.areaProperties().area}")
-            extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, extrude_height=0.32, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, extrude_height=AppConfig.LayerDepth, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         except:
             log("cut-kailash-intersection: none to cut")
                 
