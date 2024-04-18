@@ -11,6 +11,9 @@ import random
 # 3. structural empty layer - the layer 8-11
 # 4. layered terrain
 
+# project layers
+# 1. each layer is 0.48
+
 class PrintType:
     def __init__(self) -> None:
         pass
@@ -31,7 +34,7 @@ class ScaleConfig():
     def __init__(self):
         pass
     
-    ScaleFactor: float = PrintType.Laser
+    ScaleFactor: float = PrintType.CNC
     
     def __str__(self) -> str:
         return f"ScaleConfig: ScaleFactor={self.ScaleFactor}"
@@ -53,9 +56,10 @@ class AppConfig():
     Extrude = True
     
     HoleRadius = 8.0 * ScaleConfig.ScaleFactor
-    MaxWidth = 128.0 * ScaleConfig.ScaleFactor
-    MaxLength = 128.0 * ScaleConfig.ScaleFactor
-    LayerDepth = (1.28 * 5) * ScaleConfig.ScaleFactor
+    MaxWidth = 96.0 * ScaleConfig.ScaleFactor
+    MaxLength = 64.0 * ScaleConfig.ScaleFactor
+    LayerDepth = 0.48 * ScaleConfig.ScaleFactor
+    StrokeWeight = 0.96 * ScaleConfig.ScaleFactor
     
     BorderWidth = 1.28 * ScaleConfig.ScaleFactor
     BorderDepth = (1.28 * 2) * ScaleConfig.ScaleFactor
@@ -63,22 +67,33 @@ class AppConfig():
     Seed = create_seed()
     DesignMode = DesignMode.DirectDesign
     SlicerRecursiveDepthLimit = 4
+    
+    def aspect_ratio(self):
+        return self.MaxLength / self.MaxWidth
+    
+    
+class BackgroundConfig():
+    def __init__(self):
+        pass
+    MaxWidth = AppConfig.MaxWidth
+    MaxLength = AppConfig.MaxLength
+    ExtrudeHeight = AppConfig.LayerDepth * 2 * ScaleConfig.ScaleFactor
  
 class DiagonalRectangleConfig():
     def __init__(self):
         pass
     def __str__(self) -> str:
         return f"DiagonalRectangleConfig: NumPoints={self.NumPoints}, StrokeWeight={self.StrokeWeight}, OuterDiagonalRectangleWidth={self.OuterDiagonalRectangleWidth}, OuterDiagonalRectangleHeight={self.OuterDiagonalRectangleHeight}, MiddleDiagonalRectangleWidth={self.MiddleDiagonalRectangleWidth}, MiddleDiagonalRectangleHeight={self.MiddleDiagonalRectangleHeight}, InnerDiagonalRectangleWidth={self.InnerDiagonalRectangleWidth}, InnerDiagonalRectangleHeight={self.InnerDiagonalRectangleHeight}"
-    OuterDiagonalRectangleWidth = 64.0 * ScaleConfig.ScaleFactor
-    OuterDiagonalRectangleHeight = 64.0 * ScaleConfig.ScaleFactor
+    OuterDiagonalRectangleWidth = 32.0 * ScaleConfig.ScaleFactor
+    OuterDiagonalRectangleHeight = 32.0 * ScaleConfig.ScaleFactor
     OuterDiagonalRectangleStrokeWeight = 0.64 * ScaleConfig.ScaleFactor
     
-    MiddleDiagonalRectangleWidth = (64.0 - 16.0) * ScaleConfig.ScaleFactor
-    MiddleDiagonalRectangleHeight = (64.0 - 16.0) * ScaleConfig.ScaleFactor
+    MiddleDiagonalRectangleWidth = (64.0 - 16.0) / (2.0) * ScaleConfig.ScaleFactor
+    MiddleDiagonalRectangleHeight = (64.0 - 16.0) / (2.0) * ScaleConfig.ScaleFactor
     MiddleDiagonalRectangleStrokeWeight = 0.64 * ScaleConfig.ScaleFactor
     
-    InnerDiagonalRectangleWidth = 32.0 * ScaleConfig.ScaleFactor
-    InnerDiagonalRectangleHeight = 32.0 * ScaleConfig.ScaleFactor
+    InnerDiagonalRectangleWidth = 32.0 / 2.0 * ScaleConfig.ScaleFactor
+    InnerDiagonalRectangleHeight = 32.0 / 2.0 * ScaleConfig.ScaleFactor
     InnerDiagonalRectangleStrokeWeight = 0.64 * ScaleConfig.ScaleFactor 
     
 class AstroidConfig():
@@ -89,11 +104,11 @@ class AstroidConfig():
     N = 2/3
     NumPoints = 128
     
-    OuterAstroidRadius = (64.0 - 1.28 * 4) * ScaleConfig.ScaleFactor
-    OuterAstroidStrokeWeight = (1.28 * ScaleConfig.ScaleFactor) * 2
+    OuterAstroidRadius = (32.0 - 2.56) * ScaleConfig.ScaleFactor
+    OuterAstroidStrokeWeight = (AppConfig.StrokeWeight * ScaleConfig.ScaleFactor) * 2
     
-    InnerAstroidRadius = (32.0 + 1.28 * 4) * ScaleConfig.ScaleFactor
-    InnerAstroidStrokeWeight = (1.28 * ScaleConfig.ScaleFactor) * 2
+    InnerAstroidRadius = (16.0 + 2.56) * ScaleConfig.ScaleFactor
+    InnerAstroidStrokeWeight = (AppConfig.StrokeWeight * ScaleConfig.ScaleFactor) * 2
     
 class KailashConfig():
     def __init__(self):
@@ -155,17 +170,16 @@ def run(context):
         # second-layer = 1.28
         # third-layer = 1.28
         # fourth-layer = 1.28
-        slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
-        return
+        # slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
+        # return
         
         # Structural Component - Background
         if not component_exist(root_comp, create_component_name('bg')):
             core_structural_comp = create_component(root_component=root_comp, component_name=create_component_name("bg"))
             sketch = create_sketch(core_structural_comp, 'bg-rect', offset=0.0)
-            draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            extrude_profile_by_area(component=core_structural_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth) - calculate_circle_area(AppConfig.HoleRadius), extrude_height=AppConfig.LayerDepth, name='bg-rect')
-            
+            draw_rectangle(sketch=sketch, length=BackgroundConfig.MaxLength, width=BackgroundConfig.MaxWidth)
+            extrude_profile_by_area(component=core_structural_comp, profiles=sketch.profiles, area=calculate_rectangle_area(BackgroundConfig.MaxLength, BackgroundConfig.MaxWidth), extrude_height=BackgroundConfig.ExtrudeHeight, name='bg-rect')
+
         # Structural Component - Border
         # if not component_exist(root_comp, create_component_name('border')):
         #     border_comp = create_component(root_component=root_comp, component_name=create_component_name("border"))
@@ -177,45 +191,77 @@ def run(context):
         if not component_exist(root_comp, create_component_name('core')):
             main_comp = create_component(root_component=root_comp, component_name=create_component_name("core"))
             
-            # draw the rotated rectangle outer
-            sketch = create_sketch(main_comp, 'angled-rectangles-outer-lower', offset=AppConfig.LayerDepth)
-            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_three_point_rectangle_area(DiagonalRectangleConfig.OuterDiagonalRectangleWidth, DiagonalRectangleConfig.OuterDiagonalRectangleHeight), extrude_height=AppConfig.LayerDepth / 2, name='angled-rectangles-outer', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            # level 2D -----------
+            layer_offset = AppConfig.LayerDepth * 2
             
-            sketch = create_sketch(main_comp, 'angled-rectangles-outer-upper', offset=AppConfig.LayerDepth + AppConfig.LayerDepth / 2)
+            # draw the rotated rectangle outer
+            sketch = create_sketch(main_comp, 'angled-rectangles-outer-lower', offset=layer_offset)
+            extrude_height = AppConfig.LayerDepth
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_three_point_rectangle_area(DiagonalRectangleConfig.OuterDiagonalRectangleWidth, DiagonalRectangleConfig.OuterDiagonalRectangleHeight), extrude_height=extrude_height, name='angled-rectangles-outer', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            
+            # level 2.5D ----------- 
+            layer_offset = AppConfig.LayerDepth * 3
+            
+            # draw the rotated rectangle outer upper thin extrudes
+            sketch = create_sketch(main_comp, 'angled-rectangles-outer-upper', offset=layer_offset)
+            extrude_height = AppConfig.LayerDepth * 2
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
             for profile in sketch.profiles:
-                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth, strokeWeight=DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight, name="angled-rectangles-outer", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=extrude_height, strokeWeight=DiagonalRectangleConfig.OuterDiagonalRectangleStrokeWeight, name="angled-rectangles-outer", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            
+            # level 3D -----------
+            layer_offset = AppConfig.LayerDepth * 3
             
             # draw the rotated rectangle middle
-            sketch = create_sketch(main_comp, 'angled-rectangles-middle', offset=AppConfig.LayerDepth + AppConfig.LayerDepth / 2)
+            sketch = create_sketch(main_comp, 'angled-rectangles-middle', offset=layer_offset)
+            extrude_height = AppConfig.LayerDepth * 2
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight) 
             for profile in sketch.profiles:
-                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, name="angled-rectangles-middle", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=extrude_height, strokeWeight=DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, name="angled-rectangles-middle", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                
+            # draw the astroid 64
+            sketch = create_sketch(main_comp, 'astroid-64-outer', offset=layer_offset)
+            extrude_height = AppConfig.LayerDepth
+            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius), extrude_height=extrude_height, name='astroid-64-outer', fp_tolerance=1e0)
+            
+            # level 4D -----------
+            layer_offset = AppConfig.LayerDepth * 4
+            
+            # draw the astroid 64 inner
+            sketch = create_sketch(main_comp, 'astroid-64-inner', offset=layer_offset)
+            extrude_height = AppConfig.LayerDepth
+            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight, scaleY=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight), extrude_height=extrude_height, name='astroid-64-inner', fp_tolerance=1e0) 
 
+            # level 5D -----------
+            layer_offset = AppConfig.LayerDepth * 5
+            
             # draw the rotated rectangle inner
-            sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)            
+            sketch = create_sketch(main_comp, 'angled-rectangles-inner', offset=layer_offset)            
+            extrude_height = AppConfig.LayerDepth * 2
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
             for profile in sketch.profiles:
-                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="angled-rectangles-inner", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                extrude_thin_one(component=main_comp, profile=profile, extrudeHeight=extrude_height, strokeWeight=DiagonalRectangleConfig.InnerDiagonalRectangleStrokeWeight, name="angled-rectangles-inner", operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
 
-            # draw the astroid 64 
-            sketch = create_sketch(main_comp, 'astroid-64-outer', offset=AppConfig.LayerDepth + AppConfig.LayerDepth / 2)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-outer', fp_tolerance=1e-1)
-
-            sketch = create_sketch(main_comp, 'astroid-64-inner', offset=AppConfig.LayerDepth * 2)
-            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight, scaleY=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight), extrude_height=AppConfig.LayerDepth / 2, name='astroid-64-inner', fp_tolerance=1e-1)
-            
             # draw the astroid 32
-            sketch = create_sketch(main_comp, 'astroid-32-outer', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)
+            sketch = create_sketch(main_comp, 'astroid-32-outer', offset=layer_offset)
+            extrude_height = AppConfig.LayerDepth
             draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius, scaleY=AstroidConfig.InnerAstroidRadius)
-            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-outer',fp_tolerance=1e-1)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius), extrude_height=extrude_height, name='astroid-32-outer',fp_tolerance=1e0)
             
-            # sketch = create_sketch(main_comp, 'astroid-32-inner', offset=AppConfig.LayerDepth * 3)
-            # draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
-            # extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), extrude_height=AppConfig.LayerDepth / 2, name='astroid-32-inner', fp_tolerance=1e-1)
+            # layer 6D -----------
+            layer_offset = AppConfig.LayerDepth * 6
+
+            # draw the astroid 32 inner            
+            sketch = create_sketch(main_comp, 'astroid-32-inner', offset=layer_offset)
+            extrude_height = AppConfig.LayerDepth
+            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
+            extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), extrude_height=extrude_height, name='astroid-32-inner', fp_tolerance=1e-1)
+            
+            
+        return
         # return
         # Structural Component - Tesseract Projection
         if not component_exist(root_comp, create_component_name('core-tesseract')):
