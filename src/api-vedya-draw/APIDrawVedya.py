@@ -55,7 +55,7 @@ class AppConfig():
         return f"AppConfig: HoleRadius={self.HoleRadius}, Extrude={self.Extrude}, MaxWidth={self.MaxWidth}, MaxLength={self.MaxLength}, LayerDepth={self.LayerDepth}, Seed={self.Seed}"
     Extrude = True
     
-    HoleRadius = 8.0 * ScaleConfig.ScaleFactor
+    HoleRadius = 4.0 * ScaleConfig.ScaleFactor
     MaxWidth = 96.0 * ScaleConfig.ScaleFactor
     MaxLength = 64.0 * ScaleConfig.ScaleFactor
     LayerDepth = 0.48 * ScaleConfig.ScaleFactor
@@ -259,7 +259,11 @@ def run(context):
             extrude_height = AppConfig.LayerDepth
             draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
             extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), extrude_height=extrude_height, name='astroid-32-inner', fp_tolerance=1e-1)
-            
+           
+            # hole
+            sketch = create_sketch(main_comp, 'hole-thin-circle', offset=AppConfig.LayerDepth)
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+            extrude_thin_one(component=main_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 9, strokeWeight=0.64 * ScaleConfig.ScaleFactor, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1) 
             
         return
         # return
