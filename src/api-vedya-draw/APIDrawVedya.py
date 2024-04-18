@@ -260,51 +260,74 @@ def run(context):
             draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
             extrude_profile_by_area(component=main_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), extrude_height=extrude_height, name='astroid-32-inner', fp_tolerance=1e-1)
            
-            # hole
-            sketch = create_sketch(main_comp, 'hole-thin-circle', offset=AppConfig.LayerDepth)
-            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            extrude_thin_one(component=main_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 9, strokeWeight=0.64 * ScaleConfig.ScaleFactor, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1) 
-            
-        return
-        # return
-        # Structural Component - Tesseract Projection
-        if not component_exist(root_comp, create_component_name('core-tesseract')):
+        # Structural Component - Outer Brace
+        if not component_exist(root_comp, create_component_name('core-outer-brace')):
             try:
-                # Drawing a Tesseract structure
-                tesseract_comp = create_component(root_component=root_comp, component_name=create_component_name("core-tesseract"))
-            
+                # Drawing a Outer Brace 
+                width = AppConfig.MaxWidth
+                length = AppConfig.MaxLength
+                
                 # depth repeat
-                depth_repeat = 6
-                
-                # size
-                size = (128.0) * ScaleConfig.ScaleFactor
-                
-                # extrude height
-                extrude_height_per_layer = (AppConfig.LayerDepth * 3 / 2) / depth_repeat
-                
-                # stroke weight
-                stroke_weight = 0.64 * ScaleConfig.ScaleFactor
+                depth_repeat = 4
                 
                 # start layer offset
-                start_layer_offset = AppConfig.LayerDepth
+                start_layer_offset = AppConfig.LayerDepth * 2
                 
-                # depth effect
-                for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight):
-                    # tesseract
-                    sketch = create_sketch(tesseract_comp, 'tesseract-inner-rect', offset=layer_offset)
-                    draw_tesseract_projection(sketch, center_x=0, center_y=0, size=size)
-
-                    # extrude
-                    for profile in sketch.profiles:
-                        extrude_thin_one(component=tesseract_comp, profile=profile, extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='tesseract', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
-                        
-                    # # outer rect
-                    # sketch = create_sketch(tesseract_comp, 'tesseract-outer-rect', offset=layer_offset)
-                    # draw_rectangle(sketch=sketch, length=size, width=size)
-                    # extrude_thin_one(component=tesseract_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='tesseract-outer-rect', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation, side=DepthEffect.Side2)
+                # Outer Brace
+                outer_brace_comp = create_component(root_component=root_comp, component_name=create_component_name("core-outer-brace"))
+                
+                # draw the outer brace
+                extrude_height_per_layer = AppConfig.LayerDepth * 4 / depth_repeat
+                stroke_weight = 0.64 * ScaleConfig.ScaleFactor
+                depth_repeat = 4
+                
+                for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset=start_layer_offset, extrude_height=extrude_height_per_layer, stroke_weight=stroke_weight):
+                    sketch = create_sketch(outer_brace_comp, 'outer-brace' + str(layer_offset), offset=layer_offset)
+                    draw_rectangle(sketch=sketch, length=length, width=width)
+                    extrude_thin_one(component=outer_brace_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='outer-brace', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1)
+                
             except:
-                log("tesseract: none to draw")
-        return
+                log("core-outer-brace: none to draw")
+            
+        # Structural Component - Tesseract Projection
+        # if not component_exist(root_comp, create_component_name('core-tesseract')):
+        #     try:
+        #         # Drawing a Tesseract structure
+        #         tesseract_comp = create_component(root_component=root_comp, component_name=create_component_name("core-tesseract"))
+            
+        #         # depth repeat
+        #         depth_repeat = 4
+                
+        #         # size
+        #         size = (64.0) * ScaleConfig.ScaleFactor
+                
+        #         # extrude height
+        #         max_height = AppConfig.LayerDepth * 4
+        #         extrude_height_per_layer = (max_height) / depth_repeat
+                
+        #         # stroke weight
+        #         stroke_weight = 0.64 * ScaleConfig.ScaleFactor
+                
+        #         # start layer offset
+        #         start_layer_offset = AppConfig.LayerDepth * 2
+                
+        #         # depth effect
+        #         for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight):
+        #             # tesseract
+        #             sketch = create_sketch(tesseract_comp, 'tesseract-inner-rect', offset=layer_offset)
+        #             draw_tesseract_projection(sketch, center_x=0, center_y=0, size=size)
+
+        #             # extrude
+        #             for profile in sketch.profiles:
+        #                 extrude_thin_one(component=tesseract_comp, profile=profile, extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='tesseract', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
+                        
+        #             # # outer rect
+        #             # sketch = create_sketch(tesseract_comp, 'tesseract-outer-rect', offset=layer_offset)
+        #             # draw_rectangle(sketch=sketch, length=size, width=size)
+        #             # extrude_thin_one(component=tesseract_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='tesseract-outer-rect', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation, side=DepthEffect.Side2)
+        #     except:
+        #         log("tesseract: none to draw")
+        # return
                 
         # Structural Component - Interstellar Tesellation
         if not component_exist(root_comp, create_component_name('interstellar-tesellation')):
@@ -314,19 +337,19 @@ def run(context):
             center_x = 0
             center_y = 0
             depth_repeat = 4
-            extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
+            extrude_height_per_layer = AppConfig.LayerDepth * 2 / depth_repeat
             stroke_weight = 0.64 * ScaleConfig.ScaleFactor
-            start_layer_offset = AppConfig.LayerDepth + AppConfig.LayerDepth / 2
+            start_layer_offset = AppConfig.LayerDepth * 3
            
             for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight): 
                 sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-outer', offset=layer_offset)
                 draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth, height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight)
                 extrude_thin_one(component=interstellar_tesellation_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='interstellar-tesellation-outer', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
                
-            for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight): 
-                sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-middle', offset=layer_offset)
-                draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
-                extrude_thin_one(component=interstellar_tesellation_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='interstellar-tesellation-middle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side2)
+            # for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight): 
+            #     sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-middle', offset=layer_offset)
+            #     draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
+            #     extrude_thin_one(component=interstellar_tesellation_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='interstellar-tesellation-middle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side2)
             
             # cut with AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea
             # sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-astroid-outer-cut', offset=AppConfig.LayerDepth)
@@ -345,10 +368,10 @@ def run(context):
             depth_repeat = 4
             
             # extrude height
-            extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
+            extrude_height_per_layer = AppConfig.LayerDepth * 2 / depth_repeat
             
             # iterate; the enumerator is an array of multiples of 8; e.g [8, 16, 24, 32, 40, 48, 56, 64]
-            for (_, radius) in enumerate(create_array_random_unique_multiples(size=1, multiple=8 * ScaleConfig.ScaleFactor, min_multiple=4, max_multiple=10)):
+            for (_, radius) in enumerate(create_array_random_unique_multiples(size=2, multiple=8 * ScaleConfig.ScaleFactor, min_multiple=4, max_multiple=10)):
                 seed_of_life_layer_0_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("seed-of-life-layer-0-" + str(radius)))
                 
                 # draw from middle
@@ -356,11 +379,10 @@ def run(context):
                 center_y = 0
                 
                 # start layer offset
-                start_layer_offset = AppConfig.LayerDepth
+                start_layer_offset = AppConfig.LayerDepth * 2
                 
                 # stroke weight
-                # stroke_weight = create_array_random_unique_multiples(size=1, multiple=0.64 * ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=3)[0]
-                stroke_weight = 1.28 * ScaleConfig.ScaleFactor
+                stroke_weight = create_array_random_unique_multiples(size=1, multiple=0.48 * ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=6)[0]
                 
                 # depth iterator
                 for layer_offset, sw in depth_repeat_iterator(depth_repeat=depth_repeat, start_layer_offset=start_layer_offset, extrude_height=extrude_height_per_layer,stroke_weight=stroke_weight, direction=DepthRepeat.Decrement):
@@ -376,7 +398,7 @@ def run(context):
                     draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
                     invert_body = extrude_single_profile_by_area(component=torus_inner_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height_per_layer, name='seed-of-life-inverse', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
                     combine_body(torus_inner_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-            
+        return
         if not component_exist(root_comp, create_component_name('torus')):
             torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
            
