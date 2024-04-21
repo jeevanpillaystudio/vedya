@@ -62,7 +62,7 @@ class AppConfig():
     LayerDepth = 0.48 * ScaleConfig.ScaleFactor
     StrokeWeight = 0.72 * ScaleConfig.ScaleFactor
     
-    BorderWidth = 1.28 * ScaleConfig.ScaleFactor
+    BorderWidth = 0.48 * 4 * ScaleConfig.ScaleFactor
     BorderDepth = (1.28 * 2) * ScaleConfig.ScaleFactor
     
     Seed = create_seed()
@@ -115,7 +115,7 @@ class KailashConfig():
     def __init__(self):
         pass
     # KailashIntersectExtrudeArea = 2130.679120238867 * ScaleConfig.ScaleFactor ** 2 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
-    KailashIntersectExtrudeArea = 24.69811845861016
+    KailashIntersectExtrudeArea = 401.66169829603086
     AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea = 1.2765358608164958
     OuterDiagonalCutWithAstroidExtrudeArea = 12.375340707128288
 
@@ -174,84 +174,28 @@ def run(context):
         # slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
         # return
         
+        # structural components
         create_bg(root_comp)
         create_border(root_comp)
         create_component_seed_of_life_layer_0(root_comp)
         create_component_seed_of_life_layer_2(root_comp)
         create_component_seed_of_life_layer_1(root_comp)
         create_component_core(root_comp)
-        return
-        create_component_outer_diagonal_steps(root_comp)
-
-
-        if not component_exist(root_comp, create_component_name('torus')):
-            torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
-           
-            # inner torus
-            iterations = 16
-            radius = random.choice([19.6]) * ScaleConfig.ScaleFactor
-            stroke_weight = random.choice([0.24]) * ScaleConfig.ScaleFactor
-            inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer-" + str(radius) + "-" + str(iterations)))
-            depth_repeat = 2
-            start_layer_offset = AppConfig.LayerDepth * 6
-            extrude_height_per_layer = AppConfig.LayerDepth * 2 / depth_repeat
-            for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight, direction=DepthRepeat.Decrement):
-                # create the torus
-                torus_layer_0_inner_comp = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
-                create_torus(root_component=torus_layer_0_inner_comp, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height_per_layer, layer_offset=layer_offset)
-                
-                # get all bodies
-                invert_bodies = adsk.core.ObjectCollection.create()
-                for body in torus_layer_0_inner_comp.bRepBodies:
-                    invert_bodies.add(body)
-                
-                # invert the joint body; re should always be in first occurance
-                sketch = create_sketch(torus_comp, 'torus-astroid-32-inverse', offset=layer_offset)
-                draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
-                invert_body = extrude_single_profile_by_area(component=torus_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), extrude_height=extrude_height_per_layer, name='astroid-32-inner', fp_tolerance=1e-0)
-                combine_body(torus_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-                
-                # add astroid bracing (stroke)
-                sketch = create_sketch(torus_comp, 'torus-astroid-32-inverse-bracing', offset=layer_offset)
-                draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, strokeWeight=AppConfig.StrokeWeight)
-                extrude_profile_by_area(component=torus_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight) - calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight - AppConfig.StrokeWeight), extrude_height=extrude_height_per_layer, name='torus-astroid-bracing', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation, fp_tolerance=1e-0)
-                
-            # combine all the bodies
-            all_bodies = aggregate_all_bodies(torus_comp)
-            root_body = all_bodies.item(0)
-            all_bodies.removeByIndex(0)
-            combine_body(torus_comp, root_body, all_bodies, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
+        create_torus_astroid(root_comp)
+        
+        # cuts
+        create_middle_cut(root_comp)
             
-        try:
-            middle_circle_comp = create_component(root_component=root_comp, component_name=create_component_name("middle_circle_comp"))
-            
-            # sketch = create_sketch(middle_circle_comp, 'hole-thin-circle', offset=AppConfig.LayerDepth)
-            # draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            # extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 4, strokeWeight=0.64 * ScaleConfig.ScaleFactor, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1)
-            
-            sketch = create_sketch(middle_circle_comp, 'cut-hole', offset=AppConfig.LayerDepth)
-            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            extrude_profile_by_area(component=middle_circle_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), extrude_height=AppConfig.LayerDepth * 9, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-            
-            # sketch = create_sketch(middle_circle_comp, 'inner-circle', offset=AppConfig.LayerDepth)
-            # draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-            # extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=0.64 * ScaleConfig.ScaleFactor, name='inner-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side2)
-            
-            # sketch = create_sketch(middle_circle_comp, 'outer-circle', offset=AppConfig.LayerDepth)
-            # draw_circle(sketch=sketch, radius=AppConfig.HoleRadius * 2)
-            # extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 2, strokeWeight=0.64 * ScaleConfig.ScaleFactor, name='outer-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side1)
-        except:
-            log("cut-hole: none to cut")
-            
-        return
             
         # Structural Component - Kailash Terrain Generation Sketch
         # Note: This is a placeholder for the actual terrain generation code. Requires manual intervention using STL files & Fusion Forms.
         # Guide: https://www.youtube.com/watch?v=Ea_YC4Jh0Sw
         try:
             kailash_comp = create_component(root_component=root_comp, component_name=create_component_name("cut-kailash-intersection"))
-            sketch = create_sketch(kailash_comp, 'cut-kailash-intersection', offset=AppConfig.LayerDepth * 2 + AppConfig.LayerDepth / 2)
-            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight)
+            start_layer_offset = AppConfig.LayerDepth * 3.5
+            extrude_height = AppConfig.LayerDepth * 3
+            sketch = create_sketch(kailash_comp, 'cut-kailash-intersection', offset=start_layer_offset)
+            draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight * 2, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight * 2)
             draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth, height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight)
             draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius)
             draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight, scaleY=AstroidConfig.OuterAstroidRadius - AstroidConfig.OuterAstroidStrokeWeight)
@@ -259,9 +203,17 @@ def run(context):
             draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
             # for profile in sketch.profiles:
             #     log(f"cut-kailash-intersection: profile area: {profile.areaProperties().area}")
-            extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, extrude_height=AppConfig.LayerDepth, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+            extrude_profile_by_area(component=kailash_comp, profiles=sketch.profiles, area=KailashConfig.KailashIntersectExtrudeArea, extrude_height=extrude_height, name='cut-kailash-intersection', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         except:
             log("cut-kailash-intersection: none to cut")
+            
+        return
+        create_component_outer_diagonal_steps(root_comp)
+
+
+            
+            
+        return
                 
         # intersect only in bounds
         try:
@@ -274,6 +226,61 @@ def run(context):
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
+
+def create_middle_cut(root_comp):
+    try:
+        middle_circle_comp = create_component(root_component=root_comp, component_name=create_component_name("middle_circle_comp"))
+            
+        sketch = create_sketch(middle_circle_comp, 'hole-thin-circle', offset=AppConfig.LayerDepth)
+        stroke_weight = AppConfig.LayerDepth * 1.5 * ScaleConfig.ScaleFactor
+        draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+        extrude_thin_one(component=middle_circle_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.LayerDepth * 6, strokeWeight=stroke_weight, name='hole-thin-circle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side2)
+            
+        sketch = create_sketch(middle_circle_comp, 'cut-hole', offset=0.0)
+        draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+        extrude_profile_by_area(component=middle_circle_comp, profiles=sketch.profiles, area=calculate_circle_area(AppConfig.HoleRadius), extrude_height=AppConfig.LayerDepth * 9, name='cut-hole', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+    except:
+        log("cut-hole: none to cut")
+
+def create_torus_astroid(root_comp):
+    if not component_exist(root_comp, create_component_name('torus')):
+        torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
+        
+        # inner torus
+        iterations = 16
+        radius = random.choice([0.48 * 20 * 2]) * ScaleConfig.ScaleFactor
+        stroke_weight = random.choice([0.32]) * ScaleConfig.ScaleFactor
+        inner_torus_component = create_component(root_component=torus_comp, component_name=create_component_name("torus-outer-" + str(radius) + "-" + str(iterations)))
+        depth_repeat = 2
+        start_layer_offset = AppConfig.LayerDepth * 6
+        extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
+        
+        for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight, direction=DepthRepeat.Decrement):
+            # create the torus
+            torus_layer_0_inner_comp = create_component(root_component=inner_torus_component, component_name=create_component_name("torus-inner-" + str(radius) + "-" + str(sw)))
+            create_torus(root_component=torus_layer_0_inner_comp, center_x=0, center_y=0, radius=radius, iterations=iterations, stroke_weight=sw, extrude_height=extrude_height_per_layer, layer_offset=layer_offset)
+                
+                # get all bodies
+            invert_bodies = adsk.core.ObjectCollection.create()
+            for body in torus_layer_0_inner_comp.bRepBodies:
+                invert_bodies.add(body)
+                
+            # invert the joint body; re should always be in first occurance
+            sketch = create_sketch(torus_comp, 'torus-astroid-32-inverse', offset=layer_offset)
+            draw_astroid(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight)
+            invert_body = extrude_single_profile_by_area(component=torus_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight), extrude_height=extrude_height_per_layer, name='astroid-32-inner', fp_tolerance=1e-0)
+            combine_body(torus_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+                
+            # add astroid bracing (stroke)
+            sketch = create_sketch(torus_comp, 'torus-astroid-32-inverse-bracing', offset=layer_offset)
+            draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, scaleY=AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight, strokeWeight=AppConfig.StrokeWeight)
+            extrude_profile_by_area(component=torus_comp, profiles=sketch.profiles, area=calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight) - calculate_astroid_area(AstroidConfig.InnerAstroidRadius - AstroidConfig.InnerAstroidStrokeWeight - AppConfig.StrokeWeight), extrude_height=extrude_height_per_layer, name='torus-astroid-bracing', operation=adsk.fusion.FeatureOperations.JoinFeatureOperation, fp_tolerance=1e-0)
+                
+        # combine all the bodies
+        all_bodies = aggregate_all_bodies(torus_comp)
+        root_body = all_bodies.item(0)
+        all_bodies.removeByIndex(0)
+        combine_body(torus_comp, root_body, all_bodies, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
 
 def create_border(root_comp):
     if not component_exist(root_comp, create_component_name('border')):
