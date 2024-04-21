@@ -175,6 +175,7 @@ def run(context):
         # return
         
         create_bg(root_comp)
+        create_border(root_comp)
         create_component_seed_of_life_layer_0(root_comp)
         create_component_seed_of_life_layer_2(root_comp)
         create_component_seed_of_life_layer_1(root_comp)
@@ -182,12 +183,6 @@ def run(context):
         return
         create_component_outer_diagonal_steps(root_comp)
 
-        # Structural Component - Border
-        # if not component_exist(root_comp, create_component_name('border')):
-        #     border_comp = create_component(root_component=root_comp, component_name=create_component_name("border"))
-        #     sketch = create_sketch(border_comp, 'border', offset=0.0)
-        #     draw_rectangle(sketch=sketch, length=AppConfig.MaxLength + AppConfig.BorderWidth * 2, width=AppConfig.MaxWidth + AppConfig.BorderWidth * 2)
-        #     extrude_thin_one(component=border_comp, profile=sketch.profiles[0], extrudeHeight=AppConfig.BorderDepth * 2, strokeWeight=AppConfig.BorderWidth, name='border', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
 
         if not component_exist(root_comp, create_component_name('torus')):
             torus_comp = create_component(root_component=root_comp, component_name=create_component_name("torus"))
@@ -279,6 +274,15 @@ def run(context):
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
+
+def create_border(root_comp):
+    if not component_exist(root_comp, create_component_name('border')):
+        layer_offset = AppConfig.LayerDepth * 2
+        border_comp = create_component(root_component=root_comp, component_name=create_component_name("border"))
+        extrude_height = AppConfig.LayerDepth * 6
+        sketch = create_sketch(border_comp, 'border', offset=layer_offset)
+        draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
+        extrude_thin_one(component=border_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height, strokeWeight=AppConfig.BorderWidth, name='border', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
 
 def create_component_outer_diagonal_steps(root_comp: adsk.fusion.Component):
     if not component_exist(root_comp, create_component_name('interstellar-tesellation')):
