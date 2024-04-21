@@ -176,9 +176,9 @@ def run(context):
         
         create_bg(root_comp)
         create_component_seed_of_life_layer_0(root_comp)
-        # create_component_seed_of_life_layer_1(root_comp)
-        # create_component_seed_of_life_layer_2(root_comp)
-        # create_component_core(root_comp)
+        create_component_seed_of_life_layer_2(root_comp)
+        create_component_seed_of_life_layer_1(root_comp)
+        create_component_core(root_comp)
         return
         create_component_outer_diagonal_steps(root_comp)
 
@@ -284,7 +284,7 @@ def create_component_outer_diagonal_steps(root_comp: adsk.fusion.Component):
     if not component_exist(root_comp, create_component_name('interstellar-tesellation')):
         interstellar_tesellation_comp = create_component(root_component=root_comp, component_name=create_component_name("interstellar-tesellation"))
             
-            # draw from middle
+        # draw from middle
         center_x = 0
         center_y = 0
         depth_repeat = 4
@@ -389,9 +389,6 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
         # top level comp
         seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("layer-0-seed-of-life-x-1"))
             
-        # depth repeat
-        depth_repeat = 4
-            
         # start layer offset
         start_layer_offset = AppConfig.LayerDepth * 4
             
@@ -410,10 +407,9 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
         # 20 56
         # 20 64 v nice. BIG potenially.
         # 24 56
-        # for (_, values) in enumerate([[20 * ScaleConfig.ScaleFactor, 0.96 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 4, AppConfig.LayerDepth * 2], [64 * ScaleConfig.ScaleFactor, 2.88 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 2]]):
-        for (_, values) in enumerate([[20 * ScaleConfig.ScaleFactor, 0.96 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 2], [64 * ScaleConfig.ScaleFactor, 2.88 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth]]):
+        for (_, values) in enumerate([[20 * ScaleConfig.ScaleFactor, 0.96 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 2, 4], [64 * ScaleConfig.ScaleFactor, 2.88 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth, 4]]):
             # init
-            radius, stroke_weight, extrude_height = values[0], values[1], values[2]
+            radius, stroke_weight, extrude_height, depth_repeat = values[0], values[1], values[2], values[3]
             
             # comp
             seed_of_life_layer_0_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("seed-of-life-layer-0-" + str(radius)))
@@ -454,29 +450,30 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
                 combine_body(seed_of_life_layer_0_inner_comp, invert_body, invert_bodies, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
     
         # only in bounds
-        sketch = create_sketch(seed_of_life_comp, 'seed-of-life-bound-intersect', offset=start_layer_offset)
-        extrude_height = AppConfig.LayerDepth * 2
-        draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-        extrude_single_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=AppConfig.LayerDepth * 2, name='seed-of-life-bound-intersect', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
+        # sketch = create_sketch(seed_of_life_comp, 'seed-of-life-bound-intersect', offset=start_layer_offset)
+        # extrude_height = AppConfig.LayerDepth * 2
+        # draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
+        # extrude_single_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=AppConfig.LayerDepth * 2, name='seed-of-life-bound-intersect', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
                 
 def create_component_seed_of_life_layer_1(root_comp: adsk.fusion.Component):
     if not component_exist(root_comp, create_component_name('layer-1-seed-of-life-x')):
         # top level comp
         seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("layer-1-seed-of-life-x"))
             
-        # depth repeat
-        depth_repeat = 4
-            
-        # extrude height
-        extrude_height_per_layer = AppConfig.LayerDepth * 2 / depth_repeat
-            
         # start layer offset
         start_layer_offset = AppConfig.LayerDepth * 2
             
         # iterate; the enumerator is an array of multiples of 8; e.g [32, 40, 48, 56, 64, 72, 80]
         # for (_, radius) in enumerate(create_array_random_unique_multiples(size=2, multiple=8 * ScaleConfig.ScaleFactor, min_multiple=4, max_multiple=10)):
-        for (_, (radius, stroke_weight)) in enumerate([(32 * ScaleConfig.ScaleFactor, 1.92 * ScaleConfig.ScaleFactor), (16 * ScaleConfig.ScaleFactor, 0.96 * ScaleConfig.ScaleFactor)]):
+        for (_, values) in enumerate([(28 * ScaleConfig.ScaleFactor, 1.92 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 4, 6), (16 * ScaleConfig.ScaleFactor, 0.96 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 2, 4)]):
+            # init
+            radius, stroke_weight, extrude_height, depth_repeat = values[0], values[1], values[2], values[3]
+            
+            # comp
             seed_of_life_layer_0_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("seed-of-life-layer-0-" + str(radius)))
+            
+            # extrude height
+            extrude_height_per_layer = extrude_height / depth_repeat
                 
             # draw from middle
             center_x = 0
@@ -513,41 +510,36 @@ def create_component_seed_of_life_layer_1(root_comp: adsk.fusion.Component):
 def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
     if not component_exist(root_comp, create_component_name('layer-2-seed-of-life-x')):
         # top level comp
-        seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("layer-1-seed-of-life-x"))
-            
-        # depth repeat
-        depth_repeat = 4
-        
-        # extrude height
-        extrude_height = AppConfig.LayerDepth * 2
-            
-        # extrude height
-        extrude_height_per_layer = extrude_height / depth_repeat
-            
+        seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("layer-2-seed-of-life-x"))
+                
         # start layer offset
         start_layer_offset = AppConfig.LayerDepth * 4
             
         # iterate; the enumerator is an array of multiples of 8; e.g [32, 40, 48, 56, 64, 72, 80]
-        for (_, radius) in enumerate(create_array_random_unique_multiples(size=2, multiple=8 * ScaleConfig.ScaleFactor, min_multiple=4, max_multiple=10)):
+        # for (_, radius) in enumerate(create_array_random_unique_multiples(size=2, multiple=8 * ScaleConfig.ScaleFactor, min_multiple=4, max_multiple=10)):
+        for (_, values) in enumerate([[44 * ScaleConfig.ScaleFactor, 0.96 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 4, 6], [72 * ScaleConfig.ScaleFactor, 0.96 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 2, 4]]):
+            # init
+            radius, stroke_weight, extrude_height, depth_repeat = values[0], values[1], values[2], values[3]
+            
+            # comp
             seed_of_life_layer_0_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("seed-of-life-layer-0-" + str(radius)))
                 
             # draw from middle
             center_x = 0
             center_y = 0
-                
-            # stroke weight
-            stroke_weight = create_array_random_unique_multiples(size=1, multiple=0.48 * ScaleConfig.ScaleFactor, min_multiple=1, max_multiple=6)[0]
             
+            # extrude height
+            extrude_height_per_layer = extrude_height / depth_repeat
+                
             # circle radius
             circle_radius = 36.0 * ScaleConfig.ScaleFactor
-            extra_leway = 4.0 * ScaleConfig.ScaleFactor
+            extra_leway = 16.0 * ScaleConfig.ScaleFactor
                 
             # depth iterator
             for layer_offset, sw in depth_repeat_iterator(depth_repeat=depth_repeat, start_layer_offset=start_layer_offset, extrude_height=extrude_height_per_layer,stroke_weight=stroke_weight, direction=DepthRepeat.Decrement):
                 seed_of_life_layer_0_inner_comp = create_component(root_component=seed_of_life_layer_0_comp, component_name=create_component_name("seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)))
                 log(f"INIT seed-of-life-layer-0: depth-repeat 2, initial-radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {sw}")
                 create_seed_of_life(root_component=seed_of_life_layer_0_inner_comp, center_x=center_x, center_y=center_y, radius=radius, extrude_height=extrude_height_per_layer, stroke_weight=sw, layer_offset=layer_offset, side=DepthEffect.Center)
-                    # all_bodies.add(seed_of_life_inner_layer_comp.bRepBodies.item(0))
                     
                 # intersect with draw rotated rectangle
                 sketch = create_sketch(seed_of_life_layer_0_inner_comp, 'seed-of-life-intersect', offset=layer_offset)
@@ -567,8 +559,10 @@ def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
     
         # only in bounds
         sketch = create_sketch(seed_of_life_comp, 'seed-of-life-bound-intersect', offset=start_layer_offset)
+        extrude_height = AppConfig.LayerDepth * 4
+        draw_rectangle(sketch=sketch, length=AppConfig.MaxLength * 2, width=AppConfig.MaxWidth * 2)
         draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-        extrude_single_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height, name='seed-of-life-bound-intersect', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
+        extrude_single_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength * 2, AppConfig.MaxWidth * 2) - calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height, name='seed-of-life-bound-intersect', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
 @timer      
 def slicer(root_component: adsk.fusion.Component,design: adsk.core.Product, sliced_layer_depth: float, sliced_layer_count: float):
     # Ensure design is set to parametric
