@@ -45,7 +45,7 @@ def calculate_astroid_area(scaleX):
     """
     return (3 / 8) * math.pi * scaleX ** 2
 
-def calculate_rectangle_area(width, height):
+def calculate_rectangle_area(width, length):
     """
     Calculate the area of a rectangle.
 
@@ -56,7 +56,7 @@ def calculate_rectangle_area(width, height):
     Returns:
         float: The area of the rectangle.
     """
-    return width * height
+    return width * length
 
 
 def calculate_circle_area(radius):
