@@ -176,9 +176,9 @@ def run(context):
         
         create_bg(root_comp)
         create_component_seed_of_life_layer_0(root_comp)
-        create_component_seed_of_life_layer_1(root_comp)
-        create_component_seed_of_life_layer_2(root_comp)
-        create_component_core(root_comp)
+        # create_component_seed_of_life_layer_1(root_comp)
+        # create_component_seed_of_life_layer_2(root_comp)
+        # create_component_core(root_comp)
         return
         create_component_outer_diagonal_steps(root_comp)
 
@@ -385,18 +385,12 @@ def create_bg(root_comp: adsk.fusion.Component):
         extrude_profile_by_area(component=core_structural_comp, profiles=sketch.profiles, area=calculate_rectangle_area(BackgroundConfig.MaxLength, BackgroundConfig.MaxWidth), extrude_height=BackgroundConfig.ExtrudeHeight, name='bg-rect')
 
 def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
-    if not component_exist(root_comp, create_component_name('layer-0-seed-of-life-x')):
+    if not component_exist(root_comp, create_component_name('layer-0-seed-of-life-x-1')):
         # top level comp
-        seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("layer-0-seed-of-life-x"))
+        seed_of_life_comp = create_component(root_component=root_comp, component_name=create_component_name("layer-0-seed-of-life-x-1"))
             
         # depth repeat
         depth_repeat = 4
-        
-        # extrude height
-        extrude_height = AppConfig.LayerDepth * 2
-            
-        # extrude height
-        extrude_height_per_layer = extrude_height / depth_repeat
             
         # start layer offset
         start_layer_offset = AppConfig.LayerDepth * 4
@@ -416,8 +410,16 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
         # 20 56
         # 20 64 v nice. BIG potenially.
         # 24 56
-        for (_, (radius, stroke_weight)) in enumerate([(20 * ScaleConfig.ScaleFactor, 0.96 * ScaleConfig.ScaleFactor), (64 * ScaleConfig.ScaleFactor, 2.88 * ScaleConfig.ScaleFactor)]):
+        # for (_, values) in enumerate([[20 * ScaleConfig.ScaleFactor, 0.96 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 4, AppConfig.LayerDepth * 2], [64 * ScaleConfig.ScaleFactor, 2.88 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 2]]):
+        for (_, values) in enumerate([[20 * ScaleConfig.ScaleFactor, 0.96 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth * 2], [64 * ScaleConfig.ScaleFactor, 2.88 * ScaleConfig.ScaleFactor, AppConfig.LayerDepth]]):
+            # init
+            radius, stroke_weight, extrude_height = values[0], values[1], values[2]
+            
+            # comp
             seed_of_life_layer_0_comp = create_component(root_component=seed_of_life_comp, component_name=create_component_name("seed-of-life-layer-0-" + str(radius)))
+            
+            # extrude height
+            extrude_height_per_layer = extrude_height / depth_repeat
                 
             # draw from middle
             center_x = 0
@@ -453,8 +455,9 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
     
         # only in bounds
         sketch = create_sketch(seed_of_life_comp, 'seed-of-life-bound-intersect', offset=start_layer_offset)
+        extrude_height = AppConfig.LayerDepth * 2
         draw_rectangle(sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth)
-        extrude_single_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=extrude_height, name='seed-of-life-bound-intersect', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
+        extrude_single_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=AppConfig.LayerDepth * 2, name='seed-of-life-bound-intersect', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
                 
 def create_component_seed_of_life_layer_1(root_comp: adsk.fusion.Component):
     if not component_exist(root_comp, create_component_name('layer-1-seed-of-life-x')):
