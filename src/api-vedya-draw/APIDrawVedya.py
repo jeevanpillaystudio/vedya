@@ -118,7 +118,6 @@ class KailashConfig():
     KailashIntersectExtrudeArea = 401.66169829603086
     AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea = 1.2765358608164958
     OuterDiagonalCutWithAstroidExtrudeArea = 12.375340707128288
-
 class SeedOfLifeConfig():
     def __init__(self):
         pass
