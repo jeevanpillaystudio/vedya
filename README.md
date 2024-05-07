@@ -1,4 +1,4 @@
-## Project Overview
+## Overview
 
 ### Project Name
 Mandala Sculpture for Australia Bush Festival
