@@ -25,3 +25,7 @@ Full Installation 2m x 2m; Prototypes vary in size
 1. Open Fusion 360
 2. Open the script in the Script Editor
 3. Run the script
+
+## Python with Poetry for Scripting
+1. Run `poetry shell` & `poetry install`
+
