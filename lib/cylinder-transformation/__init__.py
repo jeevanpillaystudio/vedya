@@ -1,3 +1,4 @@
-from .spherical_transform import plot_cylinder_with_filled_circle
+from .cylinder_transform import plot_cylinder_with_filled_circle
+from .spherical_transform import plot_sphere_with_filled_circle
 
 __all__ = ["plot_cylinder_with_filled_circle"]
