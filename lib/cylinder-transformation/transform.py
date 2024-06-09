@@ -1,6 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import plotly.graph_objects as go
 
 # References:
 # 1. Cylindrical Coordinates: https://mathinsight.org/cylindrical_coordinates
@@ -60,7 +59,7 @@ def transform_circle_to_cylinder(L, R, circle_radius, circle_height, resolution)
             x_prime, y_prime, z_prime = transform_to_cylinder(x, y, L, R)
             points.append((x_prime, y_prime, z_prime))
 
-    return points
+    return np.array(points)
 
 def transform_rectangle_to_cylinder(L, H, R, resolution):
     """Transforms points of a pixelated rectangle into cylindrical coordinates.
@@ -89,7 +88,7 @@ def transform_rectangle_to_cylinder(L, H, R, resolution):
             x_prime, y_prime, z_prime = transform_to_cylinder(x, y, L, R)
             points.append((x_prime, y_prime, z_prime))
 
-    return points
+    return np.array(points)
 
 def plot_points(points, color, ax):
     """Plots a list of points in 3D space.
@@ -117,20 +116,45 @@ def plot_cylinder_with_filled_circle(L, H, R, cylinder_resolution, circle_resolu
         circle_radius (float): The radius of the circle.
         circle_height (float): The height position of the circle on the cylinder.
     """
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
     cylinder_points = transform_rectangle_to_cylinder(L, H, R, cylinder_resolution)
     circle_points = transform_circle_to_cylinder(L, R, circle_radius, circle_height, circle_resolution)
 
-    plot_points(cylinder_points, 'r', ax)
-    plot_points(circle_points, 'b', ax)
+    # Create Plotly scatter plot
+    fig = go.Figure()
 
-    ax.set_xlim([-R - 1, R + 1])
-    ax.set_ylim([-R - 1, R + 1])
-    ax.set_zlim([0, H])
-    ax.set_title('Cylinder with Filled Circle')
-    plt.show()
+    # Add rectangle points
+    fig.add_trace(go.Scatter3d(
+        x=cylinder_points[:, 0],
+        y=cylinder_points[:, 1],
+        z=cylinder_points[:, 2],
+        mode='markers',
+        marker=dict(size=3, color='red'),
+        name='Rectangle'
+    ))
+
+    # Add circle points
+    fig.add_trace(go.Scatter3d(
+        x=circle_points[:, 0],
+        y=circle_points[:, 1],
+        z=circle_points[:, 2],
+        mode='markers',
+        marker=dict(size=3, color='blue'),
+        name='Circle'
+    ))
+    
+    fig.update_layout(
+        scene=dict(
+            xaxis=dict(range=[-R-1, R+1]),
+            yaxis=dict(range=[-R-1, R+1]),
+            zaxis=dict(range=[0, H]),
+            aspectmode='manual',
+            aspectratio=dict(x=1, y=1, z=1)
+        ),
+        title='Cylinder with Filled Circle'
+    )
+    
+    fig.show()
+
 
 
 __all__ = ["plot_cylinder_with_filled_circle"]
