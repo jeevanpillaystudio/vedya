@@ -9,7 +9,7 @@ license = "unlicense"
 description = "a snippet of code to run python for fast scripting in vedya" 
 authors = ["jeevanpillay <jp@jeevanpillay.com>"]
 packages = [ 
-  { include = "cylinder-transformation", from = "lib" }
+  { include = "coord-transform-for-circle", from = "lib" }
 ]
 
 [tool.poetry.dependencies]
@@ -28,13 +28,13 @@ pydoctor = "^24.3.3"
 ruff = "^0.4.4"
 
 [tool.poetry.scripts]
-cylinder-transformation = "cylinder-transformation.__main__:main"
+coord-transform-for-circle = "coord-transform-for-circle.__main__:main"
 
 [tool.poe.tasks]
-docs = "pydoctor --make-html lib/cylinder-transformation"
+docs = "pydoctor --make-html lib/coord-transform-for-circle"
 format = "ruff format lib tests"
 lint = "ruff check lib tests"
-test = "pytest -v --cov=cylinder-transformation"
+test = "pytest -v --cov=coord-transform-for-circle"
 
 [tool.coverage.report]
 fail_under = 100

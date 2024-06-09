@@ -77,3 +77,4 @@ def plot_sphere_with_filled_circle(L, H, R, sphere_resolution, circle_resolution
 
     fig.show()
 
+__all__ = ["plot_sphere_with_filled_circle"]
