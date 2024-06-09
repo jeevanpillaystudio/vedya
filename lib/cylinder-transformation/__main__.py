@@ -1,9 +1,4 @@
-"""An example main Python module."""
-
-import sys
-
 from . import plot_cylinder_with_filled_circle 
-
 
 def main() -> None:
     # Parameters for the transformation
