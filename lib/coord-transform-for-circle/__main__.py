@@ -14,10 +14,10 @@ def main() -> None:
     # plot_cylinder_with_filled_circle(L, H, R, cylinder_resolution, circle_resolution, circle_radius, circle_height)
 
     # Plot the sphere with a filled circle
-    # plot_sphere_with_filled_circle(L, H, R, cylinder_resolution, circle_resolution, circle_radius, circle_height)
+    plot_sphere_with_filled_circle(L, H, R, cylinder_resolution, circle_resolution, circle_radius, circle_height)
 
     # OpenSCAD model generation
-    create_cylinder_scad_model(L, H, R, cylinder_resolution)
+    # create_cylinder_scad_model(L, H, R, cylinder_resolution)
 
 if __name__ == "__main__":
     main()

@@ -23,4 +23,3 @@ def create_cylinder_scad_model(L, H, R, resolution):
     scad_render_to_file(cylinder_model, 'cylindrical_model.scad')
 
 __all__ = ["create_cylinder_scad_model"]
-    

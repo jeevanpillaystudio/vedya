@@ -3,8 +3,6 @@ import plotly.graph_objects as go
 
 # References:
 # 1. Cylindrical Coordinates: https://mathinsight.org/cylindrical_coordinates
-# 2. Transformations between coordinate systems: https://en.wikipedia.org/wiki/Coordinate_system#Transformations_between_coordinate_systems
-# 3. Plotting with Matplotlib: https://matplotlib.org/stable/gallery/mplot3d/index.html
 
 def transform_to_cylinder(x, y, L, R):
     """Transforms a single point (x, y) on the rectangle into cylindrical coordinates.
