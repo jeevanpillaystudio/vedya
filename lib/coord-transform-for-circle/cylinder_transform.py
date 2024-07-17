@@ -3,8 +3,6 @@ import plotly.graph_objects as go
 
 # References:
 # 1. Cylindrical Coordinates: https://mathinsight.org/cylindrical_coordinates
-# 2. Transformations between coordinate systems: https://en.wikipedia.org/wiki/Coordinate_system#Transformations_between_coordinate_systems
-# 3. Plotting with Matplotlib: https://matplotlib.org/stable/gallery/mplot3d/index.html
 
 def transform_to_cylinder(x, y, L, R):
     theta = 2 * np.pi * x / L
@@ -12,6 +10,20 @@ def transform_to_cylinder(x, y, L, R):
     y_prime = R * np.sin(theta)
     z_prime = y
     return x_prime, y_prime, z_prime
+
+def transform_rectangle_to_cylinder(L, H, R, resolution):
+    x_steps = int(L / resolution)
+    y_steps = int(H / resolution)
+
+    points = []
+    for i in range(x_steps):
+        for j in range(y_steps):
+            x = i * resolution + resolution / 2
+            y = j * resolution + resolution / 2
+            x_prime, y_prime, z_prime = transform_to_cylinder(x, y, L, R)
+            points.append((x_prime, y_prime, z_prime))
+
+    return np.array(points)
 
 def transform_circle_to_cylinder(L, R, circle_radius, circle_height, resolution):
     num_r_steps = int(2 * circle_radius / resolution)
@@ -25,20 +37,6 @@ def transform_circle_to_cylinder(L, R, circle_radius, circle_height, resolution)
             x = r * np.cos(theta)
             y = circle_height + r * np.sin(theta)
             z = circle_height + r * np.cos(theta)
-            x_prime, y_prime, z_prime = transform_to_cylinder(x, y, L, R)
-            points.append((x_prime, y_prime, z_prime))
-
-    return np.array(points)
-
-def transform_rectangle_to_cylinder(L, H, R, resolution):
-    x_steps = int(L / resolution)
-    y_steps = int(H / resolution)
-
-    points = []
-    for i in range(x_steps):
-        for j in range(y_steps):
-            x = i * resolution + resolution / 2
-            y = j * resolution + resolution / 2
             x_prime, y_prime, z_prime = transform_to_cylinder(x, y, L, R)
             points.append((x_prime, y_prime, z_prime))
 
