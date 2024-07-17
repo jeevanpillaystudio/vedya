@@ -5,23 +5,6 @@ import plotly.graph_objects as go
 # 1. Spherical Coordinates: https://mathinsight.org/spherical_coordinates
 
 def transform_to_spherical(x, y, L, H, R):
-    """
-    Transforms Cartesian coordinates (x, y) to spherical coordinates (x_prime, y_prime, z_prime).
-
-    Parameters:
-    x (float): The x-coordinate in the Cartesian system.
-    y (float): The y-coordinate in the Cartesian system.
-    L (float): The length of the Cartesian system.
-    H (float): The height of the Cartesian system.
-    R (float): The radius of the sphere.
-
-    Returns:
-    tuple: A tuple containing the transformed spherical coordinates (x_prime, y_prime, z_prime).
-    
-    Reference:
-    This transformation maps a rectangular coordinate (x, y) to spherical coordinates (x_prime, y_prime, z_prime).
-    For more details, see: https://mathinsight.org/spherical_coordinates
-    """
     theta = 2 * np.pi * x / L  # Map x to theta (0 to 2pi)
     phi = np.pi * y / H        # Map y to phi (0 to pi)
     x_prime = R * np.sin(phi) * np.cos(theta)

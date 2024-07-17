@@ -3,6 +3,8 @@ import plotly.graph_objects as go
 
 # References:
 # 1. Cylindrical Coordinates: https://mathinsight.org/cylindrical_coordinates
+# 2. Transformations between coordinate systems: https://en.wikipedia.org/wiki/Coordinate_system#Transformations_between_coordinate_systems
+# 3. Plotting with Matplotlib: https://matplotlib.org/stable/gallery/mplot3d/index.html
 
 def transform_to_cylinder(x, y, L, R):
     theta = 2 * np.pi * x / L
@@ -88,4 +90,4 @@ def plot_cylinder_with_filled_circle(L, H, R, cylinder_resolution, circle_resolu
 
 
 
-__all__ = ["plot_cylinder_with_filled_circle, transform_rectangle_to_cylinder"]
+__all__ = ["plot_cylinder_with_filled_circle"]
