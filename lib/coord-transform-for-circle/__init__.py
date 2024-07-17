@@ -1,6 +1,6 @@
-from .cylinder_transform import plot_cylinder_with_filled_circle
+from .cylinder_transform import plot_cylinder_with_filled_circle, transform_rectangle_to_cylinder
 from .spherical_transform import plot_sphere_with_filled_circle
 
 from .cylinder_openscad import create_cylinder_scad_model
 
-__all__ = ["plot_cylinder_with_filled_circle, plot_sphere_with_filled_circle, create_cylinder_scad_model"]
+__all__ = ["plot_cylinder_with_filled_circle, plot_sphere_with_filled_circle, create_cylinder_scad_model, transform_rectangle_to_cylinder"]

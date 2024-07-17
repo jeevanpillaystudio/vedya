@@ -5,7 +5,7 @@ def main() -> None:
     L = 10  # Length of the rectangle
     H = 4  # Height of the rectangle
     R = 1  # Radius of the cylinder
-    cylinder_resolution = 0.1  # Size of each square in the rectangle
+    cylinder_resolution = 10  # Size of each square in the rectangle
     circle_resolution = 0.1  # Size of each square in the circle
     circle_radius = 1.2  # Radius of the circle
     circle_height = 2.5  # Height position of the circle on the cylinder

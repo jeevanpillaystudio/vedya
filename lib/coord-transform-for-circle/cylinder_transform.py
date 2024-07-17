@@ -157,4 +157,4 @@ def plot_cylinder_with_filled_circle(L, H, R, cylinder_resolution, circle_resolu
 
 
 
-__all__ = ["plot_cylinder_with_filled_circle"]
+__all__ = ["plot_cylinder_with_filled_circle, transform_rectangle_to_cylinder"]
