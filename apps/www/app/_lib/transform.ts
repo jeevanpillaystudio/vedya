@@ -1,32 +1,114 @@
-export function transformToCylinder(x: number, y: number, L: number, R: number): [number, number, number] {
-    const theta = (2 * Math.PI * x) / L;
-    const xPrime = R * Math.cos(theta);
-    const yPrime = R * Math.sin(theta);
-    const zPrime = y;
-    return [xPrime, yPrime, zPrime];
-  }
-  
-  export function transformRectangleToCylinder(L: number, H: number, R: number, resolution: number): Float32Array {
-    const xSteps = Math.floor(L / resolution);
-    const ySteps = Math.floor(H / resolution);
-  
-    const points = new Float32Array(xSteps * ySteps * 3); // Use Float32Array directly
-    let idx = 0;
-    for (let i = 0; i < xSteps; i++) {
-      const x = i * resolution;
-      const theta = (2 * Math.PI * x) / L; // Pre-compute theta for all y-values at this x
-      const cosTheta = Math.cos(theta);
-      const sinTheta = Math.sin(theta);
-  
-      for (let j = 0; j < ySteps; j++) {
-        const y = j * resolution;
-        points[idx++] = R * cosTheta;
-        points[idx++] = y;
-        points[idx++] = R * sinTheta;
-      }
+export function transformToRectangle(
+  x: number,
+  y: number,
+): [number, number, number] {
+  return [x, y, 0];
+}
+
+export function transformToCylinder(
+  x: number,
+  y: number,
+  L: number,
+  R: number,
+): [number, number, number] {
+  const theta = (2 * Math.PI * x) / L;
+  const xPrime = R * Math.cos(theta);
+  const yPrime = R * Math.sin(theta);
+  const zPrime = y;
+  return [xPrime, yPrime, zPrime];
+}
+
+export function transformToSphere(
+  x: number,
+  y: number,
+  L: number,
+  H: number,
+  R: number,
+): [number, number, number] {
+  const theta = (2 * Math.PI * x) / L;
+  const phi = (Math.PI * y) / H;
+  const xPrime = R * Math.sin(phi) * Math.cos(theta);
+  const yPrime = R * Math.sin(phi) * Math.sin(theta);
+  const zPrime = R * Math.cos(phi);
+  return [xPrime, yPrime, zPrime];
+}
+
+export function generateRectanglePoints(
+  L: number,
+  H: number,
+  resolution: number,
+): Float32Array {
+  const xSteps = Math.floor(L / resolution);
+  const ySteps = Math.floor(H / resolution);
+
+  const points = new Float32Array(xSteps * ySteps * 3);
+  let idx = 0;
+
+  for (let i = 0; i < xSteps; i++) {
+    const x = i * resolution;
+
+    for (let j = 0; j < ySteps; j++) {
+      const y = j * resolution;
+      const [xPrime, yPrime, zPrime] = transformToRectangle(x, y);
+      points[idx++] = xPrime;
+      points[idx++] = yPrime;
+      points[idx++] = zPrime;
     }
-  
-    return points;
   }
-  
-  
+
+  return points;
+}
+
+export function generateCylinderPoints(
+  L: number,
+  H: number,
+  R: number,
+  resolution: number,
+): Float32Array {
+  const xSteps = Math.floor(L / resolution);
+  const ySteps = Math.floor(H / resolution);
+
+  const points = new Float32Array(xSteps * ySteps * 3);
+  let idx = 0;
+
+  for (let i = 0; i < xSteps; i++) {
+    const x = i * resolution;
+
+    for (let j = 0; j < ySteps; j++) {
+      const y = j * resolution;
+      const [xPrime, yPrime, zPrime] = transformToCylinder(x, y, L, R);
+      points[idx++] = xPrime;
+      points[idx++] = yPrime;
+      points[idx++] = zPrime;
+    }
+  }
+
+  return points;
+}
+
+export function generateSpherePoints(
+  L: number,
+  H: number,
+  R: number,
+  resolution: number,
+): Float32Array {
+  const xSteps = Math.floor(L / resolution);
+  const ySteps = Math.floor(H / resolution);
+
+  const points = new Float32Array(xSteps * ySteps * 3);
+  let idx = 0;
+
+  for (let i = 0; i < xSteps; i++) {
+    const x = i * resolution;
+
+    for (let j = 0; j < ySteps; j++) {
+      const y = j * resolution;
+      const [xPrime, yPrime, zPrime] = transformToSphere(x, y, L, H, R);
+      points[idx++] = xPrime;
+      points[idx++] = yPrime;
+      points[idx++] = zPrime;
+    }
+  }
+
+  return points;
+}
