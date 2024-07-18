@@ -5,9 +5,11 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import CylinderWireframe from "./cylinder-wireframe";
 import RectangleWireframe from "./rectangle-wireframe";
+import CuboidWireframe from "./cuboid-wireframe";
 
 const ThreeScene: React.FC = () => {
   const L = 10;
+  const W = 4;
   const H = 4;
   const R = 1;
   const cylinderResolution = 0.1;
@@ -23,8 +25,15 @@ const ThreeScene: React.FC = () => {
         resolution={cylinderResolution}
         position={[0, H / 2, 0]}
       />
-      <RectangleWireframe
+      {/* <RectangleWireframe
         L={L}
+        H={H}
+        resolution={cylinderResolution}
+        position={[0, 0, 0]}
+      /> */}
+      <CuboidWireframe
+        L={L}
+        W={W}
         H={H}
         resolution={cylinderResolution}
         position={[0, 0, 0]}
