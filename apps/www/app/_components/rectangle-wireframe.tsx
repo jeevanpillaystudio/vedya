@@ -1,5 +1,5 @@
 import { type PointsProps } from "@react-three/fiber";
-import { generateRectanglePoints } from "../_lib/transform";
+import { generateRectanglePoints } from "../_lib/transform-future-change";
 import { DEFAULT_POINT_SIZE, DEFAULT_RESOLUTION } from "./_defaults";
 
 interface RectangleWireframeProps extends PointsProps {
@@ -20,12 +20,7 @@ export const RectangleWireframe: React.FC<RectangleWireframeProps> = ({
   return (
     <points {...props}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={rectangularPoints.length / 3}
-          array={rectangularPoints}
-          itemSize={3}
-        />
+        <bufferAttribute attach="attributes-position" count={rectangularPoints.length / 3} array={rectangularPoints} itemSize={3} />
       </bufferGeometry>
       <pointsMaterial size={DEFAULT_POINT_SIZE} color={color} />
     </points>
