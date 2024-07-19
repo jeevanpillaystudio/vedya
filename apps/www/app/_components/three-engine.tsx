@@ -2,13 +2,11 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { EngineProvider } from "./three-engine-provider";
+import { type EngineCoreSettings, EngineProvider } from "./three-engine-provider";
 import { ThreeScene } from "./three-scene";
-import { type ConstructionPlane } from "../_lib/_enums";
 
-interface ThreeEngineProps {
-  resolution: number;
-  constructionPlane: ConstructionPlane;
+interface ThreeEngineProps extends EngineCoreSettings {
+  name: string;
 }
 
 const ThreeEngine: React.FC<ThreeEngineProps> = ({ resolution, constructionPlane }) => {

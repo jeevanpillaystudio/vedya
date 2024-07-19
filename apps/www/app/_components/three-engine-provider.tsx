@@ -1,12 +1,14 @@
 "use client";
 
 import { createContext, type ReactNode, useContext, useState } from "react";
-import { DEFAULT_CONSTRUCTION_PLANE, DEFAULT_RESOLUTION } from "./_defaults";
 import { type ConstructionPlane } from "../_lib/_enums";
 
-export interface EngineSettings {
+export interface EngineCoreSettings {
   resolution: number;
   constructionPlane: ConstructionPlane;
+}
+
+export interface EngineSettings extends EngineCoreSettings {
   setResolution: (resolution: number) => void;
   setConstructionPlane: (plane: ConstructionPlane) => void;
 }
@@ -23,15 +25,9 @@ export const useEngine = (): EngineSettings => {
 
 export type EngineProviderProps = {
   children: ReactNode;
-  resolution?: number;
-  constructionPlane?: ConstructionPlane;
-};
+} & EngineCoreSettings;
 
-export const EngineProvider = ({
-  resolution: r = DEFAULT_RESOLUTION,
-  constructionPlane: cp = DEFAULT_CONSTRUCTION_PLANE,
-  children,
-}: EngineProviderProps) => {
+export const EngineProvider = ({ resolution: r, constructionPlane: cp, children }: EngineProviderProps) => {
   const [resolution, setResolution] = useState<number>(r);
   const [constructionPlane, setConstructionPlane] = useState<ConstructionPlane>(cp);
 
