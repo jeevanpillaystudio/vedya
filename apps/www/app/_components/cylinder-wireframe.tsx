@@ -10,9 +10,9 @@ interface CylinderWireframeProps extends PointsProps {
   L: number;
   H: number;
   R: number;
+  resolution: number;
+  plane: ConstructionPlane;
   color?: Color;
-  resolution?: number;
-  plane?: ConstructionPlane;
 }
 
 const CylinderWireframe: React.FC<CylinderWireframeProps> = ({

@@ -1,30 +1,18 @@
 "use client";
 
-import React from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
 import CylinderWireframe from "./cylinder-wireframe";
-import { DEFAULT_CONSTRUCTION_PLANE, DEFAULT_RESOLUTION } from "./_defaults";
+import { useEngine } from "./three-engine-provider";
 
 const ThreeScene: React.FC = () => {
   const L = 10;
   const H = 4;
   const R = 1;
-  const resolution = DEFAULT_RESOLUTION;
-  const constructionPlane = DEFAULT_CONSTRUCTION_PLANE;
-
+  const { resolution, constructionPlane } = useEngine();
   return (
-    <Canvas camera={{ position: [5, 5, 5], fov: 75 }}>
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} />
-      <CylinderWireframe L={L} H={H} R={R} resolution={resolution} position={[0, H / 2, 0]} plane={constructionPlane} />
-      <mesh position={[0, H / 2, 0]}>
-        <cylinderGeometry args={[R, R, H, 32]} />
-        <meshStandardMaterial wireframe color="blue" opacity={0.3} transparent />
-      </mesh>
-      <OrbitControls enableDamping dampingFactor={0.25} rotateSpeed={0.5} maxPolarAngle={Math.PI / 2} minPolarAngle={0} />
-    </Canvas>
+    <>
+      <CylinderWireframe L={L} H={H} R={R} resolution={resolution} position={[0, H / 2, 0]} plane={constructionPlane} />;
+    </>
   );
 };
 
-export default ThreeScene;
+export { ThreeScene };
