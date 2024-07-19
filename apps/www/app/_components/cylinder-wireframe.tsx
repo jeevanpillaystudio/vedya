@@ -1,8 +1,10 @@
+"use client";
+
 import React from "react";
-import { generateCylinderPoints } from "../_lib/transform";
-import { type PointsProps } from "@react-three/fiber";
-import { DEFAULT_POINT_SIZE, DEFAULT_RESOLUTION } from "./_defaults";
-import { type Color } from "@react-three/fiber";
+import type { Color, PointsProps } from "@react-three/fiber";
+import { DEFAULT_CONSTRUCTION_PLANE, DEFAULT_POINT_SIZE, DEFAULT_RESOLUTION, DEFAULT_WIREFRAME_COLOR } from "./_defaults";
+import { type ConstructionPlane } from "../_lib/_enums";
+import { createCylinderPoints } from "../_lib/transform";
 
 interface CylinderWireframeProps extends PointsProps {
   L: number;
@@ -10,6 +12,7 @@ interface CylinderWireframeProps extends PointsProps {
   R: number;
   color?: Color;
   resolution?: number;
+  plane?: ConstructionPlane;
 }
 
 const CylinderWireframe: React.FC<CylinderWireframeProps> = ({
@@ -17,19 +20,15 @@ const CylinderWireframe: React.FC<CylinderWireframeProps> = ({
   H,
   R,
   resolution = DEFAULT_RESOLUTION,
-  color = "red",
+  color = DEFAULT_WIREFRAME_COLOR,
+  plane = DEFAULT_CONSTRUCTION_PLANE,
   ...props
 }) => {
-  const cylinderPoints = generateCylinderPoints(L, H, R, resolution);
+  const cylinderPoints = createCylinderPoints(L, H, R, resolution, plane);
   return (
     <points {...props}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={cylinderPoints.length / 3}
-          array={cylinderPoints}
-          itemSize={3}
-        />
+        <bufferAttribute attach="attributes-position" count={cylinderPoints.length / 3} array={cylinderPoints} itemSize={3} />
       </bufferGeometry>
       <pointsMaterial size={DEFAULT_POINT_SIZE} color={color} />
     </points>
