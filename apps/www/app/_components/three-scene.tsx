@@ -4,7 +4,6 @@ import React from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import CylinderWireframe from "./cylinder-wireframe";
-import RectangleWireframe from "./rectangle-wireframe";
 import CuboidWireframe from "./cuboid-wireframe";
 
 const ThreeScene: React.FC = () => {
