@@ -1,8 +1,8 @@
 "use client";
 
+import CylinderWireframe from "./obj/cylinder-wireframe";
 import { useEngine } from "./three-engine-provider";
 import type ViewCubeController from "./viewcube/three-viewcube";
-import CylinderWireframe from "./cylinder-wireframe";
 import { useViewcubeSyncMovement } from "./viewcube/use-viewcube-sync-movement";
 
 interface SceneProps {

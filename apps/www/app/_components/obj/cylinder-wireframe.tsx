@@ -2,9 +2,9 @@
 
 import React from "react";
 import type { Color, PointsProps } from "@react-three/fiber";
-import { DEFAULT_CONSTRUCTION_PLANE, DEFAULT_POINT_SIZE, DEFAULT_RESOLUTION, DEFAULT_WIREFRAME_COLOR } from "./_defaults";
-import { type ConstructionPlane } from "../_lib/_enums";
-import { createCylinderPoints } from "../_lib/transform";
+import { DEFAULT_CONSTRUCTION_PLANE, DEFAULT_POINT_SIZE, DEFAULT_RESOLUTION, DEFAULT_WIREFRAME_COLOR } from "../_defaults";
+import { type ConstructionPlane } from "../../_lib/_enums";
+import { createCylinderPoints } from "../../_lib/transform";
 
 interface CylinderWireframeProps extends PointsProps {
   L: number;

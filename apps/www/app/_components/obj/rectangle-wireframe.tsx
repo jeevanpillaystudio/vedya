@@ -1,6 +1,7 @@
+import React from "react";
 import { type PointsProps } from "@react-three/fiber";
-import { generateRectanglePoints } from "../_lib/transform-future-change";
-import { DEFAULT_POINT_SIZE, DEFAULT_RESOLUTION } from "./_defaults";
+import { generateRectanglePoints } from "../../_lib/transform-future-change";
+import { DEFAULT_POINT_SIZE, DEFAULT_RESOLUTION } from "../_defaults";
 
 interface RectangleWireframeProps extends PointsProps {
   L: number;
