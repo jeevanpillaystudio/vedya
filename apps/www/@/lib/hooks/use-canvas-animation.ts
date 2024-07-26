@@ -56,10 +56,26 @@ export const useCanvasAnimation = (
       frameCount: prev.frameCount + 1 
     }));
 
-    if (progress < 1 && isPlaying && !debug) {
+    if (progress < 1) {
       animationRef.current = requestAnimationFrame(updateCanvas);
     }
-  }, [duration, isPlaying, debug, drawFn]);
+  }, [duration, drawFn]);
+
+  const startAnimation = useCallback(() => {
+    startTimeRef.current = Date.now();
+    lastFrameTimeRef.current = Date.now();
+    setDebugInfo((prev) => ({ ...prev, frameCount: 0 }));
+    if (animationRef.current === null) {
+      animationRef.current = requestAnimationFrame(updateCanvas);
+    }
+  }, [updateCanvas]);
+
+  const stopAnimation = useCallback(() => {
+    if (animationRef.current !== null) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -75,29 +91,14 @@ export const useCanvasAnimation = (
 
       return () => {
         window.removeEventListener("resize", resizeCanvas);
+        stopAnimation();
       };
     }
-  }, [updateCanvas]);
-
-  useEffect(() => {
-    startTimeRef.current = Date.now();
-    lastFrameTimeRef.current = Date.now();
-    setDebugInfo((prev) => ({ ...prev, frameCount: 0 }));
-
-    if (isPlaying && !debug) {
-      animationRef.current = requestAnimationFrame(updateCanvas);
-    }
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isPlaying, debug, duration, updateCanvas]);
+  }, [updateCanvas, stopAnimation]);
 
   const handleNextFrame = () => {
     updateCanvas();
   };
 
-  return { canvasRef, debugInfo, handleNextFrame, setDebugInfo };
+  return { canvasRef, debugInfo, handleNextFrame, setDebugInfo, startAnimation, stopAnimation };
 };

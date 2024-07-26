@@ -14,7 +14,7 @@ export const drawBinaryGrid = (
   const cellSize = Math.min(size.width / currentSize, size.height / currentSize);
   const noiseScale = 0.2;
   const opacityNoiseScale = 0.1;
-  const opacitySpeed = 2;
+  const opacitySpeed = 0.001; // Reduced speed to make use of deltaTime
 
   ctx.clearRect(0, 0, size.width, size.height);
   ctx.font = `${cellSize}px monospace`;
@@ -35,8 +35,8 @@ export const drawBinaryGrid = (
       }
 
       const opacityNoiseValue = opacityNoise2D(
-        col * opacityNoiseScale + progress * opacitySpeed,
-        row * opacityNoiseScale + progress * opacitySpeed,
+        col * opacityNoiseScale + progress * opacitySpeed * deltaTime,
+        row * opacityNoiseScale + progress * opacitySpeed * deltaTime
       );
       const opacity = 0.3 + opacityNoiseValue * 0.7;
 
