@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useCanvasAnimation } from "@/lib/hooks/use-canvas-animation";
-import { drawBinaryGrid } from "@/lib/draw/draw-binary-grid";
 import { cn } from "@/lib/utils";
+import { drawBinaryGrid } from "@/lib/draw/draw-binary-grid";
 import { useDebugAnimationStore } from "../debug/debug-animation-store";
 
 const BinaryLoading: React.FC = () => {
@@ -10,7 +10,7 @@ const BinaryLoading: React.FC = () => {
   const { canvasRef, debugInfo, handleNextFrame, startAnimation, stopAnimation } = useCanvasAnimation(
     (ctx, size, progress, deltaTime) => {
       const { currentSize } = drawBinaryGrid(ctx, size, progress, deltaTime);
-      setDebugInfo({ progress, currentSize, frameCount: debugInfo.frameCount + 1 });
+      // setDebugInfo({ progress, currentSize, frameCount: debugInfo.frameCount + 1 });
     },
     { duration, debug, isPlaying },
   );
@@ -29,13 +29,13 @@ const BinaryLoading: React.FC = () => {
     }
   }, [restart, startAnimation]);
 
-  useEffect(() => {
-    setOnNextFrame(handleNextFrame);
-  }, [handleNextFrame, setOnNextFrame]);
+  // useEffect(() => {
+  //   setOnNextFrame(handleNextFrame);
+  // }, [handleNextFrame, setOnNextFrame]);
 
   return (
     <div className={cn("fixed inset-0 overflow-hidden bg-black")}>
-      <canvas ref={canvasRef} className="h-full w-full" />
+      <canvas ref={canvasRef} className="h-full w-full border" />
     </div>
   );
 };
