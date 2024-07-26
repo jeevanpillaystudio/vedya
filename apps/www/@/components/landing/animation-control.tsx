@@ -12,6 +12,12 @@ interface AnimationControlProps {
   duration: number;
   setDuration: (duration: number) => void;
   onRestart: () => void;
+  onNextFrame: () => void;
+  debugInfo: {
+    progress: number;
+    currentSize?: number;
+    frameCount: number;
+  };
 }
 
 const PlayButton: React.FC<{ isPlaying: boolean; onClick: () => void }> = ({ isPlaying, onClick }) => (
@@ -39,6 +45,8 @@ const AnimationControl: React.FC<AnimationControlProps> = ({
   duration,
   setDuration,
   onRestart,
+  onNextFrame,
+  debugInfo,
 }) => {
   return (
     <div className="fixed right-4 top-4 z-10">
@@ -59,6 +67,18 @@ const AnimationControl: React.FC<AnimationControlProps> = ({
             </label>
             <Slider id="duration" min={1000} max={10000} step={100} value={[duration]} onValueChange={(value) => setDuration(value[0]!)} />
           </div>
+          {debug && (
+            <>
+              <Button onClick={onNextFrame}>Next Frame</Button>
+              <div className="mt-2">
+                Progress: {debugInfo.progress.toFixed(2)}
+                <br />
+                Current Size: {debugInfo.currentSize}
+                <br />
+                Frame Count: {debugInfo.frameCount}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

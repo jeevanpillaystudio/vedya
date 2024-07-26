@@ -8,9 +8,10 @@ interface BinaryLoadingProps {
   debug: boolean;
   isPlaying: boolean;
   restart: number;
+  onNextFrame: () => void;
 }
 
-const BinaryLoading: React.FC<BinaryLoadingProps> = ({ duration, debug, isPlaying, restart }) => {
+const BinaryLoading: React.FC<BinaryLoadingProps> = ({ duration, debug, isPlaying, restart, onNextFrame }) => {
   const { canvasRef, debugInfo, handleNextFrame, setDebugInfo, startAnimation, stopAnimation } = useCanvasAnimation(
     (ctx, size, progress, deltaTime) => {
       const { currentSize } = drawBinaryGrid(ctx, size, progress, deltaTime);
@@ -33,23 +34,15 @@ const BinaryLoading: React.FC<BinaryLoadingProps> = ({ duration, debug, isPlayin
     }
   }, [restart, startAnimation]);
 
+  useEffect(() => {
+    if (debug) {
+      onNextFrame = handleNextFrame;
+    }
+  }, [debug, handleNextFrame, onNextFrame]);
+
   return (
     <div className={cn("fixed inset-0 overflow-hidden bg-black")}>
       <canvas ref={canvasRef} className="h-full w-full" />
-      {debug && (
-        <div className="absolute bottom-4 left-4 text-white">
-          <button className="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700" onClick={handleNextFrame}>
-            Next Frame
-          </button>
-          <div className="mt-2">
-            Progress: {debugInfo.progress.toFixed(2)}
-            <br />
-            Current Size: {debugInfo.currentSize}
-            <br />
-            Frame Count: {debugInfo.frameCount}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

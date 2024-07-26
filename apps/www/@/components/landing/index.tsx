@@ -10,6 +10,8 @@ export default function Index() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(5000); // 5 seconds default
   const [restart, setRestart] = useState(0);
+  const [debugInfo, setDebugInfo] = useState({ progress: 0, currentSize: 0, frameCount: 0 });
+  const [onNextFrame, setOnNextFrame] = useState(() => () => {});
 
   const handleRestart = () => {
     setRestart((prev) => prev + 1);
@@ -18,7 +20,7 @@ export default function Index() {
 
   return (
     <main className={cn("relative h-screen w-screen")}>
-      <BinaryLoading duration={duration} debug={debug} isPlaying={isPlaying} restart={restart} />
+      <BinaryLoading duration={duration} debug={debug} isPlaying={isPlaying} restart={restart} onNextFrame={onNextFrame} />
       <AnimationControl
         isPlaying={isPlaying}
         setIsPlaying={setIsPlaying}
@@ -27,6 +29,8 @@ export default function Index() {
         duration={duration}
         setDuration={setDuration}
         onRestart={handleRestart}
+        onNextFrame={onNextFrame}
+        debugInfo={debugInfo}
       />
     </main>
   );
