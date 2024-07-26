@@ -2,20 +2,15 @@ import React, { useEffect } from "react";
 import { useCanvasAnimation } from "@/lib/hooks/use-canvas-animation";
 import { drawBinaryGrid } from "@/lib/draw/draw-binary-grid";
 import { cn } from "@/lib/utils";
+import { useDebugAnimationStore } from "../debug/debug-animation-store";
 
-interface BinaryLoadingProps {
-  duration: number;
-  debug: boolean;
-  isPlaying: boolean;
-  restart: number;
-  onNextFrame: () => void;
-}
+const BinaryLoading: React.FC = () => {
+  const { duration, debug, isPlaying, restart, setOnNextFrame, setDebugInfo } = useDebugAnimationStore();
 
-const BinaryLoading: React.FC<BinaryLoadingProps> = ({ duration, debug, isPlaying, restart, onNextFrame }) => {
-  const { canvasRef, debugInfo, handleNextFrame, setDebugInfo, startAnimation, stopAnimation } = useCanvasAnimation(
+  const { canvasRef, debugInfo, handleNextFrame, startAnimation, stopAnimation } = useCanvasAnimation(
     (ctx, size, progress, deltaTime) => {
       const { currentSize } = drawBinaryGrid(ctx, size, progress, deltaTime);
-      setDebugInfo((prev) => ({ ...prev, currentSize }));
+      setDebugInfo({ progress, currentSize, frameCount: debugInfo.frameCount + 1 });
     },
     { duration, debug, isPlaying },
   );
@@ -35,10 +30,8 @@ const BinaryLoading: React.FC<BinaryLoadingProps> = ({ duration, debug, isPlayin
   }, [restart, startAnimation]);
 
   useEffect(() => {
-    if (debug) {
-      onNextFrame = handleNextFrame;
-    }
-  }, [debug, handleNextFrame, onNextFrame]);
+    setOnNextFrame(handleNextFrame);
+  }, [handleNextFrame, setOnNextFrame]);
 
   return (
     <div className={cn("fixed inset-0 overflow-hidden bg-black")}>

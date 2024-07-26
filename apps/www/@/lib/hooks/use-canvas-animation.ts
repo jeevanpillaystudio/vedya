@@ -34,6 +34,7 @@ export const useCanvasAnimation = (
   const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef(Date.now());
   const lastFrameTimeRef = useRef(Date.now());
+  const maxDuration = 5000; // 5 seconds in milliseconds
 
   const updateCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -56,8 +57,10 @@ export const useCanvasAnimation = (
       frameCount: prev.frameCount + 1 
     }));
 
-    if (progress < 1) {
+    if (progress < 1 && elapsedTime < maxDuration) {
       animationRef.current = requestAnimationFrame(updateCanvas);
+    } else {
+      stopAnimation();
     }
   }, [duration, drawFn]);
 

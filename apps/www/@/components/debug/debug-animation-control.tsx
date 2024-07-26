@@ -3,22 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-interface DebugAnimationControlProps {
-  isPlaying: boolean;
-  setIsPlaying: (isPlaying: boolean) => void;
-  debug: boolean;
-  setDebug: (debug: boolean) => void;
-  duration: number;
-  setDuration: (duration: number) => void;
-  onRestart: () => void;
-  onNextFrame: () => void;
-  debugInfo: {
-    progress: number;
-    currentSize?: number;
-    frameCount: number;
-  };
-}
+import { useDebugAnimationStore } from "./debug-animation-store";
 
 const PlayButton: React.FC<{ isPlaying: boolean; onClick: () => void }> = ({ isPlaying, onClick }) => (
   <Button variant={isPlaying ? "destructive" : "default"} onClick={onClick}>
@@ -37,17 +22,10 @@ const DebugSwitch: React.FC<{ debug: boolean; setDebug: (debug: boolean) => void
   </div>
 );
 
-const DebugAnimationControl: React.FC<DebugAnimationControlProps> = ({
-  isPlaying,
-  setIsPlaying,
-  debug,
-  setDebug,
-  duration,
-  setDuration,
-  onRestart,
-  onNextFrame,
-  debugInfo,
-}) => {
+const DebugAnimationControl: React.FC = () => {
+  const { isPlaying, setIsPlaying, debug, setDebug, duration, setDuration, handleRestart, debugInfo, onNextFrame } =
+    useDebugAnimationStore();
+
   return (
     <div className="fixed right-4 top-4 z-10">
       <Card className="w-64 bg-black/50 text-white">
@@ -58,7 +36,7 @@ const DebugAnimationControl: React.FC<DebugAnimationControlProps> = ({
         <CardContent className="space-y-4">
           <div className="flex justify-between">
             <PlayButton isPlaying={isPlaying} onClick={() => setIsPlaying(!isPlaying)} />
-            <RestartButton onClick={onRestart} />
+            <RestartButton onClick={handleRestart} />
           </div>
           <DebugSwitch debug={debug} setDebug={setDebug} />
           <div>
