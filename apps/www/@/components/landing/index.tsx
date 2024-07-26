@@ -3,7 +3,7 @@
 import { useState } from "react";
 import BinaryLoading from "./binary-loading";
 import { cn } from "@/lib/utils";
-import AnimationControl from "./animation-control";
+import DebugAnimationControl from "../debug/debug-animation-control";
 
 export default function Index() {
   const [debug, setDebug] = useState(false);
@@ -21,7 +21,7 @@ export default function Index() {
   return (
     <main className={cn("relative h-screen w-screen")}>
       <BinaryLoading duration={duration} debug={debug} isPlaying={isPlaying} restart={restart} onNextFrame={onNextFrame} />
-      <AnimationControl
+      <DebugAnimationControl
         isPlaying={isPlaying}
         setIsPlaying={setIsPlaying}
         debug={debug}

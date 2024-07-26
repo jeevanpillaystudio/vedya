@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface AnimationControlProps {
+interface DebugAnimationControlProps {
   isPlaying: boolean;
   setIsPlaying: (isPlaying: boolean) => void;
   debug: boolean;
@@ -37,7 +37,7 @@ const DebugSwitch: React.FC<{ debug: boolean; setDebug: (debug: boolean) => void
   </div>
 );
 
-const AnimationControl: React.FC<AnimationControlProps> = ({
+const DebugAnimationControl: React.FC<DebugAnimationControlProps> = ({
   isPlaying,
   setIsPlaying,
   debug,
@@ -85,4 +85,4 @@ const AnimationControl: React.FC<AnimationControlProps> = ({
   );
 };
 
-export default AnimationControl;
+export default DebugAnimationControl;
