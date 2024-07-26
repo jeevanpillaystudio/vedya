@@ -2,7 +2,7 @@
 
 import { type MutableRefObject } from "react";
 import ViewCubeController from "./three-viewcube";
-import { cn } from "../_react/css-utils";
+import { cn } from "../../_react/css-utils";
 
 interface ViewcubeInterface {
   vcControllerRef: MutableRefObject<ViewCubeController | undefined>;

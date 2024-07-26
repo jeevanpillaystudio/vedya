@@ -5,8 +5,8 @@ import { Canvas } from "@react-three/fiber";
 import { type EngineCoreSettings, EngineProvider } from "./three-engine-provider";
 import ThreeScene from "./three-scene";
 import { useRef } from "react";
-import type ViewCubeController from "./three-viewcube";
-import Viewcube from "./viewcube";
+import type ViewCubeController from "./viewcube/three-viewcube";
+import Viewcube from "./viewcube/viewcube";
 
 interface ThreeEngineProps extends EngineCoreSettings {
   name: string;

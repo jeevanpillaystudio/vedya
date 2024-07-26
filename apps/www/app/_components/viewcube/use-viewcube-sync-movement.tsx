@@ -1,7 +1,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 import { Matrix4 } from "three";
-import { getCameraCSSMatrix } from "./math";
+import { getCameraCSSMatrix } from "../math";
 import ViewCubeController from "./three-viewcube";
 
 interface ViewCubeSyncMovementProps {

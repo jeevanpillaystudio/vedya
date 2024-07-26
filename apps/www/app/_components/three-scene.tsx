@@ -1,9 +1,9 @@
 "use client";
 
 import { useEngine } from "./three-engine-provider";
-import type ViewCubeController from "./three-viewcube";
+import type ViewCubeController from "./viewcube/three-viewcube";
 import CylinderWireframe from "./cylinder-wireframe";
-import { useViewcubeSyncMovement } from "./use-viewcube-sync-movement";
+import { useViewcubeSyncMovement } from "./viewcube/use-viewcube-sync-movement";
 
 interface SceneProps {
   vcControllerRef: React.MutableRefObject<ViewCubeController | undefined>;
