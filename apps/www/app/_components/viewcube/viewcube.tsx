@@ -33,7 +33,7 @@ const Viewcube: React.FC<ViewcubeInterface> = ({ vcControllerRef }) => {
               if (!vcControllerRef.current) {
                 return;
               }
-              vcControllerRef.current.tweenCamera(ViewCubeController.ORIENTATIONS[orientation]!);
+              vcControllerRef.current.animateCameraToOrientation(ViewCubeController.ORIENTATIONS[orientation]!);
             }}
           >
             {orientation}

@@ -1,5 +1,4 @@
 import { Vector3, type Camera } from "three";
-import TWEEN from "@tweenjs/tween.js";
 
 export type Orientation = {
   offsetFactor: {
@@ -9,66 +8,6 @@ export type Orientation = {
   };
   rotationX: number;
   rotationY: number;
-};
-
-const TOP: Orientation = {
-  offsetFactor: {
-    x: 0,
-    y: 1,
-    z: 0,
-  },
-  rotationX: 90,
-  rotationY: 0,
-};
-
-const BOTTOM: Orientation = {
-  offsetFactor: {
-    x: 0,
-    y: -1,
-    z: 0,
-  },
-  rotationX: -90,
-  rotationY: 0,
-};
-
-const FRONT: Orientation = {
-  offsetFactor: {
-    x: 0,
-    y: 0,
-    z: 1,
-  },
-  rotationX: 0,
-  rotationY: 0,
-};
-
-const BACK: Orientation = {
-  offsetFactor: {
-    x: 0,
-    y: 0,
-    z: -1,
-  },
-  rotationX: 0,
-  rotationY: 180,
-};
-
-const LEFT: Orientation = {
-  offsetFactor: {
-    x: -1,
-    y: 0,
-    z: 0,
-  },
-  rotationX: 0,
-  rotationY: -90,
-};
-
-const RIGHT: Orientation = {
-  offsetFactor: {
-    x: 1,
-    y: 0,
-    z: 0,
-  },
-  rotationX: 0,
-  rotationY: 90,
 };
 
 class ViewCubeController {
@@ -81,13 +20,37 @@ class ViewCubeController {
     Right: "right",
   };
 
-  static ORIENTATIONS = {
-    [ViewCubeController.CubeOrientation.Top]: TOP,
-    [ViewCubeController.CubeOrientation.Bottom]: BOTTOM,
-    [ViewCubeController.CubeOrientation.Front]: FRONT,
-    [ViewCubeController.CubeOrientation.Back]: BACK,
-    [ViewCubeController.CubeOrientation.Left]: LEFT,
-    [ViewCubeController.CubeOrientation.Right]: RIGHT,
+  static ORIENTATIONS: Record<string, Orientation> = {
+    top: {
+      offsetFactor: { x: 0, y: 1, z: 0 },
+      rotationX: 90,
+      rotationY: 0,
+    },
+    bottom: {
+      offsetFactor: { x: 0, y: -1, z: 0 },
+      rotationX: -90,
+      rotationY: 0,
+    },
+    front: {
+      offsetFactor: { x: 0, y: 0, z: 1 },
+      rotationX: 0,
+      rotationY: 0,
+    },
+    back: {
+      offsetFactor: { x: 0, y: 0, z: -1 },
+      rotationX: 0,
+      rotationY: 180,
+    },
+    left: {
+      offsetFactor: { x: -1, y: 0, z: 0 },
+      rotationX: 0,
+      rotationY: -90,
+    },
+    right: {
+      offsetFactor: { x: 1, y: 0, z: 0 },
+      rotationX: 0,
+      rotationY: 90,
+    },
   };
 
   private camera: Camera;
@@ -96,7 +59,7 @@ class ViewCubeController {
     this.camera = camera;
   }
 
-  tweenCamera(orientation: Orientation) {
+  animateCameraToOrientation(orientation: Orientation) {
     const { offsetFactor } = orientation;
 
     if (this.camera) {
@@ -109,20 +72,33 @@ class ViewCubeController {
       // The target position the camera should always look at
       const targetPosition = new Vector3(0, 0, 0);
 
-      const positionTween = new TWEEN.Tween(this.camera.position)
-        .to(finishPosition, 300)
-        .easing(TWEEN.Easing.Cubic.InOut)
-        .onUpdate(() => {
-          // Update the camera rotation to look at the target position
-          this.camera.lookAt(targetPosition);
-        });
-
-      positionTween.start();
+      this.animateCamera(this.camera.position, finishPosition, 300, () => {
+        this.camera.lookAt(targetPosition);
+      });
     }
   }
 
-  tweenCallback() {
-    TWEEN.update();
+  private animateCamera(startPosition: Vector3, endPosition: Vector3, duration: number, onUpdate: () => void) {
+    const startTime = performance.now();
+
+    const animate = (currentTime: number) => {
+      const elapsedTime = currentTime - startTime;
+      const t = Math.min(elapsedTime / duration, 1);
+
+      // Cubic ease-in-out
+      const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+      const easedT = easeInOutCubic(t);
+
+      this.camera.position.lerpVectors(startPosition, endPosition, easedT);
+      onUpdate();
+
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
   }
 }
 

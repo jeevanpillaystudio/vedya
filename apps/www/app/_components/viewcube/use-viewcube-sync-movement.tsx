@@ -24,10 +24,6 @@ export const useViewcubeSyncMovement = ({ viewCubeControllerRef }: ViewCubeSyncM
       matrix.extractRotation(camera.matrixWorldInverse);
       (cube as HTMLElement).style.transform = `translateZ(-300px) ${getCameraCSSMatrix(matrix)}`;
     }
-
-    if (viewCubeControllerRef.current) {
-      viewCubeControllerRef.current.tweenCallback();
-    }
   });
 
   return {
