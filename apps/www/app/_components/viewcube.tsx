@@ -2,6 +2,7 @@
 
 import { type MutableRefObject } from "react";
 import ViewCubeController from "./three-viewcube";
+import { cn } from "../_react/css-utils";
 
 interface ViewcubeInterface {
   vcControllerRef: MutableRefObject<ViewCubeController | undefined>;
@@ -11,39 +12,21 @@ const Viewcube: React.FC<ViewcubeInterface> = ({ vcControllerRef }) => {
   return (
     <div
       id="viewcube-container"
-      style={{
-        width: "120px",
-        height: "120px",
-        margin: "10px",
-        perspective: "600px",
-        position: "absolute",
-        right: "60px",
-        bottom: "40px",
-        zIndex: 2,
-      }}
+      className={cn("perspective-[600px] absolute bottom-[40px] right-[60px] z-[2] m-[10px] h-[120px] w-[120px]")}
     >
       <div
         id="cube"
-        className="cube"
-        style={{ width: "100px", height: "100px", position: "relative", transformStyle: "preserve-3d", transform: "translateZ(-300px)" }}
+        className="cube preserve-3d relative h-[100px] w-[100px]"
+        style={{ transformStyle: "preserve-3d", transform: "translateZ(-300px)" }}
       >
         {Object.values(ViewCubeController.CubeOrientation).map((orientation) => (
           <div
             key={orientation}
-            className={`cube__face cube__face--${orientation}`}
+            className={cn(
+              `cube__face cube__face--${orientation}`,
+              "absolute left-0 top-0 flex h-[100px] w-[100px] cursor-pointer select-none items-center justify-center border-2 border-gray-400 bg-white text-2xl font-bold text-gray-600",
+            )}
             style={{
-              width: "100px",
-              height: "100px",
-              border: "2px solid #808080",
-              lineHeight: "100px",
-              fontSize: "25px",
-              fontWeight: "bold",
-              color: "#7d7d7d",
-              textAlign: "center",
-              background: "#fff",
-              cursor: "pointer",
-              userSelect: "none",
-              position: "absolute",
               transform: `rotateX(${ViewCubeController.ORIENTATIONS[orientation]!.rotationX}deg) rotateY(${ViewCubeController.ORIENTATIONS[orientation]!.rotationY}deg) translateZ(50px)`,
             }}
             onClick={() => {

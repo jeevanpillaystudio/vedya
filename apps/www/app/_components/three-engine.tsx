@@ -3,7 +3,7 @@
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { type EngineCoreSettings, EngineProvider } from "./three-engine-provider";
-import Scene from "./scene";
+import ThreeScene from "./three-scene";
 import { useRef } from "react";
 import type ViewCubeController from "./three-viewcube";
 import Viewcube from "./viewcube";
@@ -28,7 +28,7 @@ const ThreeEngine: React.FC<ThreeEngineProps> = ({ resolution, constructionPlane
         }}
         orthographic
       >
-        <Scene vcControllerRef={vcControllerRef} />
+        <ThreeScene vcControllerRef={vcControllerRef} />
         <ambientLight intensity={0.1} />
         <directionalLight color="red" position={[0, 0, 5]} />
         <OrbitControls enableDamping={false} />
@@ -39,4 +39,3 @@ const ThreeEngine: React.FC<ThreeEngineProps> = ({ resolution, constructionPlane
 };
 
 export default ThreeEngine;
-

@@ -13,10 +13,12 @@
     "@react-three/drei": "^9.108.4",
     "@react-three/fiber": "^8.16.8",
     "@tweenjs/tween.js": "^23.1.2",
+    "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "next": "14.2.5",
     "react": "^18",
     "react-dom": "^18",
+    "tailwind-merge": "^2.4.0",
     "three": "^0.166.1"
   },
   "devDependencies": {
