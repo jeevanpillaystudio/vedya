@@ -1,7 +1,7 @@
 import React from "react";
-import { cn } from "../../_react/css-utils";
 import { useCanvasAnimation } from "@/lib/hooks/use-canvas-animation";
 import { drawBinaryGrid } from "@/lib/draw/draw-binary-grid";
+import { cn } from "@/lib/utils";
 
 interface BinaryLoadingProps {
   duration: number;

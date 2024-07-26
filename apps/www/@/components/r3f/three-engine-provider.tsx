@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, type ReactNode, useContext, useState } from "react";
-import { type ConstructionPlane } from "../_lib/_enums";
+import { type ConstructionPlane } from "./_lib/_enums";
 
 export interface EngineCoreSettings {
   resolution: number;

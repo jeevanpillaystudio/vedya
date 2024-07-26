@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { cn } from "../../_react/css-utils";
 import BinaryLoading from "./binary-loading";
+import { cn } from "@/lib/utils";
 
 export default function Index() {
   const [debug, setDebug] = useState(false);

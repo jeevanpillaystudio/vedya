@@ -1,5 +1,5 @@
 import React from "react";
-import { generateCuboidPoints } from "../../_lib/transform-future-change";
+import { generateCuboidPoints } from "../_lib/transform-future-change";
 import { type PointsProps } from "@react-three/fiber";
 import { DEFAULT_POINT_SIZE, DEFAULT_RESOLUTION } from "../_defaults";
 import { type Color } from "@react-three/fiber";
