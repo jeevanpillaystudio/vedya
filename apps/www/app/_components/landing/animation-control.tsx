@@ -1,5 +1,8 @@
 import React from "react";
-import { cn } from "../../_react/css-utils";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AnimationControlProps {
   isPlaying: boolean;
@@ -11,6 +14,32 @@ interface AnimationControlProps {
   onRestart: () => void;
 }
 
+const PlayButton: React.FC<{ isPlaying: boolean; onClick: () => void }> = ({ isPlaying, onClick }) => (
+  <Button variant={isPlaying ? "destructive" : "default"} onClick={onClick}>
+    {isPlaying ? "Stop" : "Play"}
+  </Button>
+);
+
+const RestartButton: React.FC<{ onClick: () => void }> = ({ onClick }) => <Button onClick={onClick}>Restart</Button>;
+
+const DebugSwitch: React.FC<{ debug: boolean; setDebug: (debug: boolean) => void }> = ({ debug, setDebug }) => (
+  <div className="flex items-center space-x-2">
+    <Switch id="debug-mode" checked={debug} onCheckedChange={setDebug} />
+    <label htmlFor="debug-mode" className="text-white">
+      Debug Mode
+    </label>
+  </div>
+);
+
+const SpeedSlider: React.FC<{ duration: number; setDuration: (duration: number) => void }> = ({ duration, setDuration }) => (
+  <div className="flex w-full flex-col space-y-2">
+    <label htmlFor="speed" className="text-white">
+      Speed: {duration / 1000}s
+    </label>
+    <Slider id="speed" min={1000} max={10000} step={1000} value={[duration]} onValueChange={(value) => setDuration(value[0]!)} />
+  </div>
+);
+
 const AnimationControl: React.FC<AnimationControlProps> = ({
   isPlaying,
   setIsPlaying,
@@ -21,43 +50,25 @@ const AnimationControl: React.FC<AnimationControlProps> = ({
   onRestart,
 }) => {
   return (
-    <div className="absolute right-4 top-4 flex flex-col items-end space-y-2 rounded bg-gray-800 p-4 text-white">
-      <div className="flex space-x-2">
-        <button
-          className={cn("rounded px-4 py-2 font-bold", isPlaying ? "bg-red-500 hover:bg-red-700" : "bg-green-500 hover:bg-green-700")}
-          onClick={() => setIsPlaying(!isPlaying)}
-        >
-          {isPlaying ? "Stop" : "Play"}
-        </button>
-        <button className="rounded bg-blue-500 px-4 py-2 font-bold hover:bg-blue-700" onClick={onRestart}>
-          Restart
-        </button>
-      </div>
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          id="debug"
-          checked={debug}
-          onChange={(e) => setDebug(e.target.checked)}
-          className="form-checkbox h-5 w-5 text-blue-600"
-        />
-        <label htmlFor="debug">Debug Mode</label>
-      </div>
-      <div className="flex items-center space-x-2">
-        <label htmlFor="speed">Speed:</label>
-        <input
-          type="range"
-          id="speed"
-          min="1000"
-          max="10000"
-          step="1000"
-          value={duration}
-          onChange={(e) => setDuration(Number(e.target.value))}
-          className="form-range h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200"
-        />
-        <span>{duration / 1000}s</span>
-      </div>
-    </div>
+    <Card className="fixed right-4 top-4 w-80">
+      <CardHeader>
+        <CardTitle>Debug Controls</CardTitle>
+        <CardDescription className="text-gray-300">Adjust animation settings here.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col space-y-4">
+          <div className="flex space-x-2">
+            <PlayButton isPlaying={isPlaying} onClick={() => setIsPlaying(!isPlaying)} />
+            <RestartButton onClick={onRestart} />
+          </div>
+          <DebugSwitch debug={debug} setDebug={setDebug} />
+          <SpeedSlider duration={duration} setDuration={setDuration} />
+        </div>
+      </CardContent>
+      <CardFooter>
+        <p className="text-sm text-gray-400">Animation controls</p>
+      </CardFooter>
+    </Card>
   );
 };
 

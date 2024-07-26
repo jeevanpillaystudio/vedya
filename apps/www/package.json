@@ -10,16 +10,23 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.1",
+    "@radix-ui/react-slider": "^1.2.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-switch": "^1.1.0",
     "@react-three/drei": "^9.108.4",
     "@react-three/fiber": "^8.16.8",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "lucide-react": "^0.416.0",
     "next": "14.2.5",
     "react": "^18",
     "react-dom": "^18",
     "simplex-noise": "^4.0.2",
     "tailwind-merge": "^2.4.0",
-    "three": "^0.166.1"
+    "tailwindcss-animate": "^1.0.7",
+    "three": "^0.166.1",
+    "vaul": "^0.9.1"
   },
   "devDependencies": {
     "@types/eslint": "^8.56.10",

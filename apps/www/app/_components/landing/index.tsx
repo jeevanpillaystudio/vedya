@@ -17,7 +17,7 @@ export default function Index() {
   };
 
   return (
-    <main className={cn("h-screen w-screen bg-white")}>
+    <main className={cn("h-screen w-screen")}>
       <BinaryLoading duration={duration} debug={debug} isPlaying={isPlaying} restart={restart} />
       <AnimationControl
         isPlaying={isPlaying}
