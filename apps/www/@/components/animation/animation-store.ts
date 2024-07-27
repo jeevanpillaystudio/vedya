@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { MAX_DURATION } from './default';
 
 interface AnimationState {
   isPlaying: boolean;
@@ -29,7 +30,7 @@ export const useAnimationStore = create<AnimationState>((set, get) => ({
   onNextFrame: null,
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setDebug: (debug) => set({ debug }),
-  setDuration: (duration) => set({ duration }),
+  setDuration: (duration) => set({ duration: Math.min(duration, MAX_DURATION) }),
   handleRestart: () => set((state) => ({ restart: state.restart + 1, isPlaying: true })),
   setDebugInfo: (debugInfo) => set((state) => ({ debugInfo: { ...state.debugInfo, ...debugInfo } })),
   setOnNextFrame: (callback) => set({ onNextFrame: callback }),
