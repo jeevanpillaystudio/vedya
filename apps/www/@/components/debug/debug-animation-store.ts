@@ -7,9 +7,10 @@ interface DebugAnimationState {
   restart: number;
   debugInfo: {
     progress: number;
-    currentSize?: number;
+    currentSize?: number; // @todo double check
     frameCount: number;
-  };
+    fps: number;
+  }
   onNextFrame: () => void;
   setIsPlaying: (isPlaying: boolean) => void;
   setDebug: (debug: boolean) => void;
@@ -19,12 +20,13 @@ interface DebugAnimationState {
   setOnNextFrame: (callback: () => void) => void;
 }
 
+// @todo make defaults
 export const useDebugAnimationStore = create<DebugAnimationState>((set) => ({
   isPlaying: false,
   debug: false,
   duration: 5000,
   restart: 0,
-  debugInfo: { progress: 0, currentSize: 0, frameCount: 0 },
+  debugInfo: { progress: 0, currentSize: 0, frameCount: 0, fps: 24 },
   onNextFrame: () => {},
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setDebug: (debug) => set({ debug }),

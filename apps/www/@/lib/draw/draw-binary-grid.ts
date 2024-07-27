@@ -1,4 +1,4 @@
-import { CanvasSize } from "@/lib/hooks/use-canvas-animation";
+import { CanvasSize } from "@/components/debug/use-canvas-animation";
 import { createNoise2D } from "simplex-noise";
 
 const noise2D = createNoise2D();
@@ -7,14 +7,13 @@ const opacityNoise2D = createNoise2D();
 export const drawBinaryGrid = (
   ctx: CanvasRenderingContext2D,
   size: CanvasSize,
-  progress: number,
-  deltaTime: number
+  progress: number
 ) => {
   const currentSize = calculateCurrentSize(progress, size);
   const cellSize = Math.min(size.width / currentSize, size.height / currentSize);
   const noiseScale = 0.2;
   const opacityNoiseScale = 0.1;
-  const opacitySpeed = 0.001; // Reduced speed to make use of deltaTime
+  const opacitySpeed = 0.001;
 
   ctx.clearRect(0, 0, size.width, size.height);
   ctx.font = `${cellSize}px monospace`;
@@ -35,8 +34,8 @@ export const drawBinaryGrid = (
       }
 
       const opacityNoiseValue = opacityNoise2D(
-        col * opacityNoiseScale + progress * opacitySpeed * deltaTime,
-        row * opacityNoiseScale + progress * opacitySpeed * deltaTime
+        col * opacityNoiseScale + progress * opacitySpeed,
+        row * opacityNoiseScale + progress * opacitySpeed
       );
       const opacity = 0.3 + opacityNoiseValue * 0.7;
 
@@ -48,8 +47,8 @@ export const drawBinaryGrid = (
   return { currentSize };
 };
 
-const calculateCurrentSize = (progress: number, size: CanvasSize) => {
-  const initialSize = 4;
-  const maxSize = Math.floor(Math.sqrt((size.width * size.height) / 20));
-  return Math.floor(initialSize + (maxSize - initialSize) * Math.pow(progress, 3));
-};
+function calculateCurrentSize(progress: number, size: CanvasSize): number {
+  const maxSize = Math.max(size.width, size.height) / 10;
+  const minSize = 3;
+  return Math.floor(minSize + (maxSize - minSize) * progress);
+}
