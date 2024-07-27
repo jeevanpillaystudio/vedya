@@ -1,3 +1,5 @@
+"use client";
+
 import FrameProgressBar from "./frame-progress-bar";
 import FrameControlPanel from "./frame-control-panel";
 

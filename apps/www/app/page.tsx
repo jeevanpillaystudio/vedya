@@ -1,5 +1,12 @@
-import Landing from "@/components/landing";
+import BinaryLoading from "@/components/landing/binary-loading";
+import Animation from "@/components/animation";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
-  return <Landing />;
+  return (
+    <main className={cn("relative h-screen w-screen")}>
+      <BinaryLoading />
+      <Animation />
+    </main>
+  );
 }

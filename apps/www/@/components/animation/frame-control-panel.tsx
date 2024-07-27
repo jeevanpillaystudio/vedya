@@ -20,7 +20,7 @@ const FrameControlPanel: React.FC = () => {
   const { debugInfo } = useDebugStore();
 
   return (
-    <Card className="fixed bottom-4 left-1/2 z-10 -translate-x-1/2 transform text-foreground">
+    <Card className="fixed left-1/2 top-4 z-10 -translate-x-1/2 transform text-foreground">
       <CardContent className="p-2">
         <div className="mb-2 flex items-center space-x-2">
           <Button size="icon" variant="outline" onClick={togglePlayPause}>
@@ -34,6 +34,7 @@ const FrameControlPanel: React.FC = () => {
           </Button>
           <div className="text-xs">
             <p>Progress: {debugInfo.progress.toFixed(2)}</p>
+            <p>Frame: {debugInfo.frameCount}</p>
           </div>
         </div>
         <div className="flex items-center space-x-2">

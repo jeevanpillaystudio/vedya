@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { drawBinaryGrid } from "@/lib/draw/draw-binary-grid";
