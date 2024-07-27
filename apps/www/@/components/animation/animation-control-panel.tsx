@@ -1,9 +1,10 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useAnimationStore } from "./animation-store";
 import { PlayIcon, PauseIcon, SkipForwardIcon, RefreshCwIcon, StopCircleIcon } from "lucide-react";
+import { Slider } from "../ui/slider";
+import { MAX_DURATION } from "./default";
 
 const AnimationControlPanel: React.FC = () => {
   const { isPlaying, isPaused, setIsPlaying, setIsPaused, duration, setDuration, handleRestart, debugInfo, continueOneFrame } =
@@ -25,33 +26,37 @@ const AnimationControlPanel: React.FC = () => {
   };
 
   return (
-    <Card className="fixed right-4 top-4 z-10 w-64 bg-black/50 text-white">
-      <CardHeader>
-        <CardTitle>Animation Control</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex justify-between">
-          <Button onClick={handlePlayPauseClick}>{isPlaying ? <PauseIcon /> : <PlayIcon />}</Button>
-          <Button onClick={handleStopClick} disabled={!isPlaying && !isPaused}>
-            <StopCircleIcon />
+    <Card className="fixed left-1/2 top-2 z-10 -translate-x-1/2 transform text-foreground">
+      <CardContent className="p-2">
+        <div className="mb-2 flex items-center space-x-2">
+          <Button size="icon" variant="outline" onClick={handlePlayPauseClick}>
+            {isPlaying ? <PauseIcon size={12} /> : <PlayIcon size={12} />}
           </Button>
-          <Button onClick={continueOneFrame} disabled={isPlaying}>
-            <SkipForwardIcon />
+          <Button size="icon" variant="outline" onClick={handleStopClick} disabled={!isPlaying && !isPaused}>
+            <StopCircleIcon size={16} />
           </Button>
-          <Button onClick={handleRestart}>
-            <RefreshCwIcon />
+          <Button size="icon" variant="outline" onClick={continueOneFrame} disabled={isPlaying}>
+            <SkipForwardIcon size={16} />
           </Button>
+          <Button size="icon" variant="outline" onClick={handleRestart}>
+            <RefreshCwIcon size={16} />
+          </Button>
+          <div className="text-xs">
+            <p>Progress: {debugInfo.progress.toFixed(2)}</p>
+            <p>Size: {debugInfo.currentSize}</p>
+            <p>Frames: {debugInfo.frameCount}</p>
+          </div>
         </div>
-        <div>
-          <label htmlFor="duration" className="block text-sm font-medium">
-            Duration: {duration}ms
-          </label>
-          <Slider id="duration" min={1000} max={10000} step={100} value={[duration]} onValueChange={(value) => setDuration(value[0]!)} />
-        </div>
-        <div>
-          <p>Progress: {debugInfo.progress.toFixed(2)}</p>
-          <p>Current Size: {debugInfo.currentSize}</p>
-          <p>Frame Count: {debugInfo.frameCount}</p>
+        <div className="flex items-center space-x-2">
+          <Slider
+            // className="w-32"
+            min={1000}
+            max={MAX_DURATION}
+            step={100}
+            value={[duration]}
+            onValueChange={(value) => setDuration(value[0]!)}
+          />
+          <span className="text-xs">{duration}ms</span>
         </div>
       </CardContent>
     </Card>
