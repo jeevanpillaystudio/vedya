@@ -21,7 +21,7 @@ import { useCanvasResize } from "./use-canvas-resize";
  */
 export const useCanvasAnimation = (updateFn: UpdateFunction, renderFn: RenderFunction) => {
   // Set up the core animation loop
-  const { canvasRef, animationRef, stateRef, gameLoop } = useAnimationLoop(updateFn, renderFn);
+  const { canvasRef, animationRef, stateRef, gameLoop, reset } = useAnimationLoop(updateFn, renderFn);
 
   // Set up canvas resizing
   useCanvasResize(canvasRef);
@@ -29,5 +29,5 @@ export const useCanvasAnimation = (updateFn: UpdateFunction, renderFn: RenderFun
   // Set up animation controls
   const { startAnimation, stopAnimation } = useAnimationControls(animationRef, stateRef, gameLoop);
 
-  return { canvasRef, startAnimation, stopAnimation };
+  return { canvasRef, startAnimation, stopAnimation, reset };
 };

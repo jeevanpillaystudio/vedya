@@ -1,10 +1,10 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { type UpdateFunction, type RenderFunction, type CanvasSize, type AnimationState } from '../types';
 import { useAnimationStore } from '../animation-store';
 import { FIXED_TIME_STEP, MAX_DURATION } from '../default';
 
 export const useAnimationLoop = (updateFn: UpdateFunction, renderFn: RenderFunction) => {
-  const { duration, setDebugInfo } = useAnimationStore();
+  const { duration, setDebugInfo, restart } = useAnimationStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const stateRef = useRef<AnimationState>({
@@ -13,6 +13,16 @@ export const useAnimationLoop = (updateFn: UpdateFunction, renderFn: RenderFunct
     frameCount: 0,
     accumulatedTime: 0,
   });
+
+  const clearCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  }, []);
 
   const gameLoop = useCallback((currentTime: number) => {
     const state = stateRef.current;
@@ -62,5 +72,15 @@ export const useAnimationLoop = (updateFn: UpdateFunction, renderFn: RenderFunct
     }
   }, []);
 
-  return { canvasRef, animationRef, stateRef, gameLoop, startAnimation, stopAnimation };
+  const reset = useCallback(() => {
+    clearCanvas();
+    stateRef.current = { startTime: 0, lastFrameTime: 0, frameCount: 0, accumulatedTime: 0 };
+    setDebugInfo({ progress: 0, currentSize: 0, frameCount: 0 });
+  }, [clearCanvas, setDebugInfo]);
+
+  useEffect(() => {
+    reset();
+  }, [restart, reset]);
+
+  return { canvasRef, animationRef, stateRef, gameLoop, startAnimation, stopAnimation, reset };
 };
