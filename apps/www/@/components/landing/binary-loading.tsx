@@ -2,7 +2,8 @@ import React, { useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { drawBinaryGrid } from "@/lib/draw/draw-binary-grid";
 import { useDebugAnimationStore } from "../debug/debug-animation-store";
-import { type CanvasSize, useCanvasAnimation } from "../debug/use-canvas-animation";
+import { type CanvasSize } from "../debug/types";
+import { useCanvasAnimation } from "../debug";
 
 const BinaryLoading: React.FC = () => {
   const { duration } = useDebugAnimationStore();
