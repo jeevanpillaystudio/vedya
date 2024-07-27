@@ -1,13 +1,13 @@
 import { useCallback, useEffect } from 'react';
-import { useDebugAnimationStore } from './debug-animation-store';
-import { type AnimationState } from './types';
+import { useAnimationStore } from '../animation-store';
+import { type AnimationState } from '../types';
 
 export const useAnimationControls = (
   animationRef: React.MutableRefObject<number | null>,
   stateRef: React.MutableRefObject<AnimationState>,
   gameLoop: (currentTime: number) => void
 ) => {
-  const { isPlaying, setOnNextFrame, handleRestart } = useDebugAnimationStore();
+  const { isPlaying, setOnNextFrame, handleRestart } = useAnimationStore();
 
   const startAnimation = useCallback(() => {
     stateRef.current = { startTime: 0, lastFrameTime: 0, frameCount: 0 };

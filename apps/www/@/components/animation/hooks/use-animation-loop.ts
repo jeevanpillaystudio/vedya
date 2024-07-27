@@ -1,9 +1,9 @@
 import { useCallback, useRef } from 'react';
-import { useDebugAnimationStore } from './debug-animation-store';
-import { type UpdateFunction, type RenderFunction, type AnimationState, type CanvasSize } from './types';
+import { useAnimationStore } from '../animation-store';
+import { type UpdateFunction, type RenderFunction, type AnimationState, type CanvasSize } from '../types';
 
 export const useAnimationLoop = (updateFn: UpdateFunction, renderFn: RenderFunction) => {
-  const { duration, setDebugInfo } = useDebugAnimationStore();
+  const { duration, setDebugInfo } = useAnimationStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const stateRef = useRef<AnimationState>({ startTime: 0, lastFrameTime: 0, frameCount: 0 });

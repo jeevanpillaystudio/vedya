@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-interface DebugAnimationState {
+interface AnimationState {
   isPlaying: boolean;
   debug: boolean;
   duration: number;
@@ -16,12 +16,12 @@ interface DebugAnimationState {
   setDebug: (debug: boolean) => void;
   setDuration: (duration: number) => void;
   handleRestart: () => void;
-  setDebugInfo: (debugInfo: Partial<DebugAnimationState['debugInfo']>) => void;
+  setDebugInfo: (debugInfo: Partial<AnimationState['debugInfo']>) => void;
   setOnNextFrame: (callback: () => void) => void;
 }
 
 // @todo make defaults
-export const useDebugAnimationStore = create<DebugAnimationState>((set) => ({
+export const useAnimationStore = create<AnimationState>((set) => ({
   isPlaying: false,
   debug: false,
   duration: 5000,

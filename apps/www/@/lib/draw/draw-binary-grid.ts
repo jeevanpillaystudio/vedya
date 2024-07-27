@@ -1,4 +1,4 @@
-import { CanvasSize } from "@/components/debug";
+import { type CanvasSize } from "@/components/animation";
 import { createNoise2D } from "simplex-noise";
 
 const noise2D = createNoise2D();

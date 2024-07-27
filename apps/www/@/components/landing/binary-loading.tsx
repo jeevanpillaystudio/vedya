@@ -1,12 +1,12 @@
 import React, { useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { drawBinaryGrid } from "@/lib/draw/draw-binary-grid";
-import { useDebugAnimationStore } from "../debug/debug-animation-store";
-import { type CanvasSize } from "../debug/types";
-import { useCanvasAnimation } from "../debug";
+import { useAnimationStore } from "../animation/animation-store";
+import { type CanvasSize } from "../animation/types";
+import { useCanvasAnimation } from "../animation/hooks/use-canvas-animation";
 
 const BinaryLoading: React.FC = () => {
-  const { duration } = useDebugAnimationStore();
+  const { duration } = useAnimationStore();
 
   const updateFn = useCallback((deltaTime: number, elapsedTime: number) => {
     // Update game state here if needed

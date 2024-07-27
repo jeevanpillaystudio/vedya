@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useDebugAnimationStore } from "./debug-animation-store";
+import { useAnimationStore } from "./animation-store";
 
 const PlayButton: React.FC<{ isPlaying: boolean; onClick: () => void }> = ({ isPlaying, onClick }) => (
   <Button variant={isPlaying ? "destructive" : "default"} onClick={onClick}>
@@ -22,9 +22,8 @@ const DebugSwitch: React.FC<{ debug: boolean; setDebug: (debug: boolean) => void
   </div>
 );
 
-const DebugAnimationControl: React.FC = () => {
-  const { isPlaying, setIsPlaying, debug, setDebug, duration, setDuration, handleRestart, debugInfo, onNextFrame } =
-    useDebugAnimationStore();
+const AnimationControlPanel: React.FC = () => {
+  const { isPlaying, setIsPlaying, debug, setDebug, duration, setDuration, handleRestart, debugInfo, onNextFrame } = useAnimationStore();
 
   return (
     <div className="fixed right-4 top-4 z-10">
@@ -63,4 +62,4 @@ const DebugAnimationControl: React.FC = () => {
   );
 };
 
-export default DebugAnimationControl;
+export default AnimationControlPanel;

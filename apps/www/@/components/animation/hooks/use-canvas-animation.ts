@@ -1,5 +1,5 @@
-import { type UpdateFunction, type RenderFunction } from "./types";
-import { useAnimationControls } from "./use-animation-control";
+import { type UpdateFunction, type RenderFunction } from "../types";
+import { useAnimationControls } from "./use-animation-controls";
 import { useAnimationLoop } from "./use-animation-loop";
 import { useCanvasResize } from "./use-canvas-resize";
 
