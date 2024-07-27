@@ -27,7 +27,8 @@ export const useCanvasAnimation = (updateFn: UpdateFunction, renderFn: RenderFun
   useCanvasResize(canvasRef);
 
   // Set up animation controls
-  const { startAnimation, stopAnimation } = useAnimationControls(animationRef, stateRef, gameLoop);
+  const { startAnimation, stopAnimation } = useAnimationControls(animationRef, stateRef, gameLoop, reset);
 
+  // Return the canvas ref and animation controls
   return { canvasRef, startAnimation, stopAnimation, reset };
 };

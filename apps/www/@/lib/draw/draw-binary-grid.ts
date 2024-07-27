@@ -7,9 +7,9 @@ const opacityNoise2D = createNoise2D();
 export const drawBinaryGrid = (
   ctx: CanvasRenderingContext2D,
   size: CanvasSize,
-  progress: number
+  elapsedTime: number
 ) => {
-  const currentSize = calculateCurrentSize(progress, size);
+  const currentSize = calculateCurrentSize(elapsedTime, size);
   const cellSize = Math.min(size.width / currentSize, size.height / currentSize);
   const noiseScale = 0.2;
   const opacityNoiseScale = 0.1;
@@ -34,8 +34,8 @@ export const drawBinaryGrid = (
       }
 
       const opacityNoiseValue = opacityNoise2D(
-        col * opacityNoiseScale + progress * opacitySpeed,
-        row * opacityNoiseScale + progress * opacitySpeed
+        col * opacityNoiseScale + elapsedTime * opacitySpeed,
+        row * opacityNoiseScale + elapsedTime * opacitySpeed
       );
       const opacity = 0.3 + opacityNoiseValue * 0.7;
 

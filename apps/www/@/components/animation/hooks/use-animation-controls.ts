@@ -5,9 +5,10 @@ import { type AnimationState } from '../types';
 export const useAnimationControls = (
   animationRef: React.MutableRefObject<number | null>,
   stateRef: React.MutableRefObject<AnimationState>,
-  gameLoop: (currentTime: number) => void
+  gameLoop: (currentTime: number) => void,
+  reset: () => void
 ) => {
-  const { isPlaying, isPaused } = useAnimationStore();
+  const { isPlaying, isPaused, restart } = useAnimationStore();
 
   const startAnimation = useCallback(() => {
     if (animationRef.current === null) {
@@ -29,6 +30,11 @@ export const useAnimationControls = (
       stopAnimation();
     }
   }, [isPlaying, isPaused, startAnimation, stopAnimation]);
+
+    // Reset the animation when the restart button is clicked
+    useEffect(() => {
+      reset();
+    }, [restart, reset]);
 
   return { startAnimation, stopAnimation };
 };
