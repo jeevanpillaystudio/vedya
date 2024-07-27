@@ -26,7 +26,8 @@
     /* Paths */
     "baseUrl": ".",
     "paths": {
-      "*": ["./*"]
+      "*": ["./*"],
+      "@/animation": ["./@/components/animation"]
     },
   },
   "include": [

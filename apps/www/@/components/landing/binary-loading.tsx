@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useAnimationSetup } from "@/components/animation/hooks/use-animation-setup";
 import { drawBinaryGrid } from "@/lib/draw/draw-binary-grid";
+import { useAnimationSetup } from "@/components/animation/shared/use-animation-setup";
 
 const BinaryLoading: React.FC = () => {
   const { canvasRef } = useAnimationSetup({ drawFn: drawBinaryGrid });
