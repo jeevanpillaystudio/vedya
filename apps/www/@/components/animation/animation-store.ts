@@ -3,7 +3,7 @@ import { MAX_DURATION } from './default';
 
 interface AnimationState {
   isPlaying: boolean;
-  debug: boolean;
+  isPaused: boolean;
   duration: number;
   restart: number;
   debugInfo: {
@@ -11,33 +11,35 @@ interface AnimationState {
     currentSize?: number;
     frameCount: number;
   };
-  onNextFrame: (() => void) | null;
   setIsPlaying: (isPlaying: boolean) => void;
-  setDebug: (debug: boolean) => void;
+  setIsPaused: (isPaused: boolean) => void;
   setDuration: (duration: number) => void;
   handleRestart: () => void;
   setDebugInfo: (debugInfo: Partial<AnimationState['debugInfo']>) => void;
-  setOnNextFrame: (callback: (() => void) | null) => void;
-  triggerNextFrame: () => void;
+  continueOneFrame: () => void;
 }
 
 export const useAnimationStore = create<AnimationState>((set, get) => ({
   isPlaying: false,
-  debug: false,
+  isPaused: false,
   duration: 5000,
   restart: 0,
   debugInfo: { progress: 0, currentSize: 0, frameCount: 0 },
-  onNextFrame: null,
-  setIsPlaying: (isPlaying) => set({ isPlaying }),
-  setDebug: (debug) => set({ debug }),
+  setIsPlaying: (isPlaying) => set({ isPlaying, isPaused: false }),
+  setIsPaused: (isPaused) => set({ isPaused, isPlaying: false }),
   setDuration: (duration) => set({ duration: Math.min(duration, MAX_DURATION) }),
-  handleRestart: () => set((state) => ({ restart: state.restart + 1, isPlaying: true })),
+  handleRestart: () => set((state) => ({ 
+    restart: state.restart + 1, 
+    isPlaying: false, 
+    isPaused: false,
+    debugInfo: { progress: 0, currentSize: 0, frameCount: 0 },
+  })),
   setDebugInfo: (debugInfo) => set((state) => ({ debugInfo: { ...state.debugInfo, ...debugInfo } })),
-  setOnNextFrame: (callback) => set({ onNextFrame: callback }),
-  triggerNextFrame: () => {
-    const { onNextFrame } = get();
-    if (onNextFrame) {
-      onNextFrame();
+  continueOneFrame: () => {
+    const { isPlaying, isPaused } = get();
+    if (!isPlaying && !isPaused) {
+      set({ isPlaying: true });
+      setTimeout(() => set({ isPlaying: false }), 0);
     }
   },
 }));

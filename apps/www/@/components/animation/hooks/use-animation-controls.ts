@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAnimationStore } from '../animation-store';
 import { type AnimationState } from '../types';
 
@@ -7,14 +7,14 @@ export const useAnimationControls = (
   stateRef: React.MutableRefObject<AnimationState>,
   gameLoop: (currentTime: number) => void
 ) => {
-  const { isPlaying, setOnNextFrame, handleRestart } = useAnimationStore();
+  const { isPlaying, isPaused, restart } = useAnimationStore();
+  const isFirstRender = useRef(true);
 
   const startAnimation = useCallback(() => {
-    stateRef.current = { startTime: 0, lastFrameTime: 0, frameCount: 0 };
     if (animationRef.current === null) {
       animationRef.current = requestAnimationFrame(gameLoop);
     }
-  }, [animationRef, stateRef, gameLoop]);
+  }, [animationRef, gameLoop]);
 
   const stopAnimation = useCallback(() => {
     if (animationRef.current !== null) {
@@ -23,25 +23,26 @@ export const useAnimationControls = (
     }
   }, [animationRef]);
 
+  const resetAnimation = useCallback(() => {
+    stopAnimation();
+    stateRef.current = { startTime: 0, lastFrameTime: 0, frameCount: 0, accumulatedTime: 0 };
+  }, [stopAnimation, stateRef]);
+
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying && !isPaused) {
       startAnimation();
     } else {
       stopAnimation();
     }
-  }, [isPlaying, startAnimation, stopAnimation]);
+  }, [isPlaying, isPaused, startAnimation, stopAnimation]);
 
   useEffect(() => {
-    setOnNextFrame(() => {
-      if (animationRef.current === null) {
-        requestAnimationFrame(gameLoop);
-      }
-    });
-  }, [gameLoop, setOnNextFrame, animationRef]);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+    } else {
+      resetAnimation();
+    }
+  }, [restart, resetAnimation]);
 
-  useEffect(() => {
-    handleRestart();
-  }, [handleRestart]);
-
-  return { startAnimation, stopAnimation };
+  return { startAnimation, stopAnimation, resetAnimation };
 };
