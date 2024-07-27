@@ -10,4 +10,5 @@ export interface AnimationState {
     startTime: number;
     lastFrameTime: number;
     frameCount: number;
+    accumulatedTime: number;
 }

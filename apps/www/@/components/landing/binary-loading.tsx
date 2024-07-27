@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { drawBinaryGrid } from "@/lib/draw/draw-binary-grid";
 import { useAnimationStore } from "../animation/animation-store";
@@ -22,11 +22,13 @@ const BinaryLoading: React.FC = () => {
 
   const { canvasRef } = useCanvasAnimation(updateFn, renderFn);
 
+  const canvasStyle = useMemo(() => ({ height: "100%", width: "100%" }), []);
+
   return (
     <div className={cn("fixed inset-0 overflow-hidden bg-black")}>
-      <canvas ref={canvasRef} className="h-full w-full" />
+      <canvas ref={canvasRef} style={canvasStyle} />
     </div>
   );
 };
 
-export default BinaryLoading;
+export default React.memo(BinaryLoading);

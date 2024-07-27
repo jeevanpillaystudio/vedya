@@ -7,31 +7,36 @@ interface AnimationState {
   restart: number;
   debugInfo: {
     progress: number;
-    currentSize?: number; // @todo double check
+    currentSize?: number;
     frameCount: number;
-    fps: number;
-  }
-  onNextFrame: () => void;
+  };
+  onNextFrame: (() => void) | null;
   setIsPlaying: (isPlaying: boolean) => void;
   setDebug: (debug: boolean) => void;
   setDuration: (duration: number) => void;
   handleRestart: () => void;
   setDebugInfo: (debugInfo: Partial<AnimationState['debugInfo']>) => void;
-  setOnNextFrame: (callback: () => void) => void;
+  setOnNextFrame: (callback: (() => void) | null) => void;
+  triggerNextFrame: () => void;
 }
 
-// @todo make defaults
-export const useAnimationStore = create<AnimationState>((set) => ({
+export const useAnimationStore = create<AnimationState>((set, get) => ({
   isPlaying: false,
   debug: false,
   duration: 5000,
   restart: 0,
-  debugInfo: { progress: 0, currentSize: 0, frameCount: 0, fps: 24 },
-  onNextFrame: () => {},
+  debugInfo: { progress: 0, currentSize: 0, frameCount: 0 },
+  onNextFrame: null,
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setDebug: (debug) => set({ debug }),
   setDuration: (duration) => set({ duration }),
   handleRestart: () => set((state) => ({ restart: state.restart + 1, isPlaying: true })),
   setDebugInfo: (debugInfo) => set((state) => ({ debugInfo: { ...state.debugInfo, ...debugInfo } })),
   setOnNextFrame: (callback) => set({ onNextFrame: callback }),
+  triggerNextFrame: () => {
+    const { onNextFrame } = get();
+    if (onNextFrame) {
+      onNextFrame();
+    }
+  },
 }));

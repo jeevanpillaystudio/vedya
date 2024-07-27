@@ -1,13 +1,18 @@
 import { useCallback, useRef } from 'react';
+import { type UpdateFunction, type RenderFunction, type CanvasSize, type AnimationState } from '../types';
 import { useAnimationStore } from '../animation-store';
-import { type UpdateFunction, type RenderFunction, type AnimationState, type CanvasSize } from '../types';
+import { FIXED_TIME_STEP, MAX_DURATION } from '../default';
 
 export const useAnimationLoop = (updateFn: UpdateFunction, renderFn: RenderFunction) => {
   const { duration, setDebugInfo } = useAnimationStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
-  const stateRef = useRef<AnimationState>({ startTime: 0, lastFrameTime: 0, frameCount: 0 });
-  const maxDuration = 5000; // 5 seconds in milliseconds
+  const stateRef = useRef<AnimationState>({
+    startTime: 0,
+    lastFrameTime: 0,
+    frameCount: 0,
+    accumulatedTime: 0,
+  });
 
   const gameLoop = useCallback((currentTime: number) => {
     const state = stateRef.current;
@@ -16,7 +21,12 @@ export const useAnimationLoop = (updateFn: UpdateFunction, renderFn: RenderFunct
     const deltaTime = currentTime - state.lastFrameTime;
     state.lastFrameTime = currentTime;
 
-    updateFn(deltaTime / 1000, elapsedTime / 1000);
+    state.accumulatedTime += deltaTime;
+
+    while (state.accumulatedTime >= FIXED_TIME_STEP) {
+      updateFn(FIXED_TIME_STEP / 1000, elapsedTime / 1000);
+      state.accumulatedTime -= FIXED_TIME_STEP;
+    }
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -29,15 +39,28 @@ export const useAnimationLoop = (updateFn: UpdateFunction, renderFn: RenderFunct
     setDebugInfo({
       progress: Math.min(elapsedTime / duration, 1),
       frameCount: state.frameCount,
-      fps: Math.round(1000 / deltaTime)
     });
 
-    if (elapsedTime < duration && elapsedTime < maxDuration) {
+    if (elapsedTime < duration && elapsedTime < MAX_DURATION) {
       animationRef.current = requestAnimationFrame(gameLoop);
     } else {
       // Stop animation logic here
     }
   }, [duration, updateFn, renderFn, setDebugInfo]);
 
-  return { canvasRef, animationRef, stateRef, gameLoop };
+  const startAnimation = useCallback(() => {
+    stateRef.current = { startTime: 0, lastFrameTime: 0, frameCount: 0, accumulatedTime: 0 };
+    if (animationRef.current === null) {
+      animationRef.current = requestAnimationFrame(gameLoop);
+    }
+  }, [gameLoop]);
+
+  const stopAnimation = useCallback(() => {
+    if (animationRef.current !== null) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+  }, []);
+
+  return { canvasRef, animationRef, stateRef, gameLoop, startAnimation, stopAnimation };
 };
