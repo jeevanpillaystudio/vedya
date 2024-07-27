@@ -7,7 +7,7 @@ import { Slider } from "../ui/slider";
 import { MAX_DURATION } from "./default";
 
 const AnimationControlPanel: React.FC = () => {
-  const { isPlaying, isPaused, setIsPlaying, setIsPaused, duration, setDuration, handleRestart, debugInfo, continueOneFrame } =
+  const { isPlaying, isPaused, isCompleted, setIsPlaying, setIsPaused, duration, setDuration, handleRestart, debugInfo, continueOneFrame } =
     useAnimationStore();
 
   const handlePlayPauseClick = () => {
@@ -29,13 +29,13 @@ const AnimationControlPanel: React.FC = () => {
     <Card className="fixed left-1/2 top-2 z-10 -translate-x-1/2 transform text-foreground">
       <CardContent className="p-2">
         <div className="mb-2 flex items-center space-x-2">
-          <Button size="icon" variant="outline" onClick={handlePlayPauseClick}>
+          <Button size="icon" variant="outline" onClick={handlePlayPauseClick} disabled={isCompleted}>
             {isPlaying ? <PauseIcon size={12} /> : <PlayIcon size={12} />}
           </Button>
-          <Button size="icon" variant="outline" onClick={handleStopClick} disabled={!isPlaying && !isPaused}>
+          <Button size="icon" variant="outline" onClick={handleStopClick} disabled={(!isPlaying && !isPaused) || isCompleted}>
             <StopCircleIcon size={16} />
           </Button>
-          <Button size="icon" variant="outline" onClick={continueOneFrame} disabled={isPlaying}>
+          <Button size="icon" variant="outline" onClick={continueOneFrame} disabled={isPlaying || isCompleted}>
             <SkipForwardIcon size={16} />
           </Button>
           <Button size="icon" variant="outline" onClick={handleRestart}>
