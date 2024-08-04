@@ -14,10 +14,11 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.12"
-numpy = "^1.21"
+numpy = "2.0.1"
 plotly = "^5.22.0"
 solidpython = "^1.1.3"
 solidpython2 = "^2.1.0"
+opencv-python = "^4.10.0.84"
 
 [tool.poetry.group.dev]
 optional = true
@@ -31,12 +32,13 @@ ruff = "^0.4.4"
 
 [tool.poetry.scripts]
 coord-transform-for-circle = "coord-transform-for-circle.__main__:main"
+img-to-stencil = "img-to-stencil.__main__:main"
 
-[tool.poe.tasks]
-docs = "pydoctor --make-html lib/coord-transform-for-circle"
-format = "ruff format lib tests"
-lint = "ruff check lib tests"
-test = "pytest -v --cov=coord-transform-for-circle"
+# [tool.poe.tasks]
+# docs = "pydoctor --make-html lib/coord-transform-for-circle"
+# format = "ruff format lib tests"
+# lint = "ruff check lib tests"
+# test = "pytest -v --cov=coord-transform-for-circle"
 
 [tool.coverage.report]
 fail_under = 100
