@@ -13,19 +13,29 @@ def main() -> None:
     blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
 
     # Detect edges using the Canny edge detection algorithm
-    edges = cv2.Canny(blurred_image, threshold1=60, threshold2=150)
+    edges = cv2.Canny(blurred_image, threshold1=100, threshold2=180)
 
-    # Invert the edges to create a stencil effect
-    stencil = cv2.bitwise_not(edges)
+    # Use morphological operations to improve edge connectivity
+    kernel = np.ones((3, 3), np.uint8)
+    edges = cv2.dilate(edges, kernel, iterations=1)
+    
+    adaptive_thresh = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                        cv2.THRESH_BINARY, blockSize=5, C=12)
+    stencil = cv2.bitwise_not(adaptive_thresh)
 
-    # Optional: Apply a threshold to make the stencil more distinct
-    _, stencil = cv2.threshold(stencil, 127, 255, cv2.THRESH_BINARY)
+    # Find contours based on the edges detected
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Draw contours on the stencil image
+    cv2.drawContours(stencil, contours, -1, (255, 255, 255), 1)
+
+    # Invert the stencil image to match the typical stencil look (white on black)
+    stencil = cv2.bitwise_not(stencil)
 
     # Save or display the resulting stencil
-    cv2.imwrite('lib/img-to-stencil/public/stencil_output.png', stencil)
+    cv2.imwrite('stencil_output.png', stencil)
     cv2.imshow('Stencil', stencil)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
 if __name__ == "__main__":
     main()
