@@ -191,8 +191,8 @@ def create_component(
     return newComp.component
 
 
-def component_exist(root_component: adsk.fusion.Component, name) -> bool:
-    return root_component.occurrences.itemByName(name + ":1") is not None
+def component_exist(component: adsk.fusion.Component, name) -> bool:
+    return component.occurrences.itemByName(name + ":1") is not None
 
 
 def log(value):
@@ -202,7 +202,7 @@ def log(value):
 
         # Write the log message to the a file
         with open(
-            "/Users/jeevanpillay/Documents - triangle/Developer/Repository/@jeevanpillaystudio/vedya/logfile.txt",
+            "/Users/jeevanpillay/Code/@usr/lib/vedya/src/v1/api-vedya-draw/logfile.txt",
             "a",
         ) as file:
             file.write(log_message)
