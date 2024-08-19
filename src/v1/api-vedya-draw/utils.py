@@ -7,7 +7,7 @@ FP_TOLERANCE = 1e-2  # 0.1 Precision for floating point comparison
 
 
 def create_offset_plane(
-    rootComp: adsk.fusion.Component,
+    component: adsk.fusion.Component,
     offset: float,
     name: str = "",
     plane: adsk.fusion.ConstructionPlane = None,
@@ -25,8 +25,8 @@ def create_offset_plane(
     - The created offset construction plane.
     """
     if plane is None:
-        plane = rootComp.xYConstructionPlane
-    planes = rootComp.constructionPlanes
+        plane = component.xYConstructionPlane
+    planes = component.constructionPlanes
     planeInput = planes.createInput()
     offsetValue = adsk.core.ValueInput.createByReal(offset)
     planeInput.setByOffset(plane, offsetValue)
@@ -37,7 +37,10 @@ def create_offset_plane(
 
 
 def create_sketch(
-    rootComp, name, offset=0, plane: adsk.fusion.ConstructionPlane = None
+    component: adsk.fusion.Component,
+    name: str,
+    offset: float = 0.0,
+    plane: adsk.fusion.ConstructionPlane = None,
 ) -> adsk.fusion.Sketch:
     """
     Creates a sketch on the specified plane.
@@ -49,8 +52,8 @@ def create_sketch(
     Returns:
     - The created sketch.
     """
-    sketches = rootComp.sketches
-    sketch = sketches.add(create_offset_plane(rootComp, offset, plane=plane))
+    sketches = component.sketches
+    sketch = sketches.add(create_offset_plane(component, offset, plane=plane))
     sketch.name = name
     return sketch
 
@@ -180,11 +183,11 @@ def extrude_thin_one(
 
 
 def create_component(
-    root_component: adsk.fusion.Component, component_name
+    root_component: adsk.fusion.Component, name: str
 ) -> adsk.fusion.Component:
     # Create a new component
     newComp = root_component.occurrences.addNewComponent(adsk.core.Matrix3D.create())
-    newComp.component.name = component_name
+    newComp.component.name = name
     return newComp.component
 
 

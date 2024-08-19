@@ -229,10 +229,10 @@ def run(context):
             # draw cylinder
             core_structural_comp = create_component(
                 root_component=root_comp,
-                component_name=create_component_name("cylindrical-sol"),
+                name=create_component_name("cylindrical-sol"),
             )
             sketch = create_sketch(
-                rootComp=core_structural_comp,
+                component=core_structural_comp,
                 name="bg-rect",
                 offset=-AppConfig.LayerDepth * 10,
                 plane=core_structural_comp.xYConstructionPlane,
@@ -251,7 +251,7 @@ def run(context):
             start_layer_offset = AppConfig.LayerDepth * 2
             extrude_height = AppConfig.LayerDepth
             create_seed_of_life(
-                root_component=core_structural_comp,
+                component=core_structural_comp,
                 center_x=0,
                 center_y=0,
                 radius=AppConfig.HoleRadius / 8,
@@ -270,7 +270,7 @@ def run(context):
         # second-layer = 1.28
         # third-layer = 1.28
         # fourth-layer = 1.28
-        # slicer(root_component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
+        # slicer(component=root_comp, design=design, sliced_layer_depth=AppConfig.LayerDepth / 4, sliced_layer_count=12)
         # return
 
         # structural components
@@ -290,8 +290,8 @@ def run(context):
         # Guide: https://www.youtube.com/watch?v=Ea_YC4Jh0Sw
         try:
             kailash_comp = create_component(
-                root_component=root_comp,
-                component_name=create_component_name("cut-kailash-intersection"),
+                component=root_comp,
+                name=create_component_name("cut-kailash-intersection"),
             )
             start_layer_offset = AppConfig.LayerDepth * 3.5
             extrude_height = AppConfig.LayerDepth * 3
@@ -363,8 +363,8 @@ def run(context):
         # intersect only in bounds
         try:
             intersect_only_in_bounds_comp = create_component(
-                root_component=root_comp,
-                component_name=create_component_name("intersect-only-in-bounds"),
+                component=root_comp,
+                name=create_component_name("intersect-only-in-bounds"),
             )
             sketch = create_sketch(
                 intersect_only_in_bounds_comp,
@@ -392,8 +392,8 @@ def run(context):
 def create_middle_cut(root_comp):
     try:
         middle_circle_comp = create_component(
-            root_component=root_comp,
-            component_name=create_component_name("middle_circle_comp"),
+            component=root_comp,
+            name=create_component_name("middle_circle_comp"),
         )
 
         sketch = create_sketch(
@@ -428,7 +428,7 @@ def create_middle_cut(root_comp):
 def create_torus_astroid(root_comp):
     if not component_exist(root_comp, create_component_name("torus")):
         torus_comp = create_component(
-            root_component=root_comp, component_name=create_component_name("torus")
+            component=root_comp, name=create_component_name("torus")
         )
 
         # inner torus
@@ -436,8 +436,8 @@ def create_torus_astroid(root_comp):
         radius = random.choice([0.48 * 20 * 2]) * ScaleConfig.ScaleFactor
         stroke_weight = random.choice([0.32]) * ScaleConfig.ScaleFactor
         inner_torus_component = create_component(
-            root_component=torus_comp,
-            component_name=create_component_name(
+            component=torus_comp,
+            name=create_component_name(
                 "torus-outer-" + str(radius) + "-" + str(iterations)
             ),
         )
@@ -454,13 +454,13 @@ def create_torus_astroid(root_comp):
         ):
             # create the torus
             torus_layer_0_inner_comp = create_component(
-                root_component=inner_torus_component,
-                component_name=create_component_name(
+                component=inner_torus_component,
+                name=create_component_name(
                     "torus-inner-" + str(radius) + "-" + str(sw)
                 ),
             )
             create_torus(
-                root_component=torus_layer_0_inner_comp,
+                component=torus_layer_0_inner_comp,
                 center_x=0,
                 center_y=0,
                 radius=radius,
@@ -554,7 +554,7 @@ def create_border(root_comp):
     if not component_exist(root_comp, create_component_name("border")):
         layer_offset = AppConfig.LayerDepth * 2
         border_comp = create_component(
-            root_component=root_comp, component_name=create_component_name("border")
+            component=root_comp, name=create_component_name("border")
         )
         extrude_height = AppConfig.LayerDepth * 6
         sketch = create_sketch(border_comp, "border", offset=layer_offset)
@@ -576,8 +576,8 @@ def create_component_outer_diagonal_steps(root_comp: adsk.fusion.Component):
         root_comp, create_component_name("interstellar-tesellation")
     ):
         interstellar_tesellation_comp = create_component(
-            root_component=root_comp,
-            component_name=create_component_name("interstellar-tesellation"),
+            component=root_comp,
+            name=create_component_name("interstellar-tesellation"),
         )
 
         # draw from middle
@@ -625,7 +625,7 @@ def create_component_outer_diagonal_steps(root_comp: adsk.fusion.Component):
 def create_component_core(root_comp):
     if not component_exist(root_comp, create_component_name("core")):
         main_comp = create_component(
-            root_component=root_comp, component_name=create_component_name("core")
+            component=root_comp, name=create_component_name("core")
         )
 
         # level 2D -----------
@@ -801,7 +801,7 @@ def create_component_core(root_comp):
 def create_bg(root_comp: adsk.fusion.Component):
     if not component_exist(root_comp, create_component_name("bg")):
         core_structural_comp = create_component(
-            root_component=root_comp, component_name=create_component_name("bg")
+            component=root_comp, name=create_component_name("bg")
         )
         sketch = create_sketch(core_structural_comp, "bg-rect", offset=0.0)
         draw_rectangle(
@@ -826,8 +826,8 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
     ):
         # top level comp
         seed_of_life_comp = create_component(
-            root_component=root_comp,
-            component_name=create_component_name("layer-0-seed-of-life-x-1"),
+            component=root_comp,
+            name=create_component_name("layer-0-seed-of-life-x-1"),
         )
 
         # start layer offset
@@ -874,10 +874,8 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
 
             # comp
             seed_of_life_layer_0_comp = create_component(
-                root_component=seed_of_life_comp,
-                component_name=create_component_name(
-                    "seed-of-life-layer-0-" + str(radius)
-                ),
+                component=seed_of_life_comp,
+                name=create_component_name("seed-of-life-layer-0-" + str(radius)),
             )
 
             # extrude height
@@ -902,8 +900,8 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
                 direction=DepthRepeat.Decrement,
             ):
                 seed_of_life_layer_0_inner_comp = create_component(
-                    root_component=seed_of_life_layer_0_comp,
-                    component_name=create_component_name(
+                    component=seed_of_life_layer_0_comp,
+                    name=create_component_name(
                         "seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)
                     ),
                 )
@@ -911,7 +909,7 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
                     f"INIT seed-of-life-layer-0: depth-repeat 2, initial-radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {sw}"
                 )
                 create_seed_of_life(
-                    root_component=seed_of_life_layer_0_inner_comp,
+                    component=seed_of_life_layer_0_inner_comp,
                     center_x=center_x,
                     center_y=center_y,
                     radius=radius,
@@ -990,8 +988,8 @@ def create_component_seed_of_life_layer_1(root_comp: adsk.fusion.Component):
     if not component_exist(root_comp, create_component_name("layer-1-seed-of-life-x")):
         # top level comp
         seed_of_life_comp = create_component(
-            root_component=root_comp,
-            component_name=create_component_name("layer-1-seed-of-life-x"),
+            component=root_comp,
+            name=create_component_name("layer-1-seed-of-life-x"),
         )
 
         # start layer offset
@@ -1025,10 +1023,8 @@ def create_component_seed_of_life_layer_1(root_comp: adsk.fusion.Component):
 
             # comp
             seed_of_life_layer_0_comp = create_component(
-                root_component=seed_of_life_comp,
-                component_name=create_component_name(
-                    "seed-of-life-layer-0-" + str(radius)
-                ),
+                component=seed_of_life_comp,
+                name=create_component_name("seed-of-life-layer-0-" + str(radius)),
             )
 
             # extrude height
@@ -1050,8 +1046,8 @@ def create_component_seed_of_life_layer_1(root_comp: adsk.fusion.Component):
                 direction=DepthRepeat.Decrement,
             ):
                 seed_of_life_layer_0_inner_comp = create_component(
-                    root_component=seed_of_life_layer_0_comp,
-                    component_name=create_component_name(
+                    component=seed_of_life_layer_0_comp,
+                    name=create_component_name(
                         "seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)
                     ),
                 )
@@ -1059,7 +1055,7 @@ def create_component_seed_of_life_layer_1(root_comp: adsk.fusion.Component):
                     f"INIT seed-of-life-layer-0: depth-repeat 2, initial-radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {sw}"
                 )
                 create_seed_of_life(
-                    root_component=seed_of_life_layer_0_inner_comp,
+                    component=seed_of_life_layer_0_inner_comp,
                     center_x=center_x,
                     center_y=center_y,
                     radius=radius,
@@ -1154,8 +1150,8 @@ def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
     if not component_exist(root_comp, create_component_name("layer-2-seed-of-life-x")):
         # top level comp
         seed_of_life_comp = create_component(
-            root_component=root_comp,
-            component_name=create_component_name("layer-2-seed-of-life-x"),
+            component=root_comp,
+            name=create_component_name("layer-2-seed-of-life-x"),
         )
 
         # start layer offset
@@ -1189,10 +1185,8 @@ def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
 
             # comp
             seed_of_life_layer_0_comp = create_component(
-                root_component=seed_of_life_comp,
-                component_name=create_component_name(
-                    "seed-of-life-layer-0-" + str(radius)
-                ),
+                component=seed_of_life_comp,
+                name=create_component_name("seed-of-life-layer-0-" + str(radius)),
             )
 
             # draw from middle
@@ -1215,8 +1209,8 @@ def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
                 direction=DepthRepeat.Decrement,
             ):
                 seed_of_life_layer_0_inner_comp = create_component(
-                    root_component=seed_of_life_layer_0_comp,
-                    component_name=create_component_name(
+                    component=seed_of_life_layer_0_comp,
+                    name=create_component_name(
                         "seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)
                     ),
                 )
@@ -1224,7 +1218,7 @@ def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
                     f"INIT seed-of-life-layer-0: depth-repeat 2, initial-radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {sw}"
                 )
                 create_seed_of_life(
-                    root_component=seed_of_life_layer_0_inner_comp,
+                    component=seed_of_life_layer_0_inner_comp,
                     center_x=center_x,
                     center_y=center_y,
                     radius=radius,
@@ -1317,7 +1311,7 @@ def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
 
 @timer
 def slicer(
-    root_component: adsk.fusion.Component,
+    component: adsk.fusion.Component,
     design: adsk.core.Product,
     sliced_layer_depth: float,
     sliced_layer_count: float,
@@ -1326,10 +1320,10 @@ def slicer(
     design.designType = adsk.fusion.DesignTypes.ParametricDesignType
 
     # Create a new component for the slicing operation
-    slicer_comp = create_component(root_component, create_component_name("slicer"))
+    slicer_comp = create_component(component, create_component_name("slicer"))
 
     # Gather all bodies from the root component and its subcomponents
-    all_bodies = aggregate_all_bodies(root_component)
+    all_bodies = aggregate_all_bodies(component)
 
     # Combine the rest of the bodies with the main body
     tool_bodies = adsk.core.ObjectCollection.create()
@@ -1437,7 +1431,7 @@ def slice_body(
 
 @timer
 def create_seed_of_life(
-    root_component: adsk.fusion.Component,
+    component: adsk.fusion.Component,
     center_x,
     center_y,
     radius,
@@ -1458,11 +1452,11 @@ def create_seed_of_life(
 
     # draw the center circle
     sketch = create_sketch(
-        root_component, "seed-of-life-" + str(r) + "-center", layer_offset, plane
+        component, "seed-of-life-" + str(r) + "-center", layer_offset, plane
     )
     draw_circle(sketch, r, center_x, center_y)
     initial_body = extrude_thin_one(
-        component=root_component,
+        component=component,
         profile=sketch.profiles[0],
         extrudeHeight=eh,
         strokeWeight=sw,
@@ -1482,14 +1476,14 @@ def create_seed_of_life(
         # draw
         if AppConfig.DesignMode == DesignMode.DirectDesign:
             sketch = create_sketch(
-                root_component,
+                component,
                 "seed-of-life-" + str(r) + "-" + str(angle),
                 layer_offset,
                 plane,
             )
             draw_circle(sketch, r, x, y)
             extrude_thin_one(
-                component=root_component,
+                component=component,
                 profile=sketch.profiles[0],
                 extrudeHeight=eh,
                 name="seed-of-life-" + str(r) + "-" + str(angle),
@@ -1501,18 +1495,18 @@ def create_seed_of_life(
         elif AppConfig.DesignMode == DesignMode.ParametricDesign:
             # @todo add depth effect using "side" param
             real_body = copy_body(
-                root_component,
+                component,
                 initial_body,
                 name="seed-of-life-" + str(r) + "-" + str(angle),
             )
-            move_body(root_component, x, y, real_body)
+            move_body(component, x, y, real_body)
         else:
             raise Exception("DesignMode not supported")
 
 
 @timer
 def create_torus(
-    root_component: adsk.fusion.Component,
+    component: adsk.fusion.Component,
     center_x,
     center_y,
     radius,
@@ -1522,7 +1516,7 @@ def create_torus(
     layer_offset,
 ):
     sketch = create_sketch(
-        root_component,
+        component,
         "torus-outer-circle-" + str(radius) + "-" + str(iterations),
         offset=layer_offset,
     )
@@ -1530,7 +1524,7 @@ def create_torus(
     # draw the outer circle
     draw_circle(sketch, radius, center_x, center_y)
     initial_body = extrude_thin_one(
-        component=root_component,
+        component=component,
         profile=sketch.profiles[0],
         extrudeHeight=extrude_height,
         strokeWeight=stroke_weight,
@@ -1544,12 +1538,12 @@ def create_torus(
         pass
     elif AppConfig.DesignMode == DesignMode.ParametricDesign:
         throwaway_body = copy_body(
-            root_component,
+            component,
             initial_body,
             name="torus-outer-circle-throwaway-" + str(radius) + "-" + str(iterations),
         )
         scale_body(
-            root_component=root_component,
+            component=component,
             body=throwaway_body,
             scale_x=0.5,
             scale_y=0.5,
@@ -1573,13 +1567,13 @@ def create_torus(
         # draw
         if AppConfig.DesignMode == DesignMode.DirectDesign:
             real_sketch = create_sketch(
-                root_component,
+                component,
                 "torus-inner-circle-" + str(r) + "-" + str(angle),
                 layer_offset,
             )
             draw_circle(real_sketch, r, x, y)
             extrude_thin_one(
-                component=root_component,
+                component=component,
                 profile=real_sketch.profiles[0],
                 extrudeHeight=extrude_height,
                 strokeWeight=stroke_weight,
@@ -1588,11 +1582,11 @@ def create_torus(
             )
         elif AppConfig.DesignMode == DesignMode.ParametricDesign:
             real_body = copy_body(
-                root_component=root_component,
+                component=component,
                 body=throwaway_body,
                 name="torus-inner-circle-" + str(r) + "-" + str(angle),
             )
-            move_body(root_component, x, y, real_body)
+            move_body(component, x, y, real_body)
         else:
             raise Exception("DesignMode not supported")
 
@@ -1600,5 +1594,5 @@ def create_torus(
     log(f"torus: {iterations} circles with radius: {r}")
 
 
-def create_component_name(name):
+def create_component_name(name: str):
     return f"{PrintType.get_attr_name(ScaleConfig.ScaleFactor).lower()}-{name}"
