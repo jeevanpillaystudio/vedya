@@ -1,7 +1,7 @@
 import adsk.core
 import random
 from .types import FabricationType, DesignType
-from .utils import log
+from ..utils.lib import log
 
 
 class DesignContext:

@@ -1,4 +1,5 @@
 import math
+import random
 import adsk.core, adsk.fusion, adsk.cam, traceback
 from .core.shapes import (
     calculate_three_point_rectangle_area,
@@ -13,28 +14,33 @@ from .core.shapes import (
     create_seed,
     draw_tesseract_projection,
 )
-from .core.utils import (
-    DepthRepeat,
-    combine_body,
-    copy_body,
-    create_array_random_unique_multiples,
+from .core.geometry_utils import (
     create_offset_plane,
     create_sketch,
     extrude_profile_by_area,
-    component_exist,
-    create_component,
     extrude_single_profile_by_area,
     extrude_thin_one,
-    log,
+)
+from .core.component_utils import (
+    combine_body,
+    copy_body,
+    create_component,
+    component_exist,
     move_body,
     scale_body,
-    timer,
+)
+from .core.depth_utils import (
+    DepthRepeat,
     depth_repeat_iterator,
 )
-import random
+from .utils.lib import (
+    log,
+    timer,
+    create_array_random_unique_multiples,
+)
 from .core.context import DesignContext
 from .core.types import DesignType, FabricationType
-from .core.math.measurement import Measurement
+from .math.measurement import Measurement
 
 
 @timer
