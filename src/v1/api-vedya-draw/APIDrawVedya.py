@@ -118,6 +118,7 @@ class KailashConfig():
     KailashIntersectExtrudeArea = 401.66169829603086
     AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea = 1.2765358608164958
     OuterDiagonalCutWithAstroidExtrudeArea = 12.375340707128288
+    
 class SeedOfLifeConfig():
     def __init__(self):
         pass
@@ -176,14 +177,15 @@ def run(context):
         # structural components
         create_bg(root_comp)
         create_border(root_comp)
-        create_component_seed_of_life_layer_0(root_comp)
-        create_component_seed_of_life_layer_2(root_comp)
-        create_component_seed_of_life_layer_1(root_comp)
-        create_component_core(root_comp)
-        create_torus_astroid(root_comp)
+        return
+        # create_component_seed_of_life_layer_0(root_comp)
+        # create_component_seed_of_life_layer_2(root_comp)
+        # create_component_seed_of_life_layer_1(root_comp)
+        # create_component_core(root_comp)
+        # create_torus_astroid(root_comp)
         
         # cuts
-        create_middle_cut(root_comp)
+        # create_middle_cut(root_comp)
             
             
         # Structural Component - Kailash Terrain Generation Sketch
