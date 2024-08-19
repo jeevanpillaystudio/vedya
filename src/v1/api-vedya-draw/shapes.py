@@ -5,34 +5,65 @@ import hashlib
 import random
 import time
 
+
 def create_astroid_points(n, numPoints, scaleX, scaleY):
     points = adsk.core.ObjectCollection.create()
     for i in range(numPoints + 1):
         angle = i * 2 * math.pi / numPoints
-        x = pow(abs(math.cos(angle)), 2/n) * math.copysign(1, math.cos(angle)) * scaleX
-        y = pow(abs(math.sin(angle)), 2/n) * math.copysign(1, math.sin(angle)) * scaleY
+        x = (
+            pow(abs(math.cos(angle)), 2 / n)
+            * math.copysign(1, math.cos(angle))
+            * scaleX
+        )
+        y = (
+            pow(abs(math.sin(angle)), 2 / n)
+            * math.copysign(1, math.sin(angle))
+            * scaleY
+        )
         points.add(adsk.core.Point3D.create(x, y, 0))
-    return points  
+    return points
+
 
 def draw_astroid(sketch, n, numPoints, scaleX, scaleY):
-    sketch.sketchCurves.sketchFittedSplines.add(create_astroid_points(n, numPoints, scaleX, scaleY))
-    
+    sketch.sketchCurves.sketchFittedSplines.add(
+        create_astroid_points(n, numPoints, scaleX, scaleY)
+    )
+
+
 def draw_astroid_stroke(sketch, n, numPoints, scaleX, scaleY, strokeWeight):
-    sketch.sketchCurves.sketchFittedSplines.add(create_astroid_points(n, numPoints, scaleX, scaleY))
-    sketch.sketchCurves.sketchFittedSplines.add(create_astroid_points(n, numPoints, scaleX - strokeWeight, scaleY - strokeWeight)) 
-    
+    sketch.sketchCurves.sketchFittedSplines.add(
+        create_astroid_points(n, numPoints, scaleX, scaleY)
+    )
+    sketch.sketchCurves.sketchFittedSplines.add(
+        create_astroid_points(
+            n, numPoints, scaleX - strokeWeight, scaleY - strokeWeight
+        )
+    )
+
 
 def draw_circle(sketch, radius, center_x=0.0, center_y=0.0):
     circles = sketch.sketchCurves.sketchCircles
-    circle = circles.addByCenterRadius(adsk.core.Point3D.create(center_x, center_y, 0), radius)
+    circle = circles.addByCenterRadius(
+        adsk.core.Point3D.create(center_x, center_y, 0), radius
+    )
     return circle
-    
+
+
 def draw_rectangle(sketch: adsk.fusion.Sketch, length, width):
-    sketch.sketchCurves.sketchLines.addTwoPointRectangle(adsk.core.Point3D.create(-length / 2, width / 2, 0), adsk.core.Point3D.create(length / 2, -width / 2, 0))   
-    
+    sketch.sketchCurves.sketchLines.addTwoPointRectangle(
+        adsk.core.Point3D.create(-length / 2, width / 2, 0),
+        adsk.core.Point3D.create(length / 2, -width / 2, 0),
+    )
+
+
 def draw_rotated_rectangle(sketch, width, height):
-    sketch.sketchCurves.sketchLines.addThreePointRectangle(adsk.core.Point3D.create(-width, 0, 0), adsk.core.Point3D.create(0, height, 0), adsk.core.Point3D.create(width, 0, 0))
-    
+    sketch.sketchCurves.sketchLines.addThreePointRectangle(
+        adsk.core.Point3D.create(-width, 0, 0),
+        adsk.core.Point3D.create(0, height, 0),
+        adsk.core.Point3D.create(width, 0, 0),
+    )
+
+
 def calculate_astroid_area(scaleX):
     """
     Calculate the area of an astroid shape.
@@ -43,7 +74,8 @@ def calculate_astroid_area(scaleX):
     Returns:
     float: The area of the astroid shape.
     """
-    return (3 / 8) * math.pi * scaleX ** 2
+    return (3 / 8) * math.pi * scaleX**2
+
 
 def calculate_rectangle_area(width, length):
     """
@@ -69,7 +101,8 @@ def calculate_circle_area(radius):
     Returns:
     float: The area of the circle.
     """
-    return math.pi * radius ** 2
+    return math.pi * radius**2
+
 
 def calculate_three_point_rectangle_area(width, height):
     """
@@ -82,7 +115,8 @@ def calculate_three_point_rectangle_area(width, height):
     Returns:
         float: The area of the rectangle.
     """
-    return math.sqrt(width ** 2 + height ** 2) * math.sqrt(width ** 2 + height ** 2)
+    return math.sqrt(width**2 + height**2) * math.sqrt(width**2 + height**2)
+
 
 def create_seed():
     """
@@ -96,28 +130,30 @@ def create_seed():
     hex_dig = hash_object.hexdigest()
     return hex_dig[:64]
 
+
 def create_power_series_multiples(n):
     """
     Generate the first n multiples of 1, 2, 4, 8, 16...
-    
+
     Args:
         n (int): The number of multiples to generate.
-        
+
     Returns:
         list: A list of the first n multiples.
     """
     # Base multiplier
     multiplier = 1
-    
+
     # List to hold the multiples
     multiples = []
-    
+
     # Generate multiples
     for _ in range(n):
         multiples.append(multiplier)
         multiplier *= 2  # Update the multiplier for the next iteration
-    
+
     return multiples
+
 
 def draw_tesseract_projection(sketch, center_x, center_y, size):
     """
@@ -159,10 +195,15 @@ def draw_tesseract_projection(sketch, center_x, center_y, size):
         for j in range(i + 1, 8):
             end_point = outer_cube_points[j]
             # Only connect vertices that share two coordinates (this forms the edges of a cube)
-            if sum(1 for start, end in zip(start_point, end_point) if start == end) == 2:
+            if (
+                sum(1 for start, end in zip(start_point, end_point) if start == end)
+                == 2
+            ):
                 sketch.sketchCurves.sketchLines.addByTwoPoints(
-                    adsk.core.Point3D.create(*start_point[:-1]),  # Ignoring Z for 2D projection
-                    adsk.core.Point3D.create(*end_point[:-1])
+                    adsk.core.Point3D.create(
+                        *start_point[:-1]
+                    ),  # Ignoring Z for 2D projection
+                    adsk.core.Point3D.create(*end_point[:-1]),
                 )
 
     # Draw the inner cube and connect corresponding vertices to the outer cube
@@ -170,14 +211,25 @@ def draw_tesseract_projection(sketch, center_x, center_y, size):
         start_point_outer = outer_cube_points[i]
         start_point_inner = inner_cube_points[i]
         sketch.sketchCurves.sketchLines.addByTwoPoints(
-            adsk.core.Point3D.create(*start_point_outer[:-1]),  # Ignoring Z for 2D projection
-            adsk.core.Point3D.create(*start_point_inner[:-1])
+            adsk.core.Point3D.create(
+                *start_point_outer[:-1]
+            ),  # Ignoring Z for 2D projection
+            adsk.core.Point3D.create(*start_point_inner[:-1]),
         )
         for j in range(i + 1, 8):
             end_point_inner = inner_cube_points[j]
             # Only connect vertices that share two coordinates (this forms the edges of a cube)
-            if sum(1 for start, end in zip(start_point_inner, end_point_inner) if start == end) == 2:
+            if (
+                sum(
+                    1
+                    for start, end in zip(start_point_inner, end_point_inner)
+                    if start == end
+                )
+                == 2
+            ):
                 sketch.sketchCurves.sketchLines.addByTwoPoints(
-                    adsk.core.Point3D.create(*start_point_inner[:-1]),  # Ignoring Z for 2D projection
-                    adsk.core.Point3D.create(*end_point_inner[:-1])
+                    adsk.core.Point3D.create(
+                        *start_point_inner[:-1]
+                    ),  # Ignoring Z for 2D projection
+                    adsk.core.Point3D.create(*end_point_inner[:-1]),
                 )

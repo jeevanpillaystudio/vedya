@@ -3,30 +3,42 @@ import adsk.core, adsk.fusion
 import datetime
 import time
 
-FP_TOLERANCE = 1e-2 # 0.1 Precision for floating point comparison
+FP_TOLERANCE = 1e-2  # 0.1 Precision for floating point comparison
 
-def create_offset_plane(rootComp: adsk.fusion.Component, offset: float, name: str = "") -> adsk.fusion.ConstructionPlane:
+
+def create_offset_plane(
+    rootComp: adsk.fusion.Component,
+    offset: float,
+    name: str = "",
+    plane: adsk.fusion.ConstructionPlane = None,
+) -> adsk.fusion.ConstructionPlane:
     """
-    Creates an offset plane from the XY plane based on the specified offset.
+    Creates an offset plane from the specified plane based on the specified offset.
 
     Parameters:
     - rootComp: The root component to which the plane is added.
-    - offset: The offset distance from the XY plane.
+    - offset: The offset distance from the specified plane.
+    - name: The name of the offset construction plane.
+    - plane: The plane to offset from. If None, the XY plane is used.
 
     Returns:
     - The created offset construction plane.
     """
-    xyPlane = rootComp.xYConstructionPlane
+    if plane is None:
+        plane = rootComp.xYConstructionPlane
     planes = rootComp.constructionPlanes
     planeInput = planes.createInput()
     offsetValue = adsk.core.ValueInput.createByReal(offset)
-    planeInput.setByOffset(xyPlane, offsetValue)
+    planeInput.setByOffset(plane, offsetValue)
     offsetPlane = planes.add(planeInput)
     if name:
         offsetPlane.name = name
     return offsetPlane
 
-def create_sketch(rootComp, name, offset=0):
+
+def create_sketch(
+    rootComp, name, offset=0, plane: adsk.fusion.ConstructionPlane = None
+) -> adsk.fusion.Sketch:
     """
     Creates a sketch on the specified plane.
 
@@ -38,50 +50,75 @@ def create_sketch(rootComp, name, offset=0):
     - The created sketch.
     """
     sketches = rootComp.sketches
-    sketch = sketches.add(create_offset_plane(rootComp, offset))
+    sketch = sketches.add(create_offset_plane(rootComp, offset, plane=plane))
     sketch.name = name
     return sketch
 
-def extrude_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, extrude_height, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, fp_tolerance = FP_TOLERANCE) -> adsk.core.ObjectCollection:
+
+def extrude_profile_by_area(
+    component: adsk.fusion.Component,
+    profiles: list[adsk.fusion.Profile],
+    area: float,
+    extrude_height,
+    name,
+    operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+    fp_tolerance=FP_TOLERANCE,
+) -> adsk.core.ObjectCollection:
     """
     Creates an extrusion based on the specified area and depth for the given profiles.
-    
+
     Parameters:
     - rootComp: The root component to which the extrusion is added.
     - profiles: The collection of profiles to search for the specified area.
     - area: The area to search for in the profiles.
     - depth: The depth of the extrusion.
     - bodyName: The name of the body created by the extrusion.
-    
+
     Returns:
     - The body created by the extrusion based on the specified area and depth.
     """
     bodies = adsk.core.ObjectCollection.create()
     extrudes = component.features.extrudeFeatures
     for profile in profiles:
-        log(f'{profile.areaProperties().area}, {area}, {abs(profile.areaProperties().area - area)}')
-        if abs(profile.areaProperties().area - area) < fp_tolerance or abs(profile.areaProperties().area - area) == 0.0:
+        log(
+            f"{profile.areaProperties().area}, {area}, {abs(profile.areaProperties().area - area)}"
+        )
+        if (
+            abs(profile.areaProperties().area - area) < fp_tolerance
+            or abs(profile.areaProperties().area - area) == 0.0
+        ):
             extInput = extrudes.createInput(profile, operation=operation)
-            extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrude_height))
+            extInput.setDistanceExtent(
+                False, adsk.core.ValueInput.createByReal(extrude_height)
+            )
             extrude = extrudes.add(extInput)
             body = extrude.bodies.item(0)
             body.name = name
             bodies.add(body)
     if bodies.count > 0:
         return bodies
-    raise ValueError('Failed to find the profile for extrusion')
+    raise ValueError("Failed to find the profile for extrusion")
 
-def extrude_single_profile_by_area(component: adsk.fusion.Component, profiles: list[adsk.fusion.Profile], area: float, extrude_height, name, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, fp_tolerance = FP_TOLERANCE) -> adsk.fusion.BRepBody:
+
+def extrude_single_profile_by_area(
+    component: adsk.fusion.Component,
+    profiles: list[adsk.fusion.Profile],
+    area: float,
+    extrude_height,
+    name,
+    operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+    fp_tolerance=FP_TOLERANCE,
+) -> adsk.fusion.BRepBody:
     """
     Creates an extrusion based on the specified area and depth for the given profile.
-    
+
     Parameters:
     - rootComp: The root component to which the extrusion is added.
     - profile: The profile to search for the specified area.
     - area: The area to search for in the profile.
     - depth: The depth of the extrusion.
     - bodyName: The name of the body created by the extrusion.
-    
+
     Returns:
     - The body created by the extrusion based on the specified area and depth.
     """
@@ -89,61 +126,96 @@ def extrude_single_profile_by_area(component: adsk.fusion.Component, profiles: l
     for profile in profiles:
         if abs(profile.areaProperties().area - area) < fp_tolerance:
             extInput = extrudes.createInput(profile, operation=operation)
-            extInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrude_height))
+            extInput.setDistanceExtent(
+                False, adsk.core.ValueInput.createByReal(extrude_height)
+            )
             extrude = extrudes.add(extInput)
             body = extrude.bodies.item(0)
             body.name = name
             return body
-    raise ValueError('Failed to find the profile for extrusion')
+    raise ValueError("Failed to find the profile for extrusion")
 
-def extrude_thin_one(component: adsk.fusion.Component, profile: adsk.fusion.Profile, extrudeHeight, name, strokeWeight: int, operation: adsk.fusion.FeatureOperations=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side: adsk.fusion.ThinExtrudeWallLocation=adsk.fusion.ThinExtrudeWallLocation.Side1):
+
+def extrude_thin_one(
+    component: adsk.fusion.Component,
+    profile: adsk.fusion.Profile,
+    extrudeHeight,
+    name,
+    strokeWeight: int,
+    operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+    side: adsk.fusion.ThinExtrudeWallLocation = adsk.fusion.ThinExtrudeWallLocation.Side1,
+    start_from: adsk.fusion.BRepBody = None,
+):
     """
     Creates a thin extrusion based on the specified depth for the given profile.
-    
+
     Parameters:
     - rootComp: The root component to which the extrusion is added.
     - profiles: The profiles to thin extrude.
     - depth: The depth of the extrusion.
     - bodyName: The name of the body created by the extrusion.
-    
+
     Returns:
     - The body created by the extrusion based on the specified depth.
     """
     extrudes = component.features.extrudeFeatures
     extrudeInput = extrudes.createInput(profile, operation=operation)
+
+    # start from a specific body; for curved extrusions
+    if start_from is not None:
+        mm0 = adsk.core.ValueInput.createByString("0 mm")
+        start_from_extent = adsk.fusion.FromEntityStartDefinition.create(
+            start_from, mm0
+        )
+        extrudeInput.startExtent = start_from_extent
+
     extrudeInput.setThinExtrude(side, adsk.core.ValueInput.createByReal(strokeWeight))
-    extrudeInput.setDistanceExtent(False, adsk.core.ValueInput.createByReal(extrudeHeight))
+    extrudeInput.setDistanceExtent(
+        False, adsk.core.ValueInput.createByReal(extrudeHeight)
+    )
     extrude = extrudes.add(extrudeInput)
     body = extrude.bodies.item(0)
     body.name = name
     return body
 
-def create_component(root_component: adsk.fusion.Component, component_name) -> adsk.fusion.Component:
+
+def create_component(
+    root_component: adsk.fusion.Component, component_name
+) -> adsk.fusion.Component:
     # Create a new component
     newComp = root_component.occurrences.addNewComponent(adsk.core.Matrix3D.create())
     newComp.component.name = component_name
     return newComp.component
 
+
 def component_exist(root_component: adsk.fusion.Component, name) -> bool:
     return root_component.occurrences.itemByName(name + ":1") is not None
+
 
 def log(value):
     try:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_message = f"{timestamp} INFO: {str(value)}\n"
-        
+
         # Write the log message to the a file
-        with open("/Users/jeevanpillay/Documents - triangle/Developer/Repository/@jeevanpillaystudio/vedya/logfile.txt", "a") as file:
+        with open(
+            "/Users/jeevanpillay/Documents - triangle/Developer/Repository/@jeevanpillaystudio/vedya/logfile.txt",
+            "a",
+        ) as file:
             file.write(log_message)
-        
+
         print("Values written to logfile.txt successfully.")
     except Exception as e:
         print("An error occurred while writing to logfile.txt:", str(e))
-        
+
+
 # Redefine the function to generate unique values without using numpy
 import random
 
-def create_array_random_unique_multiples(size: int, multiple: int = 8, min_multiple: int = 1, max_multiple: int = 10):
+
+def create_array_random_unique_multiples(
+    size: int, multiple: int = 8, min_multiple: int = 1, max_multiple: int = 10
+):
     """
     Generate a list of random unique multiples of a given number.
 
@@ -164,6 +236,7 @@ def create_array_random_unique_multiples(size: int, multiple: int = 8, min_multi
         values.add(value)
     return sorted(list(values))
 
+
 def timer(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
@@ -171,46 +244,59 @@ def timer(func):
         end_time = time.time()
         log(f"TIMER '{func.__name__}' took {end_time - start_time} seconds to run.")
         return result
+
     return wrapper
 
-def scale_body(root_component: adsk.fusion.Component, body: adsk.fusion.BRepBody, scale_x: float = 1, scale_y: float = 1, scale_z: float = 1, sketch_pt: adsk.fusion.SketchPoint = None):
+
+def scale_body(
+    root_component: adsk.fusion.Component,
+    body: adsk.fusion.BRepBody,
+    scale_x: float = 1,
+    scale_y: float = 1,
+    scale_z: float = 1,
+    sketch_pt: adsk.fusion.SketchPoint = None,
+):
     # init
     bodies = adsk.core.ObjectCollection.create()
     bodies.add(body)
-        
-    # init values    
-    scale_factor = adsk.core.ValueInput.createByReal(1) # @todo auto set to 1; doesn't have to be.
-    
+
+    # init values
+    scale_factor = adsk.core.ValueInput.createByReal(
+        1
+    )  # @todo auto set to 1; doesn't have to be.
+
     # create the scale feature
     scale_feature = root_component.features.scaleFeatures
     scale_feature_input = scale_feature.createInput(bodies, sketch_pt, scale_factor)
-    
+
     # set scale to be non-uniform
     xScale = adsk.core.ValueInput.createByReal(scale_x)
     yScale = adsk.core.ValueInput.createByReal(scale_y)
     zScale = adsk.core.ValueInput.createByReal(scale_z)
     scale_feature_input.setToNonUniform(xScale, yScale, zScale)
-    
+
     # scale
     scale = scale_feature.add(scale_feature_input)
-    
+
     return scale
-    
+
+
 def move_body(root_component: adsk.fusion.Component, x, y, body: adsk.fusion.BRepBody):
     # init
     bodies = adsk.core.ObjectCollection.create()
     bodies.add(body)
-        
+
     # move body transforms
     vector = adsk.core.Vector3D.create(x, y, 0)
     transform = adsk.core.Matrix3D.create()
     transform.translation = vector
-        
+
     # create the move feature
     move_feature = root_component.features.moveFeatures
     move_feature_input = move_feature.createInput2(bodies)
     move_feature_input.defineAsFreeMove(transform)
     move_feature.add(move_feature_input)
+
 
 def copy_body(root_component, body, name) -> adsk.fusion.BRepBody:
     copied_body = root_component.features.copyPasteBodies.add(body)
@@ -218,21 +304,38 @@ def copy_body(root_component, body, name) -> adsk.fusion.BRepBody:
     real_body.name = name
     return real_body
 
-def combine_body(root_component: adsk.fusion.Component, target_body: adsk.fusion.BRepBody, tool_bodies: adsk.core.ObjectCollection, operation = adsk.fusion.FeatureOperations.CutFeatureOperation):
+
+def combine_body(
+    root_component: adsk.fusion.Component,
+    target_body: adsk.fusion.BRepBody,
+    tool_bodies: adsk.core.ObjectCollection,
+    operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
+):
     combine_feature = root_component.features.combineFeatures
-    combine_feature_input = root_component.features.combineFeatures.createInput(target_body, tool_bodies)
+    combine_feature_input = root_component.features.combineFeatures.createInput(
+        target_body, tool_bodies
+    )
     combine_feature_input.operation = operation
     combine_feature_input.isKeepToolBodies = False
     combine_feature_input.isNewComponent = False
     combine_feature.add(combine_feature_input)
 
+
 class DepthRepeat:
     def __init__(self) -> None:
         pass
+
     Increment = 0
     Decrement = 1
-    
-def depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stroke_weight, direction=DepthRepeat.Increment):
+
+
+def depth_repeat_iterator(
+    depth_repeat,
+    start_layer_offset,
+    extrude_height,
+    stroke_weight,
+    direction=DepthRepeat.Increment,
+):
     for i in range(depth_repeat):
         # layer offset (runs reverse)
         layer_offset = start_layer_offset + extrude_height * i
@@ -244,3 +347,18 @@ def depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height, stro
             sw = stroke_weight * (i + 1)
 
         yield layer_offset, sw
+
+
+def create_random_string(length: int = 8) -> str:
+    """
+    Generate a random string of the specified length.
+
+    Parameters:
+    - length: The length of the random string to generate.
+
+    Returns:
+    - A random string of the specified length.
+    """
+    return "".join(
+        random.choices("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", k=length)
+    )
