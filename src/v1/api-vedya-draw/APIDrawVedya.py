@@ -1,6 +1,6 @@
 import math
 import adsk.core, adsk.fusion, adsk.cam, traceback
-from .shapes import (
+from .core.shapes import (
     calculate_three_point_rectangle_area,
     draw_astroid,
     draw_astroid_stroke,
@@ -13,7 +13,7 @@ from .shapes import (
     create_seed,
     draw_tesseract_projection,
 )
-from .utils import (
+from .core.utils import (
     DepthRepeat,
     combine_body,
     copy_body,
@@ -32,8 +32,9 @@ from .utils import (
     depth_repeat_iterator,
 )
 import random
-from .context import DesignContext
-from .types import DesignType, FabricationType
+from .core.context import DesignContext
+from .core.types import DesignType, FabricationType
+from .core.math.measurement import Measurement
 
 
 @timer
