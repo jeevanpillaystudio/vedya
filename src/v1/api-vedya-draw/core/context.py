@@ -1,6 +1,6 @@
 import adsk.core, adsk.fusion
 import random
-from .types import FabricationType, DesignType
+from .types import FabricationMode, FabricationType, DesignType
 from ..utils.lib import log
 
 
@@ -11,12 +11,14 @@ class FusionDesignContext:
         design_type: adsk.fusion.DesignTypes,
         seed: int,
         fabrication_type: FabricationType,
+        fabrication_mode: FabricationMode,
     ):
         # Set the context
         self._app_context = app_context
 
-        # Set the fabrication type
+        # Set the fabrication config
         self.fabrication_type = fabrication_type
+        self.fabrication_mode = fabrication_mode
 
         # Set the design type
         self._design = self._app_context.activeProduct
@@ -46,3 +48,10 @@ class FusionDesignContext:
     @property
     def root_component(self) -> adsk.fusion.Component:
         return self._design.rootComponent
+
+    @property
+    def design(self) -> adsk.fusion.Design:
+        return self._design
+
+    def set_design(self, design_type: DesignType):
+        self._design.designType = design_type

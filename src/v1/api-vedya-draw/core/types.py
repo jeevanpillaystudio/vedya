@@ -1,6 +1,14 @@
 import adsk.fusion
 
 
+class FabricationMode:
+    def __init__(self):
+        pass
+
+    NORMAL = "Normal"
+    SLICER = "Slicer"
+
+
 class FabricationType:
     def __init__(self):
         pass
