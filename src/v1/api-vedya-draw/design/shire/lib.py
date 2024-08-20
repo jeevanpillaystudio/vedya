@@ -12,7 +12,7 @@ from ...utils.lib import log, timer
 from ...core.types import FabricationType
 from ...core.component_utils import (
     combine_body,
-    component_exist,
+    is_component_exist,
     create_component,
 )
 from ...core.geometry.rectangle import (
@@ -38,7 +38,7 @@ from .config import (
 
 
 def create_bg(component: adsk.fusion.Component):
-    if not component_exist(component=component, name=create_component_name("bg")):
+    if not is_component_exist(component=component, name=create_component_name("bg")):
         core_structural_comp = create_component(
             component=component, name=create_component_name("bg")
         )
@@ -60,7 +60,7 @@ def create_bg(component: adsk.fusion.Component):
 
 
 def create_border(root_comp):
-    if not component_exist(root_comp, create_component_name("border")):
+    if not is_component_exist(root_comp, create_component_name("border")):
         layer_offset = AppConfig.LayerDepth * 2
         border_comp = create_component(
             component=root_comp, name=create_component_name("border")
@@ -81,7 +81,7 @@ def create_border(root_comp):
 
 
 def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
-    if not component_exist(
+    if not is_component_exist(
         root_comp, create_component_name("layer-0-seed-of-life-x-1")
     ):
         # top level comp
@@ -249,7 +249,9 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
 
 
 def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
-    if not component_exist(root_comp, create_component_name("layer-2-seed-of-life-x")):
+    if not is_component_exist(
+        root_comp, create_component_name("layer-2-seed-of-life-x")
+    ):
         # top level comp
         seed_of_life_comp = create_component(
             component=root_comp,
@@ -476,7 +478,9 @@ def create_seed_of_life(
 
 
 def create_component_seed_of_life_layer_1(root_comp: adsk.fusion.Component):
-    if not component_exist(root_comp, create_component_name("layer-1-seed-of-life-x")):
+    if not is_component_exist(
+        root_comp, create_component_name("layer-1-seed-of-life-x")
+    ):
         # top level comp
         seed_of_life_comp = create_component(
             component=root_comp,
@@ -638,7 +642,7 @@ def create_component_seed_of_life_layer_1(root_comp: adsk.fusion.Component):
 
 
 def create_component_core(root_comp):
-    if not component_exist(root_comp, create_component_name("core")):
+    if not is_component_exist(root_comp, create_component_name("core")):
         main_comp = create_component(
             component=root_comp, name=create_component_name("core")
         )
@@ -814,7 +818,7 @@ def create_component_core(root_comp):
 
 
 def create_torus_astroid(root_comp):
-    if not component_exist(root_comp, create_component_name("torus")):
+    if not is_component_exist(root_comp, create_component_name("torus")):
         torus_comp = create_component(
             component=root_comp, name=create_component_name("torus")
         )
@@ -941,7 +945,7 @@ def create_torus_astroid(root_comp):
 
 
 def create_middle_cut(root_comp):
-    if not component_exist(root_comp, create_component_name("middle_circle_comp")):
+    if not is_component_exist(root_comp, create_component_name("middle_circle_comp")):
         try:
             middle_circle_comp = create_component(
                 component=root_comp,
@@ -1064,7 +1068,7 @@ def create_intersect_only_in_bounds(root_comp):
 
 
 def create_component_outer_diagonal_steps(root_comp: adsk.fusion.Component):
-    if not component_exist(
+    if not is_component_exist(
         root_comp, create_component_name("interstellar-tesellation")
     ):
         interstellar_tesellation_comp = create_component(
@@ -1141,7 +1145,7 @@ def aggregate_all_bodies(
 
 
 def create_kailash_terrain_cut(component: adsk.fusion.Component):
-    if not component_exist(
+    if not is_component_exist(
         component, create_component_name("cut-kailash-intersection")
     ):
         # Structural Component - Kailash Terrain Generation Sketch
