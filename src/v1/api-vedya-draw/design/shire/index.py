@@ -21,6 +21,7 @@ from .lib import (
     create_bg,
     create_border,
     create_component_seed_of_life_layer_0,
+    create_component_seed_of_life_layer_1,
     create_component_seed_of_life_layer_2,
 )
 from ...utils.lib import log
@@ -52,8 +53,8 @@ def start_func(root_comp: adsk.fusion.Component):
     create_component_seed_of_life_layer_2(root_comp)
 
     # create seed of life layer 1 component
-    # log(f"INFO: create_seed_of_life_layer_1 function")
-    # create_component_seed_of_life_layer_1(root_comp)
+    log(f"INFO: create_seed_of_life_layer_1 function")
+    create_component_seed_of_life_layer_1(root_comp)
 
     # end
     log(f"DEBUG: End execute function for {PROJECT_NAME}")
