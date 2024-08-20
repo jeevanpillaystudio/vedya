@@ -56,3 +56,20 @@ class DiagonalRectangleConfig:
     InnerDiagonalRectangleWidth = 32.0 / 2.0 * SCALE_FACTOR
     InnerDiagonalRectangleHeight = 32.0 / 2.0 * SCALE_FACTOR
     InnerDiagonalRectangleStrokeWeight = AppConfig.StrokeWeight * SCALE_FACTOR
+
+
+class AstroidConfig:
+    def __init__(self):
+        pass
+
+    def __str__(self) -> str:
+        return f"AstroidConfig: NumPoints={self.NumPoints}, N={self.N}, OuterAstroidRadius={self.OuterAstroidRadius}, InnerAstroidRadius={self.InnerAstroidRadius}"
+
+    N = 2 / 3
+    NumPoints = 128
+
+    OuterAstroidRadius = (32.0 - 2.56) * SCALE_FACTOR
+    OuterAstroidStrokeWeight = AppConfig.StrokeWeight * SCALE_FACTOR
+
+    InnerAstroidRadius = (16.0 + 2.56) * SCALE_FACTOR
+    InnerAstroidStrokeWeight = AppConfig.StrokeWeight * SCALE_FACTOR
