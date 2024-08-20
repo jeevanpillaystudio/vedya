@@ -2,40 +2,38 @@ import adsk.core
 import math
 
 
-def create_astroid_points(n, numPoints, scaleX, scaleY):
+def create_astroid_points(n, num_points, scale_x, scale_y):
     points = adsk.core.ObjectCollection.create()
-    for i in range(numPoints + 1):
-        angle = i * 2 * math.pi / numPoints
+    for i in range(num_points + 1):
+        angle = i * 2 * math.pi / num_points
         x = (
             pow(abs(math.cos(angle)), 2 / n)
             * math.copysign(1, math.cos(angle))
-            * scaleX
+            * scale_x
         )
         y = (
             pow(abs(math.sin(angle)), 2 / n)
             * math.copysign(1, math.sin(angle))
-            * scaleY
+            * scale_y
         )
         points.add(adsk.core.Point3D.create(x, y, 0))
     return points
 
 
-def draw_astroid(sketch, n, numPoints, scaleX, scaleY):
+def draw_astroid(sketch, n, num_points, scale_x, scale_y):
     sketch.sketchCurves.sketchFittedSplines.add(
-        create_astroid_points(n, numPoints, scaleX, scaleY)
+        create_astroid_points(n, num_points, scale_x, scale_y)
     )
 
 
-def draw_astroid_stroke(sketch, n, numPoints, scaleX, scaleY, strokeWeight):
+def draw_astroid_stroke(sketch, n, num_points, scale_x, scale_y, thickness):
     sketch.sketchCurves.sketchFittedSplines.add(
-        create_astroid_points(n, numPoints, scaleX, scaleY)
+        create_astroid_points(n, num_points, scale_x, scale_y)
     )
     sketch.sketchCurves.sketchFittedSplines.add(
-        create_astroid_points(
-            n, numPoints, scaleX - strokeWeight, scaleY - strokeWeight
-        )
+        create_astroid_points(n, num_points, scale_x - thickness, scale_y - thickness)
     )
 
 
-def calculate_astroid_area(scaleX):
-    return (3 / 8) * math.pi * scaleX**2
+def calculate_astroid_area(scale_x):
+    return (3 / 8) * math.pi * scale_x**2

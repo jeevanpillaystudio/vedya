@@ -703,9 +703,9 @@ def create_component_core(root_comp):
         draw_astroid(
             sketch=sketch,
             n=AstroidConfig.N,
-            numPoints=AstroidConfig.NumPoints,
-            scaleX=AstroidConfig.OuterAstroidRadius,
-            scaleY=AstroidConfig.OuterAstroidRadius,
+            num_points=AstroidConfig.NumPoints,
+            scale_x=AstroidConfig.OuterAstroidRadius,
+            scale_y=AstroidConfig.OuterAstroidRadius,
         )
         extrude_profile_by_area(
             component=main_comp,
@@ -725,10 +725,10 @@ def create_component_core(root_comp):
         draw_astroid(
             sketch=sketch,
             n=AstroidConfig.N,
-            numPoints=AstroidConfig.NumPoints,
-            scaleX=AstroidConfig.OuterAstroidRadius
+            num_points=AstroidConfig.NumPoints,
+            scale_x=AstroidConfig.OuterAstroidRadius
             - AstroidConfig.OuterAstroidStrokeWeight,
-            scaleY=AstroidConfig.OuterAstroidRadius
+            scale_y=AstroidConfig.OuterAstroidRadius
             - AstroidConfig.OuterAstroidStrokeWeight,
         )
         extrude_profile_by_area(
@@ -772,9 +772,9 @@ def create_component_core(root_comp):
         draw_astroid(
             sketch=sketch,
             n=AstroidConfig.N,
-            numPoints=AstroidConfig.NumPoints,
-            scaleX=AstroidConfig.InnerAstroidRadius,
-            scaleY=AstroidConfig.InnerAstroidRadius,
+            num_points=AstroidConfig.NumPoints,
+            scale_x=AstroidConfig.InnerAstroidRadius,
+            scale_y=AstroidConfig.InnerAstroidRadius,
         )
         extrude_profile_by_area(
             component=main_comp,
@@ -794,10 +794,10 @@ def create_component_core(root_comp):
         draw_astroid(
             sketch=sketch,
             n=AstroidConfig.N,
-            numPoints=AstroidConfig.NumPoints,
-            scaleX=AstroidConfig.InnerAstroidRadius
+            num_points=AstroidConfig.NumPoints,
+            scale_x=AstroidConfig.InnerAstroidRadius
             - AstroidConfig.InnerAstroidStrokeWeight,
-            scaleY=AstroidConfig.InnerAstroidRadius
+            scale_y=AstroidConfig.InnerAstroidRadius
             - AstroidConfig.InnerAstroidStrokeWeight,
         )
         extrude_profile_by_area(
@@ -872,10 +872,10 @@ def create_torus_astroid(root_comp):
             draw_astroid(
                 sketch=sketch,
                 n=AstroidConfig.N,
-                numPoints=AstroidConfig.NumPoints,
-                scaleX=AstroidConfig.InnerAstroidRadius
+                num_points=AstroidConfig.NumPoints,
+                scale_x=AstroidConfig.InnerAstroidRadius
                 - AstroidConfig.InnerAstroidStrokeWeight,
-                scaleY=AstroidConfig.InnerAstroidRadius
+                scale_y=AstroidConfig.InnerAstroidRadius
                 - AstroidConfig.InnerAstroidStrokeWeight,
             )
             invert_body = extrude_single_profile_by_area(
@@ -903,12 +903,12 @@ def create_torus_astroid(root_comp):
             draw_astroid_stroke(
                 sketch=sketch,
                 n=AstroidConfig.N,
-                numPoints=AstroidConfig.NumPoints,
-                scaleX=AstroidConfig.InnerAstroidRadius
+                num_points=AstroidConfig.NumPoints,
+                scale_x=AstroidConfig.InnerAstroidRadius
                 - AstroidConfig.InnerAstroidStrokeWeight,
-                scaleY=AstroidConfig.InnerAstroidRadius
+                scale_y=AstroidConfig.InnerAstroidRadius
                 - AstroidConfig.InnerAstroidStrokeWeight,
-                strokeWeight=AppConfig.StrokeWeight,
+                thickness=AppConfig.StrokeWeight,
             )
             extrude_profile_by_area(
                 component=torus_comp,
@@ -1172,33 +1172,33 @@ def create_kailash_terrain_cut(component: adsk.fusion.Component):
             draw_astroid(
                 sketch=sketch,
                 n=AstroidConfig.N,
-                numPoints=AstroidConfig.NumPoints,
-                scaleX=AstroidConfig.OuterAstroidRadius,
-                scaleY=AstroidConfig.OuterAstroidRadius,
+                num_points=AstroidConfig.NumPoints,
+                scale_x=AstroidConfig.OuterAstroidRadius,
+                scale_y=AstroidConfig.OuterAstroidRadius,
             )
             draw_astroid(
                 sketch=sketch,
                 n=AstroidConfig.N,
-                numPoints=AstroidConfig.NumPoints,
-                scaleX=AstroidConfig.OuterAstroidRadius
+                num_points=AstroidConfig.NumPoints,
+                scale_x=AstroidConfig.OuterAstroidRadius
                 - AstroidConfig.OuterAstroidStrokeWeight,
-                scaleY=AstroidConfig.OuterAstroidRadius
+                scale_y=AstroidConfig.OuterAstroidRadius
                 - AstroidConfig.OuterAstroidStrokeWeight,
             )
             draw_astroid(
                 sketch=sketch,
                 n=AstroidConfig.N,
-                numPoints=AstroidConfig.NumPoints,
-                scaleX=AstroidConfig.InnerAstroidRadius,
-                scaleY=AstroidConfig.InnerAstroidRadius,
+                num_points=AstroidConfig.NumPoints,
+                scale_x=AstroidConfig.InnerAstroidRadius,
+                scale_y=AstroidConfig.InnerAstroidRadius,
             )
             draw_astroid(
                 sketch=sketch,
                 n=AstroidConfig.N,
-                numPoints=AstroidConfig.NumPoints,
-                scaleX=AstroidConfig.InnerAstroidRadius
+                num_points=AstroidConfig.NumPoints,
+                scale_x=AstroidConfig.InnerAstroidRadius
                 - AstroidConfig.InnerAstroidStrokeWeight,
-                scaleY=AstroidConfig.InnerAstroidRadius
+                scale_y=AstroidConfig.InnerAstroidRadius
                 - AstroidConfig.InnerAstroidStrokeWeight,
             )
             # for profile in sketch.profiles:

@@ -9,11 +9,16 @@ def create_component(
     return newComp.component
 
 
-def component_exist(component: adsk.fusion.Component, name) -> bool:
+def component_exist(component: adsk.fusion.Component, name: str) -> bool:
     return component.occurrences.itemByName(name + ":1") is not None
 
 
-def move_body(root_component: adsk.fusion.Component, x, y, body: adsk.fusion.BRepBody):
+def move_body(
+    root_component: adsk.fusion.Component,
+    x: float,
+    y: float,
+    body: adsk.fusion.BRepBody,
+):
     bodies = adsk.core.ObjectCollection.create()
     bodies.add(body)
     vector = adsk.core.Vector3D.create(x, y, 0)

@@ -37,10 +37,10 @@ def extrude_profile_by_area(
     component: adsk.fusion.Component,
     profiles: list[adsk.fusion.Profile],
     area: float,
-    extrude_height,
-    name,
+    extrude_height: float,
+    name: str,
     operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
-    fp_tolerance=FP_TOLERANCE,
+    fp_tolerance: float = FP_TOLERANCE,
 ) -> adsk.core.ObjectCollection:
     bodies = adsk.core.ObjectCollection.create()
     extrudes = component.features.extrudeFeatures
@@ -66,10 +66,10 @@ def extrude_single_profile_by_area(
     component: adsk.fusion.Component,
     profiles: list[adsk.fusion.Profile],
     area: float,
-    extrude_height,
-    name,
+    extrude_height: float,
+    name: str,
     operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
-    fp_tolerance=FP_TOLERANCE,
+    fp_tolerance: float = FP_TOLERANCE,
 ) -> adsk.fusion.BRepBody:
     extrudes = component.features.extrudeFeatures
     for profile in profiles:
@@ -88,8 +88,8 @@ def extrude_single_profile_by_area(
 def extrude_thin_one(
     component: adsk.fusion.Component,
     profile: adsk.fusion.Profile,
-    extrudeHeight,
-    name,
+    extrudeHeight: float,
+    name: str,
     strokeWeight: int,
     operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
     side: adsk.fusion.ThinExtrudeWallLocation = adsk.fusion.ThinExtrudeWallLocation.Side1,
