@@ -1,6 +1,21 @@
+import adsk.fusion
+
+
 class DepthRepeat:
-    INCREMENT = 0
-    DECREMENT = 1
+    def __init__(self):
+        pass
+
+    Increment = 0
+    Decrement = 1
+
+
+class DepthEffect:
+    def __init__(self):
+        pass
+
+    Side1 = adsk.fusion.ThinExtrudeWallLocation.Side1
+    Side2 = adsk.fusion.ThinExtrudeWallLocation.Side2
+    Center = adsk.fusion.ThinExtrudeWallLocation.Center
 
 
 def depth_repeat_iterator(
@@ -8,7 +23,7 @@ def depth_repeat_iterator(
     start_layer_offset: float,
     extrude_height: float,
     stroke_weight: float,
-    direction=DepthRepeat.INCREMENT,
+    direction=DepthRepeat.Increment,
 ):
     """
     Generator that yields layer offset and stroke weight for each iteration.
@@ -28,9 +43,9 @@ def depth_repeat_iterator(
         layer_offset = start_layer_offset + extrude_height * i
 
         # Adjust stroke weight based on direction
-        if direction == DepthRepeat.INCREMENT:
+        if direction == DepthRepeat.Increment:
             sw = stroke_weight * (depth_repeat - i)
-        elif direction == DepthRepeat.DECREMENT:
+        elif direction == DepthRepeat.Decrement:
             sw = stroke_weight * (i + 1)
 
         yield layer_offset, sw

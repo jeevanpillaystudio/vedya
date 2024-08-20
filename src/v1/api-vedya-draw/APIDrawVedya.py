@@ -33,6 +33,9 @@ def run(context):
         # Call the function to generate the design
         start_func(root_component)
 
+        # End
+        log(f"DEBUG: End generation of the design")
+
     except Exception as e:
         if ui:
             ui.messageBox("Failed:\n{}".format(traceback.format_exc()))

@@ -17,7 +17,7 @@ PROJECT_NAME = "shire"
 
 import adsk.core, adsk.fusion
 
-from .lib import create_bg, create_border
+from .lib import create_bg, create_border, create_component_seed_of_life_layer_0
 from ...utils.lib import log
 
 
@@ -37,6 +37,10 @@ def start_func(root_comp: adsk.fusion.Component):
     # create the border
     log(f"INFO: create_border function")
     create_border(root_comp)
+
+    # create seed of life layer 0 component
+    log(f"INFO: create_seed_of_life_layer_0 function")
+    create_component_seed_of_life_layer_0(root_comp)
 
     # end
     log(f"DEBUG: End execute function for {PROJECT_NAME}")
