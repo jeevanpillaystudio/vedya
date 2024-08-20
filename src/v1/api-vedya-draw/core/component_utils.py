@@ -1,11 +1,10 @@
 import adsk.core, adsk.fusion
-from core.types import FabricationType
 
 
 def create_component(
-    root_component: adsk.fusion.Component, name: str
+    component: adsk.fusion.Component, name: str
 ) -> adsk.fusion.Component:
-    newComp = root_component.occurrences.addNewComponent(adsk.core.Matrix3D.create())
+    newComp = component.occurrences.addNewComponent(adsk.core.Matrix3D.create())
     newComp.component.name = name
     return newComp.component
 
@@ -68,8 +67,3 @@ def copy_body(root_component, body, name) -> adsk.fusion.BRepBody:
     real_body = copied_body.bodies.item(0)
     real_body.name = name
     return real_body
-
-
-### @TODO decouple FabricationType from component name
-def create_component_name(name: str):
-    return f"{FabricationType.get_name(FabricationType.CNC_MILL).lower()}-{name}"

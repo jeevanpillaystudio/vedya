@@ -1,3 +1,4 @@
+import math
 import adsk.core
 import adsk.fusion
 

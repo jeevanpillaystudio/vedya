@@ -31,7 +31,7 @@ def run(context):
         log(f"DEBUG: Start generation of the design")
 
         # Call the function to generate the design
-        # start_func(root_component)
+        start_func(root_component)
 
     except Exception as e:
         if ui:

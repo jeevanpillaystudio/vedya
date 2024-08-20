@@ -13,23 +13,23 @@ Functionality to generate the v1 of the Vedya design.
     that was then used to generate the G-code for the CNC machine.
 """
 
-# import adsk.core, adsk.fusion
+import adsk.core, adsk.fusion
 
-# from design.v1.lib import create_bg
-# from utils.lib import log
+from .lib import create_bg
+from ...utils.lib import log
 
 
 # def start_func(root_comp: adsk.fusion.Component):
-#     """
-#     Function to generate the v1 of the Vedya design.
 
-#     @param root_comp: adsk.fusion.Component: The root component to generate the design.
-#     """
 #     log(f"DEBUG: Start execute function")
 #     # create_bg(root_comp)
 
 
-def start_func():
-    pass
-    # log(f"DEBUG: Start execute function")
-    # create_bg(root_comp)
+def start_func(root_comp: adsk.fusion.Component):
+    """
+    Function to generate the v1 of the Vedya design.
+
+    @param root_comp: adsk.fusion.Component: The root component to generate the design.
+    """
+    log(f"DEBUG: Start execute function")
+    create_bg(root_comp)
