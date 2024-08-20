@@ -4,7 +4,7 @@ from .types import FabricationType, DesignType
 from ..utils.lib import log
 
 
-class DesignContext:
+class FusionDesignContext:
     def __init__(
         self,
         app_context: adsk.core.Application,

@@ -11,7 +11,6 @@ from .core.shapes import (
     calculate_rectangle_area,
     draw_rectangle,
     draw_rotated_rectangle,
-    create_seed,
     draw_tesseract_projection,
 )
 from .core.geometry_utils import (
@@ -37,8 +36,11 @@ from .utils.lib import (
     log,
     timer,
     create_array_random_unique_multiples,
+    create_seed,
+    create_power_series_multiples,
 )
-from .core.context import DesignContext
+
+from .core.context import FusionDesignContext
 from .core.types import DesignType, FabricationType
 from .math.measurement import Measurement
 
@@ -49,7 +51,7 @@ def run(context):
     ui = None
     try:
         # Create context runner
-        context = DesignContext(
+        context = FusionDesignContext(
             app_context=adsk.core.Application.get(),
             design_type=DesignType.DIRECT,
             seed=create_seed(),

@@ -1,6 +1,8 @@
 import datetime
 import time
 import random
+import hashlib
+import os
 
 
 def log(value):
@@ -42,3 +44,40 @@ def create_array_random_unique_multiples(
         value = multiple * random.randint(min_multiple, max_multiple)
         values.add(value)
     return sorted(list(values))
+
+
+def create_seed():
+    """
+    Generates a unique seed value based on the current time, process ID, and a random number.
+
+    Returns:
+        str: A unique seed value.
+    """
+    base_string = str(time.time()) + str(os.getpid()) + str(random.random())
+    hash_object = hashlib.sha256(base_string.encode())
+    hex_dig = hash_object.hexdigest()
+    return hex_dig[:64]
+
+
+def create_power_series_multiples(n):
+    """
+    Generate the first n multiples of 1, 2, 4, 8, 16...
+
+    Args:
+        n (int): The number of multiples to generate.
+
+    Returns:
+        list: A list of the first n multiples.
+    """
+    # Base multiplier
+    multiplier = 1
+
+    # List to hold the multiples
+    multiples = []
+
+    # Generate multiples
+    for _ in range(n):
+        multiples.append(multiplier)
+        multiplier *= 2  # Update the multiplier for the next iteration
+
+    return multiples
