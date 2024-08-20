@@ -21,9 +21,11 @@ from .lib import (
     create_bg,
     create_border,
     create_component_core,
+    create_component_outer_diagonal_steps,
     create_component_seed_of_life_layer_0,
     create_component_seed_of_life_layer_1,
     create_component_seed_of_life_layer_2,
+    create_intersect_only_in_bounds,
     create_kailash_terrain_cut,
     create_middle_cut,
     create_torus_astroid,
@@ -73,8 +75,17 @@ def start_func(root_comp: adsk.fusion.Component):
     create_middle_cut(root_comp)
 
     # kailash terrain
+    # @TODO right now, there is no TERRAIN to cut as the AREA is hardcoded in config, and probably set to a different SCALE_FACTOR than the rest of the design
     log(f"INFO: create_kailash_terrain_cut function")
     create_kailash_terrain_cut(root_comp)
+
+    # outer diagonal steps
+    # log(f"INFO: create_component_outer_diagonal_steps function")
+    # create_component_outer_diagonal_steps(root_comp)
+
+    # intersect only in bounds
+    log(f"INFO: Intersecting only in bounds")
+    create_intersect_only_in_bounds(root_comp)
 
     # end
     log(f"DEBUG: End execute function for {PROJECT_NAME}")

@@ -1036,6 +1036,85 @@ def create_torus(
     log(f"torus: {iterations} circles with radius: {r}")
 
 
+def create_intersect_only_in_bounds(root_comp):
+    # intersect only in bounds
+    try:
+        intersect_only_in_bounds_comp = create_component(
+            root_component=root_comp,
+            component_name=create_component_name("intersect-only-in-bounds"),
+        )
+        sketch = create_sketch(
+            intersect_only_in_bounds_comp,
+            "intersect-only-in-bounds",
+            offset=AppConfig.LayerDepth,
+        )
+        draw_rectangle(
+            sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth
+        )
+        extrude_profile_by_area(
+            component=intersect_only_in_bounds_comp,
+            profiles=sketch.profiles,
+            area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth),
+            extrude_height=AppConfig.LayerDepth * 2,
+            name="intersect-only-in-bounds",
+            operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation,
+        )
+    except:
+        log(f"WARNING: intersect-only-in-bounds: none to cut")
+
+
+def create_component_outer_diagonal_steps(root_comp: adsk.fusion.Component):
+    if not component_exist(
+        root_comp, create_component_name("interstellar-tesellation")
+    ):
+        interstellar_tesellation_comp = create_component(
+            component=root_comp,
+            name=create_component_name("interstellar-tesellation"),
+        )
+
+        # draw from middle
+        center_x = 0
+        center_y = 0
+        depth_repeat = 4
+        extrude_height_per_layer = AppConfig.LayerDepth * 2 / depth_repeat
+        stroke_weight = 0.72 * SCALE_FACTOR
+        start_layer_offset = AppConfig.LayerDepth * 3
+
+        for layer_offset, sw in depth_repeat_iterator(
+            depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight
+        ):
+            sketch = create_sketch(
+                interstellar_tesellation_comp,
+                "interstellar-tesellation-outer",
+                offset=layer_offset,
+            )
+            draw_rotated_rectangle(
+                sketch=sketch,
+                width=DiagonalRectangleConfig.OuterDiagonalRectangleWidth,
+                height=DiagonalRectangleConfig.OuterDiagonalRectangleHeight,
+            )
+            extrude_thin_one(
+                component=interstellar_tesellation_comp,
+                profile=sketch.profiles[0],
+                extrudeHeight=extrude_height_per_layer,
+                strokeWeight=sw,
+                name="interstellar-tesellation-outer",
+                operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+            )
+
+        # for layer_offset, sw in depth_repeat_iterator(depth_repeat, start_layer_offset, extrude_height_per_layer, stroke_weight):
+        #     sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-middle', offset=layer_offset)
+        #     draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
+        #     extrude_thin_one(component=interstellar_tesellation_comp, profile=sketch.profiles[0], extrudeHeight=extrude_height_per_layer, strokeWeight=sw, name='interstellar-tesellation-middle', operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation, side=DepthEffect.Side2)
+
+        # cut with AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea
+        # sketch = create_sketch(interstellar_tesellation_comp, 'interstellar-tesellation-astroid-outer-cut', offset=AppConfig.LayerDepth)
+        # draw_astroid_stroke(sketch=sketch, n=AstroidConfig.N, numPoints=AstroidConfig.NumPoints, scaleX=AstroidConfig.OuterAstroidRadius, scaleY=AstroidConfig.OuterAstroidRadius, strokeWeight=AstroidConfig.OuterAstroidStrokeWeight)
+        # draw_rotated_rectangle(sketch=sketch, width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth, height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight)
+        # extrude_profile_y_area(component=interstellar_tesellation_comp, profiles=sketch.profiles, area=KailashConfig.AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea, extrude_height=AppConfig.LayerDepth, name='interstellar-tesellation-astroid-outer-cut', operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
+
+
+# @TODO where to move?
 def aggregate_all_bodies(
     component: adsk.fusion.Component,
     all_bodies: adsk.core.ObjectCollection = None,
@@ -1061,7 +1140,6 @@ def aggregate_all_bodies(
     return all_bodies
 
 
-### @TODO right now, there is no TERRAIN to cut as the AREA is hardcoded in config, and probably set to a different SCALE_FACTOR than the rest of the design
 def create_kailash_terrain_cut(component: adsk.fusion.Component):
     if not component_exist(
         component, create_component_name("cut-kailash-intersection")
@@ -1134,7 +1212,7 @@ def create_kailash_terrain_cut(component: adsk.fusion.Component):
                 operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
             )
         except:
-            log("cut-kailash-intersection: none to cut")
+            log(f"WARNING: cut-kailash-intersection: none to cut")
 
 
 def create_component_name(name: str):
