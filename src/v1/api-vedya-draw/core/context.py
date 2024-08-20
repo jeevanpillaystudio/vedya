@@ -1,4 +1,4 @@
-import adsk.core
+import adsk.core, adsk.fusion
 import random
 from .types import FabricationType, DesignType
 from ..utils.lib import log

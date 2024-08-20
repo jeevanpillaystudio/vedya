@@ -1,3 +1,6 @@
+import adsk.core
+
+
 class DepthEffect:
     def __init__(self):
         pass
@@ -5,42 +8,6 @@ class DepthEffect:
     Side1 = adsk.fusion.ThinExtrudeWallLocation.Side1
     Side2 = adsk.fusion.ThinExtrudeWallLocation.Side2
     Center = adsk.fusion.ThinExtrudeWallLocation.Center
-
-
-# class AppConfig:
-#     """
-#     List of the configurations for the creation
-#     """
-
-#     def __init__(self):
-#         pass
-
-#     def __str__(self) -> str:
-#         return f"AppConfig: HoleRadius={self.HoleRadius}, Extrude={self.Extrude}, MaxWidth={self.MaxWidth}, MaxLength={self.MaxLength}, LayerDepth={self.LayerDepth}"
-
-#     Extrude = True
-
-#     HoleRadius = 0.48 * 12 * ScaleConfig.ScaleFactor
-#     MaxWidth = 96.0 * ScaleConfig.ScaleFactor
-#     MaxLength = 64.0 * ScaleConfig.ScaleFactor
-#     LayerDepth = 0.48 * ScaleConfig.ScaleFactor
-#     StrokeWeight = 0.72 * ScaleConfig.ScaleFactor
-
-#     BorderWidth = 0.48 * 4 * ScaleConfig.ScaleFactor
-#     BorderDepth = (1.28 * 2) * ScaleConfig.ScaleFactor
-
-#     SlicerRecursiveDepthLimit = 4
-
-#     def aspect_ratio(self):
-#         return self.MaxLength / self.MaxWidth
-
-# class BackgroundConfig:
-#     def __init__(self):
-#         pass
-
-#     MaxWidth = AppConfig.MaxWidth
-#     MaxLength = AppConfig.MaxLength
-#     ExtrudeHeight = AppConfig.LayerDepth * 2 * ScaleConfig.ScaleFactor
 
 
 # class DiagonalRectangleConfig:
@@ -516,28 +483,6 @@ class DepthEffect:
 #             extrude_height=extrude_height,
 #             name="astroid-32-inner",
 #             fp_tolerance=1e0,
-#         )
-
-
-# def create_bg(root_comp: adsk.fusion.Component):
-#     if not component_exist(root_comp, create_component_name("bg")):
-#         core_structural_comp = create_component(
-#             component=root_comp, name=create_component_name("bg")
-#         )
-#         sketch = create_sketch(core_structural_comp, "bg-rect", offset=0.0)
-#         draw_rectangle(
-#             sketch=sketch,
-#             length=BackgroundConfig.MaxLength,
-#             width=BackgroundConfig.MaxWidth,
-#         )
-#         extrude_profile_by_area(
-#             component=core_structural_comp,
-#             profiles=sketch.profiles,
-#             area=calculate_rectangle_area(
-#                 BackgroundConfig.MaxLength, BackgroundConfig.MaxWidth
-#             ),
-#             extrude_height=BackgroundConfig.ExtrudeHeight,
-#             name="bg-rect",
 #         )
 
 
