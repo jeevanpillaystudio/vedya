@@ -1,6 +1,11 @@
 import math
+import random
 import adsk.core, adsk.fusion
-from ...core.geometry.astroid import calculate_astroid_area, draw_astroid
+from ...core.geometry.astroid import (
+    calculate_astroid_area,
+    draw_astroid,
+    draw_astroid_stroke,
+)
 from ...core.depth_utils import DepthEffect, DepthRepeat, depth_repeat_iterator
 from ...core.geometry.circle import calculate_circle_area, draw_circle
 from ...utils.lib import log, timer
@@ -805,6 +810,217 @@ def create_component_core(root_comp):
             name="astroid-32-inner",
             fp_tolerance=1e0,
         )
+
+
+def create_torus_astroid(root_comp):
+    if not component_exist(root_comp, create_component_name("torus")):
+        torus_comp = create_component(
+            component=root_comp, name=create_component_name("torus")
+        )
+
+        # inner torus
+        iterations = 16
+
+        # @TODO move random to libs
+        radius = random.choice([0.48 * 20 * 2]) * SCALE_FACTOR
+        stroke_weight = random.choice([0.32]) * SCALE_FACTOR
+        inner_torus_component = create_component(
+            component=torus_comp,
+            name=create_component_name(
+                "torus-outer-" + str(radius) + "-" + str(iterations)
+            ),
+        )
+        depth_repeat = 2
+        start_layer_offset = AppConfig.LayerDepth * 6
+        extrude_height_per_layer = AppConfig.LayerDepth / depth_repeat
+
+        for layer_offset, sw in depth_repeat_iterator(
+            depth_repeat,
+            start_layer_offset,
+            extrude_height_per_layer,
+            stroke_weight,
+            direction=DepthRepeat.Decrement,
+        ):
+            # create the torus
+            torus_layer_0_inner_comp = create_component(
+                component=inner_torus_component,
+                name=create_component_name(
+                    "torus-inner-" + str(radius) + "-" + str(sw)
+                ),
+            )
+            create_torus(
+                component=torus_layer_0_inner_comp,
+                center_x=0,
+                center_y=0,
+                radius=radius,
+                iterations=iterations,
+                stroke_weight=sw,
+                extrude_height=extrude_height_per_layer,
+                layer_offset=layer_offset,
+            )
+
+            # get all bodies
+            invert_bodies = adsk.core.ObjectCollection.create()
+            for body in torus_layer_0_inner_comp.bRepBodies:
+                invert_bodies.add(body)
+
+            # invert the joint body; re should always be in first occurance
+            sketch = create_sketch(
+                torus_comp, "torus-astroid-32-inverse", offset=layer_offset
+            )
+            draw_astroid(
+                sketch=sketch,
+                n=AstroidConfig.N,
+                numPoints=AstroidConfig.NumPoints,
+                scaleX=AstroidConfig.InnerAstroidRadius
+                - AstroidConfig.InnerAstroidStrokeWeight,
+                scaleY=AstroidConfig.InnerAstroidRadius
+                - AstroidConfig.InnerAstroidStrokeWeight,
+            )
+            invert_body = extrude_single_profile_by_area(
+                component=torus_comp,
+                profiles=sketch.profiles,
+                area=calculate_astroid_area(
+                    AstroidConfig.InnerAstroidRadius
+                    - AstroidConfig.InnerAstroidStrokeWeight
+                ),
+                extrude_height=extrude_height_per_layer,
+                name="astroid-32-inner",
+                fp_tolerance=1e-0,
+            )
+            combine_body(
+                torus_comp,
+                invert_body,
+                invert_bodies,
+                operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
+            )
+
+            # add astroid bracing (stroke)
+            sketch = create_sketch(
+                torus_comp, "torus-astroid-32-inverse-bracing", offset=layer_offset
+            )
+            draw_astroid_stroke(
+                sketch=sketch,
+                n=AstroidConfig.N,
+                numPoints=AstroidConfig.NumPoints,
+                scaleX=AstroidConfig.InnerAstroidRadius
+                - AstroidConfig.InnerAstroidStrokeWeight,
+                scaleY=AstroidConfig.InnerAstroidRadius
+                - AstroidConfig.InnerAstroidStrokeWeight,
+                strokeWeight=AppConfig.StrokeWeight,
+            )
+            extrude_profile_by_area(
+                component=torus_comp,
+                profiles=sketch.profiles,
+                area=calculate_astroid_area(
+                    AstroidConfig.InnerAstroidRadius
+                    - AstroidConfig.InnerAstroidStrokeWeight
+                )
+                - calculate_astroid_area(
+                    AstroidConfig.InnerAstroidRadius
+                    - AstroidConfig.InnerAstroidStrokeWeight
+                    - AppConfig.StrokeWeight
+                ),
+                extrude_height=extrude_height_per_layer,
+                name="torus-astroid-bracing",
+                operation=adsk.fusion.FeatureOperations.JoinFeatureOperation,
+                fp_tolerance=1e-0,
+            )
+
+        # combine all the bodies
+        all_bodies = aggregate_all_bodies(torus_comp)
+        root_body = all_bodies.item(0)
+        all_bodies.removeByIndex(0)
+        combine_body(
+            torus_comp,
+            root_body,
+            all_bodies,
+            operation=adsk.fusion.FeatureOperations.JoinFeatureOperation,
+        )
+
+
+@timer
+def create_torus(
+    component: adsk.fusion.Component,
+    center_x,
+    center_y,
+    radius,
+    iterations,
+    stroke_weight,
+    extrude_height,
+    layer_offset,
+):
+    sketch = create_sketch(
+        component,
+        "torus-outer-circle-" + str(radius) + "-" + str(iterations),
+        offset=layer_offset,
+    )
+
+    # draw the outer circle
+    draw_circle(sketch, radius, center_x, center_y)
+    initial_body = extrude_thin_one(
+        component=component,
+        profile=sketch.profiles[0],
+        extrudeHeight=extrude_height,
+        strokeWeight=stroke_weight,
+        name="torus-outer-circle" + str(radius) + "-" + str(iterations),
+        operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+    )
+    initial_body.name = "torus-outer-circle" + str(radius) + "-" + str(iterations)
+
+    # create the torus
+    angle_per_iteration = 360 / iterations
+    r = radius / 2.0
+
+    # draw; this is a standard torus algorithm.
+    for i in range(iterations):
+        # radiant angle; see obsidian://open?vault=Obsidian%20Vault&file=personal%2Fart-composition%2Fimages%2Feducation-radiant-circle-measure.png
+        angle = math.radians(i * angle_per_iteration)
+        x = center_x + r * math.cos(angle)
+        y = center_y + r * math.sin(angle)
+
+        real_sketch = create_sketch(
+            component,
+            "torus-inner-circle-" + str(r) + "-" + str(angle),
+            layer_offset,
+        )
+        draw_circle(real_sketch, r, x, y)
+        extrude_thin_one(
+            component=component,
+            profile=real_sketch.profiles[0],
+            extrudeHeight=extrude_height,
+            strokeWeight=stroke_weight,
+            name="torus-inner-circle-" + str(r) + "-" + str(angle),
+            operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+        )
+
+    # log the seed of life
+    log(f"torus: {iterations} circles with radius: {r}")
+
+
+def aggregate_all_bodies(
+    component: adsk.fusion.Component,
+    all_bodies: adsk.core.ObjectCollection = None,
+    depth_limit: int = -1,
+):
+    if all_bodies is None:
+        all_bodies = adsk.core.ObjectCollection.create()
+
+    # Add all bodies from the current component
+    for body in component.bRepBodies:
+        all_bodies.add(body)
+
+    # Check if the depth limit has been reached
+    if depth_limit == 0:
+        return all_bodies
+
+    # Recursively process all subcomponents, decreasing depth limit by 1 with each call
+    for occurrence in component.occurrences:
+        aggregate_all_bodies(
+            occurrence.component, all_bodies, depth_limit - 1 if depth_limit > 0 else -1
+        )
+
+    return all_bodies
 
 
 def create_component_name(name: str):
