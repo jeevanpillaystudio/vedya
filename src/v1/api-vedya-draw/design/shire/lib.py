@@ -5,8 +5,12 @@ from ...core.component_utils import (
     create_component,
 )
 from ...core.geometry.rectangle import calculate_rectangle_area, draw_rectangle
-from ...core.geometry_utils import create_sketch, extrude_profile_by_area
-from .config import BackgroundConfig
+from ...core.geometry_utils import (
+    create_sketch,
+    extrude_profile_by_area,
+    extrude_thin_one,
+)
+from .config import AppConfig, BackgroundConfig
 
 
 def create_bg(component: adsk.fusion.Component):
@@ -28,6 +32,27 @@ def create_bg(component: adsk.fusion.Component):
             ),
             extrude_height=BackgroundConfig.ExtrudeHeight,
             name="bg-rect",
+        )
+
+
+def create_border(root_comp):
+    if not component_exist(root_comp, create_component_name("border")):
+        layer_offset = AppConfig.LayerDepth * 2
+        border_comp = create_component(
+            component=root_comp, name=create_component_name("border")
+        )
+        extrude_height = AppConfig.LayerDepth * 6
+        sketch = create_sketch(border_comp, "border", offset=layer_offset)
+        draw_rectangle(
+            sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth
+        )
+        extrude_thin_one(
+            component=border_comp,
+            profile=sketch.profiles[0],
+            extrudeHeight=extrude_height,
+            strokeWeight=AppConfig.BorderWidth,
+            name="border",
+            operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
         )
 
 

@@ -238,27 +238,6 @@ class DepthEffect:
 #         )
 
 
-# def create_border(root_comp):
-#     if not component_exist(root_comp, create_component_name("border")):
-#         layer_offset = AppConfig.LayerDepth * 2
-#         border_comp = create_component(
-#             component=root_comp, name=create_component_name("border")
-#         )
-#         extrude_height = AppConfig.LayerDepth * 6
-#         sketch = create_sketch(border_comp, "border", offset=layer_offset)
-#         draw_rectangle(
-#             sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth
-#         )
-#         extrude_thin_one(
-#             component=border_comp,
-#             profile=sketch.profiles[0],
-#             extrudeHeight=extrude_height,
-#             strokeWeight=AppConfig.BorderWidth,
-#             name="border",
-#             operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
-#         )
-
-
 # def create_component_outer_diagonal_steps(root_comp: adsk.fusion.Component):
 #     if not component_exist(
 #         root_comp, create_component_name("interstellar-tesellation")

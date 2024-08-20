@@ -17,7 +17,7 @@ PROJECT_NAME = "shire"
 
 import adsk.core, adsk.fusion
 
-from .lib import create_bg
+from .lib import create_bg, create_border
 from ...utils.lib import log
 
 
@@ -33,6 +33,10 @@ def start_func(root_comp: adsk.fusion.Component):
     # create the background
     log(f"INFO: create_bg function")
     create_bg(root_comp)
+
+    # create the border
+    log(f"INFO: create_border function")
+    create_border(root_comp)
 
     # end
     log(f"DEBUG: End execute function for {PROJECT_NAME}")
