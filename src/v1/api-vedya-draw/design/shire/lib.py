@@ -235,6 +235,169 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
         # extrude_single_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=AppConfig.LayerDepth * 2, name='seed-of-life-bound-intersect', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
 
 
+def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
+    if not component_exist(root_comp, create_component_name("layer-2-seed-of-life-x")):
+        # top level comp
+        seed_of_life_comp = create_component(
+            component=root_comp,
+            name=create_component_name("layer-2-seed-of-life-x"),
+        )
+
+        # start layer offset
+        start_layer_offset = AppConfig.LayerDepth * 4
+
+        # iterate; the enumerator is an array of multiples of 8; e.g [32, 40, 48, 56, 64, 72, 80]
+        # for (_, radius) in enumerate(create_array_random_unique_multiples(size=2, multiple=8 * SCALE_FACTOR, min_multiple=4, max_multiple=10)):
+        for _, values in enumerate(
+            [
+                [
+                    44 * SCALE_FACTOR,
+                    0.96 * SCALE_FACTOR,
+                    AppConfig.LayerDepth * 4,
+                    6,
+                ],
+                [
+                    72 * SCALE_FACTOR,
+                    0.96 * SCALE_FACTOR,
+                    AppConfig.LayerDepth * 2,
+                    4,
+                ],
+            ]
+        ):
+            # init
+            radius, stroke_weight, extrude_height, depth_repeat = (
+                values[0],
+                values[1],
+                values[2],
+                values[3],
+            )
+
+            # comp
+            seed_of_life_layer_0_comp = create_component(
+                component=seed_of_life_comp,
+                name=create_component_name("seed-of-life-layer-0-" + str(radius)),
+            )
+
+            # draw from middle
+            center_x = 0
+            center_y = 0
+
+            # extrude height
+            extrude_height_per_layer = extrude_height / depth_repeat
+
+            # circle radius
+            circle_radius = 36.0 * SCALE_FACTOR
+            extra_leway = 16.0 * SCALE_FACTOR
+
+            # depth iterator
+            for layer_offset, sw in depth_repeat_iterator(
+                depth_repeat=depth_repeat,
+                start_layer_offset=start_layer_offset,
+                extrude_height=extrude_height_per_layer,
+                stroke_weight=stroke_weight,
+                direction=DepthRepeat.Decrement,
+            ):
+                seed_of_life_layer_0_inner_comp = create_component(
+                    component=seed_of_life_layer_0_comp,
+                    name=create_component_name(
+                        "seed-of-inner-layer-" + str(layer_offset) + "-" + str(sw)
+                    ),
+                )
+                log(
+                    f"INIT seed-of-life-layer-0: depth-repeat 2, initial-radius: {radius}, extrude-height-per-layer: {extrude_height_per_layer}, stroke-weight: {sw}"
+                )
+                create_seed_of_life(
+                    component=seed_of_life_layer_0_inner_comp,
+                    center_x=center_x,
+                    center_y=center_y,
+                    radius=radius,
+                    extrude_height=extrude_height_per_layer,
+                    stroke_weight=sw,
+                    layer_offset=layer_offset,
+                    side=DepthEffect.Center,
+                )
+
+                # intersect with draw rotated rectangle
+                sketch = create_sketch(
+                    seed_of_life_layer_0_inner_comp,
+                    "seed-of-life-intersect",
+                    offset=layer_offset,
+                )
+                draw_rectangle(
+                    sketch=sketch,
+                    length=circle_radius * 2 + extra_leway,
+                    width=AppConfig.MaxWidth,
+                )
+                draw_circle(sketch=sketch, radius=circle_radius)
+                extrude_profile_by_area(
+                    component=seed_of_life_layer_0_inner_comp,
+                    profiles=sketch.profiles,
+                    area=calculate_rectangle_area(
+                        circle_radius * 2 + extra_leway, AppConfig.MaxWidth
+                    )
+                    - calculate_circle_area(circle_radius),
+                    extrude_height=extrude_height_per_layer,
+                    name="seed-of-life-intersect",
+                    operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation,
+                )
+
+                # invert the joint body; re should always be in first occurance
+                invert_bodies = adsk.core.ObjectCollection.create()
+                for body in seed_of_life_layer_0_inner_comp.bRepBodies:
+                    invert_bodies.add(body)
+                sketch = create_sketch(
+                    seed_of_life_layer_0_inner_comp,
+                    "seed-of-life-inverse",
+                    offset=layer_offset,
+                )
+                draw_rectangle(
+                    sketch=sketch,
+                    length=circle_radius * 2 + extra_leway,
+                    width=AppConfig.MaxWidth,
+                )
+                draw_circle(sketch=sketch, radius=circle_radius)
+                invert_body = extrude_single_profile_by_area(
+                    component=seed_of_life_layer_0_inner_comp,
+                    profiles=sketch.profiles,
+                    area=calculate_rectangle_area(
+                        circle_radius * 2 + extra_leway, AppConfig.MaxWidth
+                    )
+                    - calculate_circle_area(circle_radius),
+                    extrude_height=extrude_height_per_layer,
+                    name="seed-of-life-invert",
+                    operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+                )
+                combine_body(
+                    seed_of_life_layer_0_inner_comp,
+                    invert_body,
+                    invert_bodies,
+                    operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
+                )
+
+        # only in bounds
+        sketch = create_sketch(
+            seed_of_life_comp, "seed-of-life-bound-intersect", offset=start_layer_offset
+        )
+        extrude_height = AppConfig.LayerDepth * 4
+        draw_rectangle(
+            sketch=sketch, length=AppConfig.MaxLength * 2, width=AppConfig.MaxWidth * 2
+        )
+        draw_rectangle(
+            sketch=sketch, length=AppConfig.MaxLength, width=AppConfig.MaxWidth
+        )
+        extrude_single_profile_by_area(
+            component=seed_of_life_comp,
+            profiles=sketch.profiles,
+            area=calculate_rectangle_area(
+                AppConfig.MaxLength * 2, AppConfig.MaxWidth * 2
+            )
+            - calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth),
+            extrude_height=extrude_height,
+            name="seed-of-life-bound-intersect",
+            operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
+        )
+
+
 @timer
 def create_seed_of_life(
     component: adsk.fusion.Component,
