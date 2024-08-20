@@ -24,6 +24,7 @@ from .lib import (
     create_component_seed_of_life_layer_0,
     create_component_seed_of_life_layer_1,
     create_component_seed_of_life_layer_2,
+    create_middle_cut,
     create_torus_astroid,
 )
 from ...utils.lib import log
@@ -65,6 +66,10 @@ def start_func(root_comp: adsk.fusion.Component):
     # create torus astroid
     log(f"INFO: create_torus_astroid function")
     create_torus_astroid(root_comp)
+
+    # middle cut
+    log(f"INFO: create_middle_cut function")
+    create_middle_cut(root_comp)
 
     # end
     log(f"DEBUG: End execute function for {PROJECT_NAME}")

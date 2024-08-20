@@ -22,42 +22,6 @@
 #     StrokeWeight = 0.64 * ScaleConfig.ScaleFactor
 
 
-# def create_middle_cut(root_comp):
-#     try:
-#         middle_circle_comp = create_component(
-#             component=root_comp,
-#             name=create_component_name("middle_circle_comp"),
-#         )
-
-#         sketch = create_sketch(
-#             middle_circle_comp, "hole-thin-circle", offset=AppConfig.LayerDepth
-#         )
-#         stroke_weight = AppConfig.LayerDepth * 1.5 * ScaleConfig.ScaleFactor
-#         draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-#         extrude_thin_one(
-#             component=middle_circle_comp,
-#             profile=sketch.profiles[0],
-#             extrudeHeight=AppConfig.LayerDepth * 6,
-#             strokeWeight=stroke_weight,
-#             name="hole-thin-circle",
-#             operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
-#             side=DepthEffect.Side2,
-#         )
-
-#         sketch = create_sketch(middle_circle_comp, "cut-hole", offset=0.0)
-#         draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-#         extrude_profile_by_area(
-#             component=middle_circle_comp,
-#             profiles=sketch.profiles,
-#             area=calculate_circle_area(AppConfig.HoleRadius),
-#             extrude_height=AppConfig.LayerDepth * 9,
-#             name="cut-hole",
-#             operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
-#         )
-#     except:
-#         log("cut-hole: none to cut")
-
-
 # def create_component_outer_diagonal_steps(root_comp: adsk.fusion.Component):
 #     if not component_exist(
 #         root_comp, create_component_name("interstellar-tesellation")
