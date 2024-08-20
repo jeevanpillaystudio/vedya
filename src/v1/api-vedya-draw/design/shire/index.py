@@ -24,6 +24,7 @@ from .lib import (
     create_component_seed_of_life_layer_0,
     create_component_seed_of_life_layer_1,
     create_component_seed_of_life_layer_2,
+    create_kailash_terrain_cut,
     create_middle_cut,
     create_torus_astroid,
 )
@@ -70,6 +71,10 @@ def start_func(root_comp: adsk.fusion.Component):
     # middle cut
     log(f"INFO: create_middle_cut function")
     create_middle_cut(root_comp)
+
+    # kailash terrain
+    log(f"INFO: create_kailash_terrain_cut function")
+    create_kailash_terrain_cut(root_comp)
 
     # end
     log(f"DEBUG: End execute function for {PROJECT_NAME}")

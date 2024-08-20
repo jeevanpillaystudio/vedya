@@ -33,6 +33,7 @@ from .config import (
     AstroidConfig,
     BackgroundConfig,
     DiagonalRectangleConfig,
+    KailashConfig,
 )
 
 
@@ -940,39 +941,40 @@ def create_torus_astroid(root_comp):
 
 
 def create_middle_cut(root_comp):
-    try:
-        middle_circle_comp = create_component(
-            component=root_comp,
-            name=create_component_name("middle_circle_comp"),
-        )
+    if not component_exist(root_comp, create_component_name("middle_circle_comp")):
+        try:
+            middle_circle_comp = create_component(
+                component=root_comp,
+                name=create_component_name("middle_circle_comp"),
+            )
 
-        sketch = create_sketch(
-            middle_circle_comp, "hole-thin-circle", offset=AppConfig.LayerDepth
-        )
-        stroke_weight = AppConfig.LayerDepth * 1.5 * SCALE_FACTOR
-        draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-        extrude_thin_one(
-            component=middle_circle_comp,
-            profile=sketch.profiles[0],
-            extrudeHeight=AppConfig.LayerDepth * 6,
-            strokeWeight=stroke_weight,
-            name="hole-thin-circle",
-            operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
-            side=DepthEffect.Side2,
-        )
+            sketch = create_sketch(
+                middle_circle_comp, "hole-thin-circle", offset=AppConfig.LayerDepth
+            )
+            stroke_weight = AppConfig.LayerDepth * 1.5 * SCALE_FACTOR
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+            extrude_thin_one(
+                component=middle_circle_comp,
+                profile=sketch.profiles[0],
+                extrudeHeight=AppConfig.LayerDepth * 6,
+                strokeWeight=stroke_weight,
+                name="hole-thin-circle",
+                operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+                side=DepthEffect.Side2,
+            )
 
-        sketch = create_sketch(middle_circle_comp, "cut-hole", offset=0.0)
-        draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
-        extrude_profile_by_area(
-            component=middle_circle_comp,
-            profiles=sketch.profiles,
-            area=calculate_circle_area(AppConfig.HoleRadius),
-            extrude_height=AppConfig.LayerDepth * 9,
-            name="cut-hole",
-            operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
-        )
-    except:
-        log("cut-hole: none to cut")
+            sketch = create_sketch(middle_circle_comp, "cut-hole", offset=0.0)
+            draw_circle(sketch=sketch, radius=AppConfig.HoleRadius)
+            extrude_profile_by_area(
+                component=middle_circle_comp,
+                profiles=sketch.profiles,
+                area=calculate_circle_area(AppConfig.HoleRadius),
+                extrude_height=AppConfig.LayerDepth * 9,
+                name="cut-hole",
+                operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
+            )
+        except:
+            log("cut-hole: none to cut")
 
 
 @timer
@@ -1057,6 +1059,82 @@ def aggregate_all_bodies(
         )
 
     return all_bodies
+
+
+### @TODO right now, there is no TERRAIN to cut as the AREA is hardcoded in config, and probably set to a different SCALE_FACTOR than the rest of the design
+def create_kailash_terrain_cut(component: adsk.fusion.Component):
+    if not component_exist(
+        component, create_component_name("cut-kailash-intersection")
+    ):
+        # Structural Component - Kailash Terrain Generation Sketch
+        # Note: This is a placeholder for the actual terrain generation code. Requires manual intervention using STL files & Fusion Forms.
+        # Guide: https://www.youtube.com/watch?v=Ea_YC4Jh0Sw
+        try:
+            kailash_comp = create_component(
+                root_component=component,
+                component_name=create_component_name("cut-kailash-intersection"),
+            )
+            start_layer_offset = AppConfig.LayerDepth * 3.5
+            extrude_height = AppConfig.LayerDepth * 3
+            sketch = create_sketch(
+                kailash_comp, "cut-kailash-intersection", offset=start_layer_offset
+            )
+            draw_rotated_rectangle(
+                sketch=sketch,
+                width=DiagonalRectangleConfig.MiddleDiagonalRectangleWidth
+                - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight * 2,
+                height=DiagonalRectangleConfig.MiddleDiagonalRectangleHeight
+                - DiagonalRectangleConfig.MiddleDiagonalRectangleStrokeWeight * 2,
+            )
+            draw_rotated_rectangle(
+                sketch=sketch,
+                width=DiagonalRectangleConfig.InnerDiagonalRectangleWidth,
+                height=DiagonalRectangleConfig.InnerDiagonalRectangleHeight,
+            )
+            draw_astroid(
+                sketch=sketch,
+                n=AstroidConfig.N,
+                numPoints=AstroidConfig.NumPoints,
+                scaleX=AstroidConfig.OuterAstroidRadius,
+                scaleY=AstroidConfig.OuterAstroidRadius,
+            )
+            draw_astroid(
+                sketch=sketch,
+                n=AstroidConfig.N,
+                numPoints=AstroidConfig.NumPoints,
+                scaleX=AstroidConfig.OuterAstroidRadius
+                - AstroidConfig.OuterAstroidStrokeWeight,
+                scaleY=AstroidConfig.OuterAstroidRadius
+                - AstroidConfig.OuterAstroidStrokeWeight,
+            )
+            draw_astroid(
+                sketch=sketch,
+                n=AstroidConfig.N,
+                numPoints=AstroidConfig.NumPoints,
+                scaleX=AstroidConfig.InnerAstroidRadius,
+                scaleY=AstroidConfig.InnerAstroidRadius,
+            )
+            draw_astroid(
+                sketch=sketch,
+                n=AstroidConfig.N,
+                numPoints=AstroidConfig.NumPoints,
+                scaleX=AstroidConfig.InnerAstroidRadius
+                - AstroidConfig.InnerAstroidStrokeWeight,
+                scaleY=AstroidConfig.InnerAstroidRadius
+                - AstroidConfig.InnerAstroidStrokeWeight,
+            )
+            # for profile in sketch.profiles:
+            #     log(f"cut-kailash-intersection: profile area: {profile.areaProperties().area}")
+            extrude_profile_by_area(
+                component=kailash_comp,
+                profiles=sketch.profiles,
+                area=KailashConfig.KailashIntersectExtrudeArea,
+                extrude_height=extrude_height,
+                name="cut-kailash-intersection",
+                operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
+            )
+        except:
+            log("cut-kailash-intersection: none to cut")
 
 
 def create_component_name(name: str):

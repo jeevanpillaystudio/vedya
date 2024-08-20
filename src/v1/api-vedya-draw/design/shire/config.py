@@ -73,3 +73,13 @@ class AstroidConfig:
 
     InnerAstroidRadius = (16.0 + 2.56) * SCALE_FACTOR
     InnerAstroidStrokeWeight = AppConfig.StrokeWeight * SCALE_FACTOR
+
+
+class KailashConfig:
+    def __init__(self):
+        pass
+
+    # KailashIntersectExtrudeArea = 2130.679120238867 * ScaleConfig.ScaleFactor ** 2 # this is the area of the intersected extrusion of the kailash terrain, manually created. @todo - automate this
+    KailashIntersectExtrudeArea = 401.66169829603086
+    AstroidOuterCutWithMiddleDiagonalRectangleExtrudeArea = 1.2765358608164958
+    OuterDiagonalCutWithAstroidExtrudeArea = 12.375340707128288
