@@ -109,12 +109,24 @@ class DepthArray(Array):
 
 
 class CompositeLayer:
-    def __init__(self, modifiers):
-        self.modifiers = modifiers
+    def __init__(self, elements):
+        self.elements = elements
 
     def create(self, component):
-        for modifier in self.modifiers:
-            modifier.apply(component)
+        for element in self.elements:
+            if isinstance(element, Modifier):
+                element.apply(component)
+            elif isinstance(element, Geometry):
+                sketch = create_sketch(component, "background-geometry")
+                element.draw(sketch)
+                extrude_profile_by_area(
+                    component=component,
+                    profiles=sketch.profiles,
+                    area=element.calculate_area(),
+                    extrude_height=AppConfig.LayerDepth,
+                    name="background-extrude",
+                    operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+                )
 
 
 class Layered(Modifier):
@@ -176,16 +188,9 @@ class SeedOfLife(Modifier):
 
 background_layer = CompositeLayer(
     [
-        Layered(
-            Intersection(
-                Rectangle(AppConfig.MaxLength, AppConfig.MaxWidth),
-                Circle(AppConfig.MaxLength / 2),
-            ),
-            depth_repeat=1,
-            start_offset=0,
-            extrude_height=AppConfig.LayerDepth,
-            stroke_weight=1,
-            direction=DepthRepeat.Increment,
+        Intersection(
+            Rectangle(AppConfig.MaxLength, AppConfig.MaxWidth),
+            Circle(AppConfig.MaxLength / 2),
         )
     ]
 )
