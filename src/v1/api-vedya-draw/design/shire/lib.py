@@ -5,8 +5,9 @@ from abc import ABC, abstractmethod
 from core.depth_utils import DepthEffect, DepthRepeat
 from core.modifier.index import Modifier
 
-from core.modifier.intersection import Intersection
-from core.modifier.subtraction import Subtraction
+from ...core.modifier.intersection import Intersection
+from ...core.modifier.subtraction import Subtraction
+from ...core.transform.depth import Depth
 
 from ...core.modifier.array import Array
 from ...core.geometry.index import Geometry
@@ -27,6 +28,7 @@ from ...core.geometry.rectangle import (
     draw_rectangle,
     draw_rotated_rectangle,
 )
+
 from ...core.geometry_utils import (
     create_sketch,
     extrude_profile_by_area,
@@ -63,6 +65,47 @@ class CompositeTransform(Transform):
         for transform in self.transforms:
             composite.transformBy(transform.get_matrix(index, total))
         return composite
+
+
+def create_depth_scaling_transform(
+    total_depth: float, start_scale: float, end_scale: float, direction: int
+) -> CompositeTransform:
+    return CompositeTransform(
+        Depth(total_depth, direction), Scaling(start_scale, end_scale)
+    )
+
+
+class DepthArray(Array):
+    def __init__(
+        self,
+        base_geometry: Geometry,
+        count: int,
+        total_depth: float,
+        start_scale: float,
+        end_scale: float,
+        direction: int,
+    ):
+        transform = create_depth_scaling_transform(
+            total_depth, start_scale, end_scale, direction
+        )
+        super().__init__(base_geometry, count, transform)
+        self.extrude_height_per_layer = total_depth / count
+
+    def apply(self, component: adsk.fusion.Component):
+        for i in range(self.count):
+            matrix = self.transform.get_matrix(i, self.count)
+            inner_comp = create_component(component, f"depth-layer-{i}")
+            sketch = create_sketch(inner_comp, "depth-geometry")
+            sketch.transform(matrix)
+            self.base_geometry.draw(sketch)
+            extrude_profile_by_area(
+                component=inner_comp,
+                profiles=sketch.profiles,
+                area=self.base_geometry.calculate_area(),
+                extrude_height=self.extrude_height_per_layer,
+                name=f"depth-extrude-{i}",
+                operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+            )
 
 
 class CompositeLayer:
@@ -149,7 +192,7 @@ background_layer = CompositeLayer(
 
 seed_of_life_layer_0 = CompositeLayer(
     [
-        Layered(
+        DepthArray(
             Subtraction(
                 SeedOfLife(20 * AppConfig.SCALE_FACTOR),
                 Rectangle(
@@ -158,10 +201,10 @@ seed_of_life_layer_0 = CompositeLayer(
                     rotation=45,
                 ),
             ),
-            depth_repeat=4,
-            start_offset=AppConfig.LayerDepth * 4,
-            extrude_height=AppConfig.LayerDepth * 2,
-            stroke_weight=0.96 * AppConfig.SCALE_FACTOR,
+            count=4,
+            total_depth=AppConfig.LayerDepth * 2,
+            start_scale=1.0,
+            end_scale=0.96,
             direction=DepthRepeat.Decrement,
         ),
         Layered(
@@ -234,12 +277,12 @@ seed_of_life_layer_1 = CompositeLayer(
 
 seed_of_life_layer_2 = CompositeLayer(
     [
-        Layered(
+        DepthArray(
             SeedOfLife(44 * AppConfig.SCALE_FACTOR),
-            depth_repeat=6,
-            start_offset=AppConfig.LayerDepth * 4,
-            extrude_height=AppConfig.LayerDepth * 4,
-            stroke_weight=0.96 * AppConfig.SCALE_FACTOR,
+            count=6,
+            total_depth=AppConfig.LayerDepth * 4,
+            start_scale=1.0,
+            end_scale=0.96,
             direction=DepthRepeat.Decrement,
         ),
         Layered(
