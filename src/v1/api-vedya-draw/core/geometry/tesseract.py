@@ -1,4 +1,22 @@
 import adsk.core
+from .index import Geometry
+
+
+class Tessellate(Geometry):
+    def __init__(
+        self, base_geometry: Geometry, rows: int, columns: int, spacing: float
+    ):
+        self.base_geometry = base_geometry
+        self.rows = rows
+        self.columns = columns
+        self.spacing = spacing
+
+    def draw(self, sketch: adsk.fusion.Sketch):
+        # Implementation for tessellating the base geometry
+        pass
+
+    def calculate_area(self):
+        return self.base_geometry.calculate_area() * self.rows * self.columns
 
 
 def draw_tesseract_projection(sketch, center_x, center_y, size):

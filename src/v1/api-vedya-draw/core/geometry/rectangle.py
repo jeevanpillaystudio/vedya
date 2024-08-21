@@ -1,6 +1,23 @@
 import math
 import adsk.core
 import adsk.fusion
+from .index import Geometry
+
+
+class Rectangle(Geometry):
+    def __init__(self, length: float, width: float, rotation: float = 0):
+        self.length = length
+        self.width = width
+        self.rotation = rotation
+
+    def draw(self, sketch: adsk.fusion.Sketch):
+        if self.rotation == 0:
+            draw_rectangle(sketch, self.length, self.width)
+        else:
+            draw_rotated_rectangle(sketch, self.length, self.width, self.rotation)
+
+    def calculate_area(self):
+        return self.length * self.width
 
 
 def draw_rectangle(sketch: adsk.fusion.Sketch, length, width):
