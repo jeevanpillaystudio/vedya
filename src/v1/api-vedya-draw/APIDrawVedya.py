@@ -9,7 +9,10 @@ from .utils.lib import (
 from .core.context import FusionDesignContext
 from .core.types import DesignType, FabricationMode, FabricationType
 
+# fabrication
 from .core.fabrication.slicer.index import start_slicer
+
+from .core.fabrication.aggregator.index import start_aggregator
 from .design.shire.index import start_func
 
 
@@ -24,7 +27,7 @@ def run(context):
             design_type=DesignType.DIRECT,
             seed=create_seed(),
             fabrication_type=FabricationType.CNC_MILL,
-            fabrication_mode=FabricationMode.NORMAL,
+            fabrication_mode=FabricationMode.AGGREGATOR,
         )
 
         # Get needed values
@@ -44,6 +47,11 @@ def run(context):
                 component=root_component,
                 sliced_layer_depth=1.28 / 4,
                 sliced_layer_count=12,
+            )
+        elif context.fabrication_mode == FabricationMode.AGGREGATOR:
+            context.set_design(DesignType.PARAMETRIC)
+            start_aggregator(
+                component=root_component,
             )
 
         # End
