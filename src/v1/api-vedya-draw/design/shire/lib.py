@@ -1,19 +1,26 @@
-import math
 import random
-import adsk.core, adsk.fusion
-from abc import ABC, abstractmethod
-from core.depth_utils import DepthEffect, DepthRepeat
-from core.modifier.index import Modifier
 
+import adsk.core, adsk.fusion
+
+# designer
+from design.shire.composition import Composition, CompositionLayer
+
+# modifier
+from ...core.modifier.index import Modifier
+from ...core.modifier.create import Create
 from ...core.modifier.intersection import Intersection
 from ...core.modifier.subtraction import Subtraction
-from ...core.transform.depth import Depth
-
 from ...core.modifier.array import Array
-from ...core.geometry.index import Geometry
 
+# geometry
+from ...core.geometry.index import Geometry
+from ...core.geometry.sol import SeedOfLife
+from ...core.geometry.astroid import Astroid
+
+# transform
+from ...core.transform.depth import Depth
 from ...core.transform.radial import Radial
-from ...core.transform.index import Transform
+from ...core.transform.index import CompositeTransform, Transform
 from ...core.transform.grid import Grid
 from ...core.transform.scaling import Scaling
 
@@ -56,25 +63,6 @@ from .config import (
 )
 
 
-class CompositeTransform(Transform):
-    def __init__(self, *transforms: Transform):
-        self.transforms = transforms
-
-    def get_matrix(self, index: int, total: int) -> adsk.core.Matrix3D:
-        composite = adsk.core.Matrix3D.create()
-        for transform in self.transforms:
-            composite.transformBy(transform.get_matrix(index, total))
-        return composite
-
-
-def create_depth_scaling_transform(
-    total_depth: float, start_scale: float, end_scale: float, direction: int
-) -> CompositeTransform:
-    return CompositeTransform(
-        Depth(total_depth, direction), Scaling(start_scale, end_scale)
-    )
-
-
 class DepthArray(Array):
     def __init__(
         self,
@@ -85,8 +73,8 @@ class DepthArray(Array):
         end_scale: float,
         direction: int,
     ):
-        transform = create_depth_scaling_transform(
-            total_depth, start_scale, end_scale, direction
+        transform = CompositeTransform(
+            Depth(total_depth, direction), Scaling(start_scale, end_scale)
         )
         super().__init__(base_geometry, count, transform)
         self.extrude_height_per_layer = total_depth / count
@@ -108,94 +96,18 @@ class DepthArray(Array):
             )
 
 
-class CompositeLayer:
-    def __init__(self, elements):
-        self.elements = elements
-
-    def create(self, component):
-        for element in self.elements:
-            if isinstance(element, Modifier):
-                element.apply(component)
-            elif isinstance(element, Geometry):
-                sketch = create_sketch(component, "background-geometry")
-                element.draw(sketch)
-                extrude_profile_by_area(
-                    component=component,
-                    profiles=sketch.profiles,
-                    area=element.calculate_area(),
-                    extrude_height=AppConfig.LayerDepth,
-                    name="background-extrude",
-                    operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
-                )
-
-
-class Layered(Modifier):
-    def __init__(
-        self,
-        base_geometry: Geometry,
-        depth_repeat: int,
-        start_offset: float,
-        extrude_height: float,
-        stroke_weight: float,
-        direction: DepthRepeat,
-    ):
-        self.base_geometry = base_geometry
-        self.depth_repeat = depth_repeat
-        self.start_offset = start_offset
-        self.extrude_height = extrude_height
-        self.stroke_weight = stroke_weight
-        self.direction = direction
-
-    def apply(self, component: adsk.fusion.Component):
-        extrude_height_per_layer = self.extrude_height / self.depth_repeat
-        for layer_offset, sw in depth_repeat_iterator(
-            self.depth_repeat,
-            self.start_offset,
-            extrude_height_per_layer,
-            self.stroke_weight,
-            self.direction,
-        ):
-            inner_comp = create_component(component, f"inner-layer-{layer_offset}-{sw}")
-            sketch = create_sketch(inner_comp, "layered-geometry", offset=layer_offset)
-            self.base_geometry.draw(sketch)
-            extrude_profile_by_area(
-                component=inner_comp,
-                profiles=sketch.profiles,
-                area=self.base_geometry.calculate_area(),
-                extrude_height=extrude_height_per_layer,
-                name="layered-geometry-extrude",
-                operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
-            )
-
-    def calculate_area(self):
-        return self.base_geometry.calculate_area()
-
-
-class SeedOfLife(Modifier):
-    def __init__(self, radius: float, num_circles: int = 6):
-        self.radius = radius
-        self.num_circles = num_circles
-        self.center_circle = Circle(radius)
-        self.outer_circles = Array(Circle(radius), num_circles, Radial(radius))
-
-    def apply(self, sketch: adsk.fusion.Sketch):
-        self.center_circle.draw(sketch)
-        self.outer_circles.apply(sketch)
-
-    def calculate_area(self):
-        return self.center_circle.calculate_area() + self.outer_circles.calculate_area()
-
-
-background_layer = CompositeLayer(
+background_layer = CompositionLayer(
     [
-        Intersection(
-            Rectangle(AppConfig.MaxLength, AppConfig.MaxWidth),
-            Circle(AppConfig.MaxLength / 2),
+        Create(
+            Intersection(
+                Rectangle(AppConfig.MaxLength, AppConfig.MaxWidth),
+                Circle(AppConfig.MaxLength / 2),
+            )
         )
     ]
 )
 
-seed_of_life_layer_0 = CompositeLayer(
+seed_of_life_layer_0 = CompositionLayer(
     [
         DepthArray(
             Subtraction(
@@ -212,7 +124,7 @@ seed_of_life_layer_0 = CompositeLayer(
             end_scale=0.96,
             direction=DepthRepeat.Decrement,
         ),
-        Layered(
+        Create(
             Intersection(
                 Circle(36.0 * AppConfig.SCALE_FACTOR),
                 Rectangle(
@@ -230,9 +142,9 @@ seed_of_life_layer_0 = CompositeLayer(
     ]
 )
 
-seed_of_life_layer_1 = CompositeLayer(
+seed_of_life_layer_1 = CompositionLayer(
     [
-        Layered(
+        DepthArray(
             SeedOfLife(
                 random.choice(
                     create_array_random_unique_multiples(
@@ -254,7 +166,7 @@ seed_of_life_layer_1 = CompositeLayer(
         for _ in range(2)
     ]
     + [
-        Layered(
+        DepthArray(
             Intersection(
                 Rectangle(AppConfig.MaxLength, AppConfig.MaxWidth),
                 Subtraction(
@@ -280,7 +192,7 @@ seed_of_life_layer_1 = CompositeLayer(
     ]
 )
 
-seed_of_life_layer_2 = CompositeLayer(
+seed_of_life_layer_2 = CompositionLayer(
     [
         DepthArray(
             SeedOfLife(44 * AppConfig.SCALE_FACTOR),
@@ -290,7 +202,7 @@ seed_of_life_layer_2 = CompositeLayer(
             end_scale=0.96,
             direction=DepthRepeat.Decrement,
         ),
-        Layered(
+        Create(
             Intersection(
                 Rectangle(
                     72.0 * AppConfig.SCALE_FACTOR + 0.1 * AppConfig.SCALE_FACTOR,
@@ -312,48 +224,6 @@ seed_of_life_layer_2 = CompositeLayer(
         ),
     ]
 )
-
-torus_astroid_layer = CompositeLayer(
-    [
-        Layered(
-            TorusAstroid(AstroidConfig),
-            depth_repeat=2,
-            start_offset=AppConfig.LayerDepth * 6,
-            extrude_height=AppConfig.LayerDepth,
-            stroke_weight=0.96 * AppConfig.SCALE_FACTOR,
-            direction=DepthRepeat.Decrement,
-        )
-    ]
-)
-
-# Create the final composition
-shire_composition = Composition(
-    [
-        background_layer,
-        seed_of_life_layer_0,
-        seed_of_life_layer_2,
-        seed_of_life_layer_1,
-        torus_astroid_layer,
-    ]
-)
-
-
-class Composition:
-    def __init__(self, layers):
-        self.layers = layers
-
-    def create(self, component):
-        for layer in self.layers:
-            layer.create(component)
-
-
-def start_func(root_comp: adsk.fusion.Component):
-    shire_composition.create(root_comp)
-
-    # Additional operations that don't fit into the layer structure
-    create_middle_cut(root_comp)
-    create_kailash_terrain_cut(root_comp)
-    create_intersect_only_in_bounds(root_comp)
 
 
 class TorusAstroid(Modifier):
@@ -383,6 +253,40 @@ class TorusAstroid(Modifier):
             - self.inner_astroid.calculate_area()
             + self.astroid_stroke.calculate_area()
         )
+
+
+torus_astroid_layer = CompositionLayer(
+    [
+        DepthArray(
+            TorusAstroid(AstroidConfig),
+            depth_repeat=2,
+            start_offset=AppConfig.LayerDepth * 6,
+            extrude_height=AppConfig.LayerDepth,
+            stroke_weight=0.96 * AppConfig.SCALE_FACTOR,
+            direction=DepthRepeat.Decrement,
+        )
+    ]
+)
+
+# Create the final composition
+shire_composition = Composition(
+    [
+        background_layer,
+        seed_of_life_layer_0,
+        seed_of_life_layer_2,
+        seed_of_life_layer_1,
+        torus_astroid_layer,
+    ]
+)
+
+
+def start_func(root_comp: adsk.fusion.Component):
+    shire_composition.create(root_comp)
+
+    # Additional operations that don't fit into the layer structure
+    # create_middle_cut(root_comp)
+    # create_kailash_terrain_cut(root_comp)
+    # create_intersect_only_in_bounds(root_comp)
 
 
 def create_middle_cut(root_comp):

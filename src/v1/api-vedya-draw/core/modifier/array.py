@@ -1,8 +1,8 @@
 import adsk.fusion
 
-from core.geometry.index import Geometry
-from core.modifier.index import Modifier
-from core.transform.index import Transform
+from ...core.geometry.index import Geometry
+from ...core.modifier.index import Modifier
+from ...core.transform.index import Transform
 
 
 # @TODO look at this; has both Modifier and Transform

@@ -3,14 +3,17 @@ from .index import Transform
 import adsk.core
 
 
-class Radial(Transform):
-    def __init__(self, radius: float):
-        self.radius = radius
+class Grid(Transform):
+    def __init__(self, rows: int, columns: int, spacing: float):
+        self.rows = rows
+        self.columns = columns
+        self.spacing = spacing
 
     def get_matrix(self, index: int, total: int) -> adsk.core.Matrix3D:
-        angle = (2 * math.pi * index) / total
-        x = self.radius * math.cos(angle)
-        y = self.radius * math.sin(angle)
+        row = index // self.columns
+        col = index % self.columns
+        x = (col - (self.columns - 1) / 2) * self.spacing
+        y = (row - (self.rows - 1) / 2) * self.spacing
         matrix = adsk.core.Matrix3D.create()
         matrix.translation = adsk.core.Vector3D.create(x, y, 0)
         return matrix
