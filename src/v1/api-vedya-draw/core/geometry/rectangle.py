@@ -2,11 +2,10 @@ import math
 import adsk.core
 import adsk.fusion
 
-# from .index import ModifiableGeometry
+from .index import ModifiableGeometry
 
 
-# class Rectangle(ModifiableGeometry):
-class Rectangle:
+class Rectangle(ModifiableGeometry):
     def __init__(self, length: float, width: float, rotation: float = 0):
         super().__init__()
         self.length = length

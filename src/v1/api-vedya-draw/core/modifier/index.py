@@ -1,10 +1,9 @@
 # Middle Layer: Design Patterns
 import adsk.fusion
-from abc import abstractmethod
-import abc
+from abc import ABC, abstractmethod
 
 
-class Modifier(abc):
+class Modifier(ABC):
     @abstractmethod
     def apply(self, sketch: adsk.fusion.Sketch):
         pass
