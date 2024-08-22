@@ -24,7 +24,7 @@ def run(context):
             design_type=DesignType.DIRECT,
             seed=create_seed(),
             fabrication_type=FabricationType.CNC_MILL,
-            fabrication_mode=FabricationMode.SLICER,
+            fabrication_mode=FabricationMode.NORMAL,
         )
 
         # Get needed values

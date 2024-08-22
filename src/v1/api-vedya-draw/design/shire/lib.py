@@ -8,7 +8,7 @@ from ...core.geometry.astroid import (
 )
 from ...core.depth_utils import DepthEffect, DepthRepeat, depth_repeat_iterator
 from ...core.geometry.circle import calculate_circle_area, draw_circle
-from ...utils.lib import log, timer
+from ...utils.lib import create_array_random_unique_multiples, log, timer
 from ...core.types import FabricationType
 from ...core.component_utils import (
     combine_body,
@@ -109,21 +109,26 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
         # 20 64 v nice. BIG potenially.
         # 24 56
         for _, values in enumerate(
-            [
-                [
-                    20 * SCALE_FACTOR,
-                    0.96 * SCALE_FACTOR,
-                    AppConfig.LayerDepth * 2,
-                    4,
-                ],
-                [
-                    64 * SCALE_FACTOR,
-                    2.88 * SCALE_FACTOR,
-                    AppConfig.LayerDepth,
-                    4,
-                ],
-            ]
+            generate_seed_of_life_params(
+                size=2, multiple=4 * SCALE_FACTOR, min_multiple=5, max_multiple=16
+            )
         ):
+            # for _, values in enumerate(
+            #     [
+            #         [
+            #             20 * SCALE_FACTOR,
+            #             0.96 * SCALE_FACTOR,
+            #             AppConfig.LayerDepth * 2,
+            #             4,
+            #         ],
+            #         [
+            #             64 * SCALE_FACTOR,
+            #             2.88 * SCALE_FACTOR,
+            #             AppConfig.LayerDepth,
+            #             4,
+            #         ],
+            #     ]
+            # ):
             # init
             radius, stroke_weight, extrude_height, depth_repeat = (
                 values[0],
@@ -248,9 +253,27 @@ def create_component_seed_of_life_layer_0(root_comp: adsk.fusion.Component):
         # extrude_single_profile_by_area(component=seed_of_life_comp, profiles=sketch.profiles, area=calculate_rectangle_area(AppConfig.MaxLength, AppConfig.MaxWidth), extrude_height=AppConfig.LayerDepth * 2, name='seed-of-life-bound-intersect', operation=adsk.fusion.FeatureOperations.IntersectFeatureOperation)
 
 
+def generate_seed_of_life_params(
+    size=2, multiple=8 * SCALE_FACTOR, min_multiple=4, max_multiple=10
+):
+    radii = create_array_random_unique_multiples(
+        size=size,
+        multiple=multiple,
+        min_multiple=min_multiple,
+        max_multiple=max_multiple,
+    )
+    params = []
+    for i, radius in enumerate(radii):
+        stroke_weight = 0.96 * SCALE_FACTOR
+        extrude_height = AppConfig.LayerDepth * (4 if i == 0 else 2)
+        depth_repeat = 6 if i == 0 else 4
+        params.append([radius, stroke_weight, extrude_height, depth_repeat])
+    return params
+
+
 def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
     if not component_exist(root_comp, create_component_name("layer-2-seed-of-life-x")):
-        # top level comp
+        # top level com
         seed_of_life_comp = create_component(
             component=root_comp,
             name=create_component_name("layer-2-seed-of-life-x"),
@@ -260,23 +283,27 @@ def create_component_seed_of_life_layer_2(root_comp: adsk.fusion.Component):
         start_layer_offset = AppConfig.LayerDepth * 4
 
         # iterate; the enumerator is an array of multiples of 8; e.g [32, 40, 48, 56, 64, 72, 80]
-        # for (_, radius) in enumerate(create_array_random_unique_multiples(size=2, multiple=8 * SCALE_FACTOR, min_multiple=4, max_multiple=10)):
         for _, values in enumerate(
-            [
-                [
-                    44 * SCALE_FACTOR,
-                    0.96 * SCALE_FACTOR,
-                    AppConfig.LayerDepth * 4,
-                    6,
-                ],
-                [
-                    72 * SCALE_FACTOR,
-                    0.96 * SCALE_FACTOR,
-                    AppConfig.LayerDepth * 2,
-                    4,
-                ],
-            ]
+            generate_seed_of_life_params(
+                size=2, multiple=8 * SCALE_FACTOR, min_multiple=4, max_multiple=10
+            )
         ):
+            # for _, values in enumerate(
+            #     [
+            #         [
+            #             44 * SCALE_FACTOR,
+            #             0.96 * SCALE_FACTOR,
+            #             AppConfig.LayerDepth * 4,
+            #             6,
+            #         ],
+            #         [
+            #             72 * SCALE_FACTOR,
+            #             0.96 * SCALE_FACTOR,
+            #             AppConfig.LayerDepth * 2,
+            #             4,
+            #         ],
+            #     ]
+            # ):
             # init
             radius, stroke_weight, extrude_height, depth_repeat = (
                 values[0],
@@ -489,21 +516,26 @@ def create_component_seed_of_life_layer_1(root_comp: adsk.fusion.Component):
         # iterate; the enumerator is an array of multiples of 8; e.g [32, 40, 48, 56, 64, 72, 80]
         # for (_, radius) in enumerate(create_array_random_unique_multiples(size=2, multiple=8 * SCALE_FACTOR, min_multiple=4, max_multiple=10)):
         for _, values in enumerate(
-            [
-                (
-                    28 * SCALE_FACTOR,
-                    1.92 * SCALE_FACTOR,
-                    AppConfig.LayerDepth * 4,
-                    6,
-                ),
-                (
-                    16 * SCALE_FACTOR,
-                    0.96 * SCALE_FACTOR,
-                    AppConfig.LayerDepth * 2,
-                    4,
-                ),
-            ]
+            generate_seed_of_life_params(
+                size=2, multiple=4 * SCALE_FACTOR, min_multiple=4, max_multiple=7
+            )
         ):
+            # for _, values in enumerate(
+            #     [
+            #         (
+            #             28 * SCALE_FACTOR,
+            #             1.92 * SCALE_FACTOR,
+            #             AppConfig.LayerDepth * 4,
+            #             6,
+            #         ),
+            #         (
+            #             16 * SCALE_FACTOR,
+            #             0.96 * SCALE_FACTOR,
+            #             AppConfig.LayerDepth * 2,
+            #             4,
+            #         ),
+            #     ]
+            # ):
             # init
             radius, stroke_weight, extrude_height, depth_repeat = (
                 values[0],
