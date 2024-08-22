@@ -6,29 +6,30 @@ from .index import ModifiableGeometry
 
 
 class Rectangle(ModifiableGeometry):
-    def __init__(self, length: float, width: float, rotation: float = 0):
-        super().__init__()
+    def __init__(
+        self, extrude_height: float, length: float, width: float, rotation: float = 0
+    ):
+        super().__init__(extrude_height)
         self.length = length
         self.width = width
         self.rotation = rotation
 
-    def draw(self, sketch: adsk.fusion.Sketch):
+    def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.Profile:
+        # @TODO should be two seperate geometries; Rectangle and RotatedRectangle
         if self.rotation == 0:
-            profile = self._draw_rectangle(sketch, self.length, self.width)
+            self._draw_rectangle(sketch, self.length, self.width)
         else:
-            profile = self._draw_rotated_rectangle(
-                sketch, self.length, self.width, self.rotation
-            )
+            self._draw_rotated_rectangle(sketch, self.length, self.width, self.rotation)
 
         # Apply modifiers
         # self.apply_modifiers(sketch)
 
-        return profile
-
     def calculate_area(self):
         return self.length * self.width
 
-    def _draw_rectangle(self, sketch: adsk.fusion.Sketch, length, width):
+    def _draw_rectangle(
+        self, sketch: adsk.fusion.Sketch, length, width
+    ) -> adsk.fusion.SketchLineList:
         return sketch.sketchCurves.sketchLines.addTwoPointRectangle(
             adsk.core.Point3D.create(-length / 2, width / 2, 0),
             adsk.core.Point3D.create(length / 2, -width / 2, 0),
@@ -36,7 +37,7 @@ class Rectangle(ModifiableGeometry):
 
     def _draw_rotated_rectangle(
         self, sketch: adsk.fusion.Sketch, length, width, rotation
-    ):
+    ) -> adsk.fusion.SketchLineList:
         # Convert rotation to radians
         rotation_rad = math.radians(rotation)
 

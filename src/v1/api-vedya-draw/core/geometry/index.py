@@ -1,7 +1,14 @@
 # Base Layer: Geometry
-from ..modifier.stack import ModifierStack
+from typing import List
 import adsk.fusion
 from abc import ABC, abstractmethod
+
+# from typing import List
+
+from ..geometry_utils import extrude_profile_by_area
+
+# from ..modifier.index import Modifier
+import adsk.fusion
 
 
 class Geometry(ABC):
@@ -15,8 +22,9 @@ class Geometry(ABC):
 
 
 class ModifiableGeometry(Geometry):
-    def __init__(self):
-        self.modifier_stack = ModifierStack()
+    def __init__(self, extrude_height: float):
+        # self.modifier_stack: List[Modifier] = []
+        self.extrude_height = extrude_height
 
     @abstractmethod
     def draw(self, sketch: adsk.fusion.Sketch):
@@ -26,10 +34,24 @@ class ModifiableGeometry(Geometry):
     def calculate_area(self):
         pass
 
-    def add_modifier(self, modifier):
-        self.modifier_stack.add_modifier(modifier)
+    def post_draw(
+        self, component: adsk.fusion.Component, profiles: List[adsk.fusion.Profile]
+    ):
+        if self.extrude_height > 0:
+            extrude_profile_by_area(
+                component=component,
+                profiles=profiles,
+                area=self.calculate_area(),
+                extrude_height=self.extrude_height,
+                name="draw-extrude",
+                operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+            )
 
-    def apply_modifiers(
-        self, sketch: adsk.fusion.Sketch, profile: adsk.fusion.Profile
-    ) -> adsk.fusion.Profile:
-        return self.modifier_stack.apply(sketch, profile)
+    # def add_modifier(self, modifier):
+    #     self.modifier_stack.append(modifier)
+    #     return self
+
+    # # @TODO fix this? not sure
+    # def apply_modifiers(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.Profile:
+    #     for modifier in self.modifier_stack:
+    #         modifier.apply(sketch)

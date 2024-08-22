@@ -26,7 +26,7 @@ import adsk.core, adsk.fusion
 # from ...core.geometry.circle import Circle
 from ...core.geometry.rectangle import Rectangle
 
-# from core.modifier.extrude import Extrude
+# from ...core.modifier.extrude import Extrude
 
 # from ...core.modifier.boolean import Intersect
 # from ...core.modifier.extrude import Extrude
@@ -39,8 +39,7 @@ DEPTH_PER_LAYER = 0.48
 
 background_layer = CompositionLayer(
     [
-        Rectangle(WIDTH, LENGTH)
-        # .add_modifier(Extrude(DEPTH_PER_LAYER))
+        Rectangle(width=WIDTH, length=LENGTH, extrude_height=DEPTH_PER_LAYER)
         # .add_modifier(Intersect(Circle(LENGTH / 2)))
         # .add_modifier(Extrude(DEPTH_PER_LAYER)),
     ]

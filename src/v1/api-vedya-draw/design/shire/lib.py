@@ -85,8 +85,10 @@ from .config import (
 background_layer = CompositionLayer(
     [
         Rectangle(AppConfig.MaxLength, AppConfig.MaxWidth)
-        .add_modifier(Intersect(Circle(AppConfig.MaxLength / 2)))
-        .add_modifier(Extrude(AppConfig.LayerDepth)),
+        # .add_modifier(
+        #     Extrude(AppConfig.LayerDepth)
+        # )
+        # .add_modifier(Intersect(Circle(AppConfig.MaxLength / 2)))
     ]
 )
 
