@@ -14,8 +14,8 @@ class CompositionLayer:
 
     # @TODO sketches should not be shared by all elements in a layer
     def create(self, component: adsk.fusion.Component) -> None:
-        sketch = create_sketch(component, "layer-sketch")
         for element in self.elements:
+            sketch = create_sketch(component, "layer-sketch")
             element.draw(sketch)
             element.post_draw(component, sketch.profiles)
 

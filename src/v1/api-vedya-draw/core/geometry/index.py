@@ -17,7 +17,7 @@ class Geometry(ABC):
         pass
 
     @abstractmethod
-    def calculate_area(self):
+    def calculate_area(self) -> float:
         pass
 
 
@@ -31,7 +31,7 @@ class ModifiableGeometry(Geometry):
         pass
 
     @abstractmethod
-    def calculate_area(self):
+    def calculate_area(self) -> float:
         pass
 
     def post_draw(
