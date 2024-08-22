@@ -19,10 +19,37 @@ Funcitonality to generate Partenon from Greece
     through generative techniques.
 """
 
-PROJECT_NAME = "parthenon"
+PROJECT_NAME = "PARTHENON"
 
 import adsk.core, adsk.fusion
+
+# from ...core.geometry.circle import Circle
+from ...core.geometry.rectangle import Rectangle
+
+# from ...core.modifier.boolean import Intersect
+# from ...core.modifier.extrude import Extrude
+from ...design.shire.composition import Composition, CompositionLayer
 from ...utils.lib import log
+
+WIDTH = 64.0
+LENGTH = 96.0
+DEPTH_PER_LAYER = 0.48
+
+background_layer = CompositionLayer(
+    [
+        Rectangle(WIDTH, LENGTH)
+        # .add_modifier(Intersect(Circle(LENGTH / 2)))
+        # .add_modifier(Extrude(DEPTH_PER_LAYER)),
+    ]
+)
+
+
+# create composition
+composition = Composition(
+    [
+        background_layer,
+    ]
+)
 
 
 def start_func(root_comp: adsk.fusion.Component):
@@ -33,3 +60,5 @@ def start_func(root_comp: adsk.fusion.Component):
     """
     # start
     log(f"DEBUG: Start execute function for {PROJECT_NAME}")
+
+    composition.create(root_comp)

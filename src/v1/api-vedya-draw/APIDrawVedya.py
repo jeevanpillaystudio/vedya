@@ -10,10 +10,12 @@ from .core.context import FusionDesignContext
 from .core.types import DesignType, FabricationMode, FabricationType
 
 # fabrication
-from .core.fabrication.slicer.index import start_slicer
+# from .core.fabrication.slicer.index import start_slicer
+# from .core.fabrication.aggregator.index import start_aggregator
 
-from .core.fabrication.aggregator.index import start_aggregator
-from .design.shire.index import start_func
+# design
+# from .design.shire.index import start_func
+from .design.parthenon.index import start_func
 
 
 @timer
@@ -40,19 +42,19 @@ def run(context):
         # Call the function to generate the design
         start_func(root_component)
 
-        # Call the function to slice the design
-        if context.fabrication_mode == FabricationMode.SLICER:
-            context.set_design(DesignType.PARAMETRIC)
-            start_slicer(
-                component=root_component,
-                sliced_layer_depth=1.28 / 4,
-                sliced_layer_count=12,
-            )
-        elif context.fabrication_mode == FabricationMode.AGGREGATOR:
-            context.set_design(DesignType.PARAMETRIC)
-            start_aggregator(
-                component=root_component,
-            )
+        # # Call the function to slice the design
+        # if context.fabrication_mode == FabricationMode.SLICER:
+        #     context.set_design(DesignType.PARAMETRIC)
+        #     start_slicer(
+        #         component=root_component,
+        #         sliced_layer_depth=1.28 / 4,
+        #         sliced_layer_count=12,
+        #     )
+        # elif context.fabrication_mode == FabricationMode.AGGREGATOR:
+        #     context.set_design(DesignType.PARAMETRIC)
+        #     start_aggregator(
+        #         component=root_component,
+        #     )
 
         # End
         log(f"DEBUG: End generation of the design")
