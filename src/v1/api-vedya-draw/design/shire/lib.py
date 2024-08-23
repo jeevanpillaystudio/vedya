@@ -254,7 +254,7 @@ shire_composition = Composition(
 
 
 def start_func(root_comp: adsk.fusion.Component):
-    shire_composition.create(root_comp)
+    shire_composition.draw(root_comp)
 
     # Additional operations that don't fit into the layer structure
     # create_middle_cut(root_comp)

@@ -13,7 +13,7 @@ class CompositionLayer:
         self.elements = elements
 
     # @TODO sketches should not be shared by all elements in a layer
-    def create(self, component: adsk.fusion.Component) -> None:
+    def draw(self, component: adsk.fusion.Component) -> None:
         for element in self.elements:
             sketch = create_sketch(component, "layer-sketch")
             element.draw(sketch)
@@ -24,7 +24,7 @@ class Composition:
     def __init__(self, layers: List[CompositionLayer]):
         self.layers = layers
 
-    def create(self, component: adsk.fusion.Component) -> None:
+    def draw(self, component: adsk.fusion.Component) -> None:
         for i, layer in enumerate(self.layers):
             layer_comp = create_component(component, f"layer-{i}")
-            layer.create(layer_comp)
+            layer.draw(layer_comp)

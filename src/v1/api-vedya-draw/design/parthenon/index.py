@@ -22,6 +22,7 @@ Funcitonality to generate Partenon from Greece
 PROJECT_NAME = "PARTHENON"
 
 import adsk.core, adsk.fusion
+from ...core.modifier.boolean import Intersect
 from ...core.geometry.circle import Circle
 
 # from ...core.modifier.boolean import Intersect
@@ -40,22 +41,6 @@ WIDTH = 64.0
 LENGTH = 96.0
 DEPTH_PER_LAYER = 0.48
 
-background_layer = CompositionLayer(
-    [
-        Rectangle(width=WIDTH, length=LENGTH, extrude_height=DEPTH_PER_LAYER),
-        Circle(radius=LENGTH / 2, extrude_height=DEPTH_PER_LAYER),
-        # .add_modifier(Intersect(Circle(LENGTH / 2)))
-    ]
-)
-
-
-# create composition
-composition = Composition(
-    [
-        background_layer,
-    ]
-)
-
 
 def start_func(root_comp: adsk.fusion.Component):
     """
@@ -66,4 +51,24 @@ def start_func(root_comp: adsk.fusion.Component):
     # start
     log(f"DEBUG: Start execute function for {PROJECT_NAME}")
 
-    composition.create(root_comp)
+    # create composition layer
+    background_layer = CompositionLayer(
+        [
+            Rectangle(
+                width=WIDTH, length=LENGTH, extrude_height=DEPTH_PER_LAYER
+            ).add_modifier(
+                Intersect(Circle(radius=LENGTH / 2, extrude_height=DEPTH_PER_LAYER))
+            )
+            # Circle(radius=LENGTH / 2, extrude_height=DEPTH_PER_LAYER),
+        ]
+    )
+
+    # create composition
+    composition = Composition(
+        [
+            background_layer,
+        ]
+    )
+
+    # create composition
+    composition.draw(root_comp)

@@ -3,11 +3,8 @@ from typing import List
 import adsk.fusion
 from abc import ABC, abstractmethod
 
-# from typing import List
-
+from ...core.modifier.index import Modifier
 from ..geometry_utils import extrude_profile_by_area
-
-# from ..modifier.index import Modifier
 import adsk.fusion
 
 
@@ -23,7 +20,7 @@ class Geometry(ABC):
 
 class ModifiableGeometry(Geometry):
     def __init__(self, extrude_height: float):
-        # self.modifier_stack: List[Modifier] = []
+        self.modifier_stack: List[Modifier] = []
         self.extrude_height = extrude_height
 
     @abstractmethod
@@ -47,11 +44,11 @@ class ModifiableGeometry(Geometry):
                 operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
             )
 
-    # def add_modifier(self, modifier):
-    #     self.modifier_stack.append(modifier)
-    #     return self
+    def add_modifier(self, modifier):
+        self.modifier_stack.append(modifier)
+        return self
 
     # # @TODO fix this? not sure
-    # def apply_modifiers(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.Profile:
-    #     for modifier in self.modifier_stack:
-    #         modifier.apply(sketch)
+    def apply_modifiers(self, sketch: adsk.fusion.Sketch):
+        for modifier in self.modifier_stack:
+            modifier.apply(sketch)
