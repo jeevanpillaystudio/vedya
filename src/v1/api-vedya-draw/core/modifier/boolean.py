@@ -1,10 +1,14 @@
+from typing import List
 import adsk.fusion
+from ..component_utils import intersect_bodies
+from ...utils.lib import log
+from ..geometry_utils import create_sketch
 
 from ..geometry.index import ModifiableGeometry
 from .index import Modifier
 
 
-class Difference(Modifier):
+class Intersect(Modifier):
     def __init__(self, subtracted_geometry: ModifiableGeometry):
         self.subtracted_geometry = subtracted_geometry
 
@@ -13,9 +17,9 @@ class Difference(Modifier):
         subtracted_profile = self.subtracted_geometry.draw(sketch)
 
         # Apply any modifiers on the subtracted geometry
-        subtracted_profile = self.subtracted_geometry.apply_modifiers(
-            sketch, subtracted_profile
-        )
+        # subtracted_profile = self.subtracted_geometry.apply_modifiers(
+        #     sketch, subtracted_profile
+        # )
 
         # Perform the subtraction operation
         if not base_profile or not subtracted_profile:
@@ -46,40 +50,38 @@ class Difference(Modifier):
         return f"Difference(subtracted_geometry={self.subtracted_geometry})"
 
 
-class Intersect(Modifier):
+class Difference(Modifier):
     def __init__(self, intersecting_geometry: ModifiableGeometry):
         self.intersecting_geometry = intersecting_geometry
         self.intersected_profile = None
 
-    def apply(self, sketch: adsk.fusion.Sketch, base_profile):
-        # Draw the intersecting geometry
-        intersecting_profile = self.intersecting_geometry.draw(sketch)
+    def apply(
+        self,
+        component: adsk.fusion.Component,
+        profiles: List[adsk.fusion.Profile],
+    ) -> adsk.fusion.Profile:
+        # Create a collection of all bodies in the component
+        all_bodies = adsk.core.ObjectCollection.create()
+        for target_body in component.bRepBodies:
+            all_bodies.add(target_body)
 
-        # Apply any modifiers on the intersecting geometry
-        intersecting_profile = self.intersecting_geometry.apply_modifiers(
-            sketch, intersecting_profile
+        # Draw the intersecting geometry
+        sketch = create_sketch(component, "-sketch")
+        self.intersecting_geometry.draw(sketch)
+        target_body = self.intersecting_geometry.post_draw(
+            component=component, profiles=sketch.profiles
         )
 
         # Perform intersection
-        if not base_profile or not intersecting_profile:
-            raise ValueError("Invalid profiles for intersection")
+        if not all_bodies or not target_body:
+            raise ValueError("Invalid profiles for difference operation")
 
-        # Create a collection of profiles to intersect
-        profile_collection = adsk.core.ObjectCollection.create()
-        profile_collection.add(base_profile)
-        profile_collection.add(intersecting_profile)
-
-        # Perform the intersection
-        intersected_profiles = sketch.profiles.intersect(profile_collection)
-
-        if intersected_profiles.count != 1:
-            raise ValueError("Unexpected number of profiles after intersection")
-
-        self.intersected_profile = intersected_profiles.item(0)
-
-        # Delete the original profiles
-        base_profile.deleteMe()
-        intersecting_profile.deleteMe()
+        intersect_bodies(
+            root_component=component,
+            target_body=target_body,
+            tool_bodies=all_bodies,
+            operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
+        )
 
         return self.intersected_profile
 

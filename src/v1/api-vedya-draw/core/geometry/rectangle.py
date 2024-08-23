@@ -14,15 +14,12 @@ class Rectangle(ModifiableGeometry):
         self.width = width
         self.rotation = rotation
 
-    def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.Profile:
+    def draw(self, sketch: adsk.fusion.Sketch):
         # @TODO should be two seperate geometries; Rectangle and RotatedRectangle
         if self.rotation == 0:
             self._draw_rectangle(sketch, self.length, self.width)
         else:
             self._draw_rotated_rectangle(sketch, self.length, self.width, self.rotation)
-
-        # Apply modifiers
-        # self.apply_modifiers(sketch)
 
     def calculate_area(self):
         return self.length * self.width
@@ -66,7 +63,3 @@ class Rectangle(ModifiableGeometry):
 
     def __str__(self):
         return f"Rectangle(length={self.length}, width={self.width}, rotation={self.rotation})"
-
-
-def calculate_rectangle_area(width, length):
-    return width * length

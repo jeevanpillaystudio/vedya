@@ -3,6 +3,8 @@ from typing import List
 import adsk.fusion
 from abc import ABC, abstractmethod
 
+from ...utils.lib import log
+
 from ...core.modifier.index import Modifier
 from ..geometry_utils import extrude_profile_by_area
 import adsk.fusion
@@ -33,22 +35,27 @@ class ModifiableGeometry(Geometry):
 
     def post_draw(
         self, component: adsk.fusion.Component, profiles: List[adsk.fusion.Profile]
-    ):
+    ) -> adsk.fusion.BRepBody:
+        body = None
+
+        # Extr
         if self.extrude_height > 0:
-            extrude_profile_by_area(
+            body = extrude_profile_by_area(
                 component=component,
                 profiles=profiles,
                 area=self.calculate_area(),
                 extrude_height=self.extrude_height,
                 name="draw-extrude",
                 operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
-            )
+            ).item(0)
+
+        # Apply modifiers
+        for modifier in self.modifier_stack:
+            log(f"Applying modifier: {modifier}")
+            modifier.apply(component, profiles)
+
+        return body
 
     def add_modifier(self, modifier):
         self.modifier_stack.append(modifier)
         return self
-
-    # # @TODO fix this? not sure
-    def apply_modifiers(self, sketch: adsk.fusion.Sketch):
-        for modifier in self.modifier_stack:
-            modifier.apply(sketch)

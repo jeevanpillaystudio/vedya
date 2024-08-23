@@ -1,5 +1,5 @@
 import adsk.core, adsk.fusion
-from ...component_utils import combine_body, copy_body, create_component
+from ...component_utils import intersect_bodies, copy_body, create_component
 from ....design.shire.lib import aggregate_all_bodies, create_component_name
 from ....utils.lib import log
 
@@ -45,7 +45,7 @@ def run_aggregator(
     # Perform the combination
     first_body = tool_bodies.item(0)
     tool_bodies.removeByIndex(0)
-    combine_body(
+    intersect_bodies(
         target_component,
         first_body,
         tool_bodies,

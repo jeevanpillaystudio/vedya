@@ -51,7 +51,7 @@ def scale_body(
     return scale
 
 
-def combine_body(
+def intersect_bodies(
     root_component: adsk.fusion.Component,
     target_body: adsk.fusion.BRepBody,
     tool_bodies: adsk.core.ObjectCollection,

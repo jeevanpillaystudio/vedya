@@ -1,4 +1,5 @@
 import adsk.core, adsk.fusion
+from ..utils.lib import log
 
 FP_TOLERANCE = 1e-2  # 0.1 Precision for floating point comparison
 
@@ -45,6 +46,7 @@ def extrude_profile_by_area(
     bodies = adsk.core.ObjectCollection.create()
     extrudes = component.features.extrudeFeatures
     for profile in profiles:
+        log(profile.areaProperties().area)
         if (
             abs(profile.areaProperties().area - area) < fp_tolerance
             or abs(profile.areaProperties().area - area) == 0.0

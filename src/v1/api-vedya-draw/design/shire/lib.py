@@ -7,7 +7,7 @@ from design.shire.composition import Composition, CompositionLayer
 
 # modifier
 from ...core.modifier.index import Modifier
-from ...core.modifier.boolean import Intersect, Difference, Union
+from ...core.modifier.boolean import Difference, Difference, Union
 from ...core.modifier.array import Array
 
 # geometry

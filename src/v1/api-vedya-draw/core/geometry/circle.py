@@ -19,18 +19,15 @@ class Circle(ModifiableGeometry):
 
     def draw(self, sketch: adsk.fusion.Sketch):
         # Draw the base circle
-        profile = self._draw_circle(sketch)
+        self._draw_circle(sketch)
 
         # Apply modifiers
         # self.apply_modifiers(sketch)
 
-        return profile
-
     def _draw_circle(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchCircle:
-        circle = sketch.sketchCurves.sketchCircles.addByCenterRadius(
+        return sketch.sketchCurves.sketchCircles.addByCenterRadius(
             adsk.core.Point3D.create(self.center_x, self.center_y, 0), self.radius
         )
-        return sketch.profiles.item(sketch.profiles.count - 1)
 
     def calculate_area(self) -> float:
         return math.pi * self.radius**2
@@ -39,7 +36,3 @@ class Circle(ModifiableGeometry):
         return (
             f"Circle(radius={self.radius}, center=({self.center_x}, {self.center_y}))"
         )
-
-
-def calculate_circle_area(radius):
-    return math.pi * radius**2
