@@ -1,5 +1,5 @@
 from typing import List
-import adsk.fusion
+import adsk.fusion, adsk.core
 from ..component_utils import intersect_bodies
 from ...utils.lib import log
 from ..geometry_utils import create_sketch
@@ -41,62 +41,45 @@ class Intersect(Modifier):
 
         return result
 
-    def calculate_area(self, base_area):
-        # Note: This is a simplified calculation and may not be accurate for complex geometries
-        subtracted_area = self.subtracted_geometry.calculate_area()
-        return max(0, base_area - subtracted_area)
-
     def __str__(self):
         return f"Difference(subtracted_geometry={self.subtracted_geometry})"
 
 
 class Difference(Modifier):
-    def __init__(self, intersecting_geometry: ModifiableGeometry):
-        self.intersecting_geometry = intersecting_geometry
-        self.intersected_profile = None
+    def __init__(self, subtracted_geometry: ModifiableGeometry):
+        self.subtracted_geometry = subtracted_geometry
 
     def apply(
         self,
         component: adsk.fusion.Component,
-        profiles: List[adsk.fusion.Profile],
+        base_body: adsk.fusion.BRepBody,
     ) -> adsk.fusion.Profile:
-        # Create a collection of all bodies in the component
-        all_bodies = adsk.core.ObjectCollection.create()
-        for target_body in component.bRepBodies:
-            all_bodies.add(target_body)
-
-        # Draw the intersecting geometry
-        sketch = create_sketch(component, "-sketch")
-        self.intersecting_geometry.draw(sketch)
-        target_body = self.intersecting_geometry.post_draw(
+        # Create a sketch for the subtracted geometry
+        sketch = create_sketch(component, "subtraction_sketch")
+        self.subtracted_geometry.draw(sketch)
+        tool_body = self.subtracted_geometry.post_draw(
             component=component, profiles=sketch.profiles
         )
 
-        # Perform intersection
-        if not all_bodies or not target_body:
+        if not base_body or not tool_body:
             raise ValueError("Invalid profiles for difference operation")
 
+        # Perform subtraction
+        tool_bodies = adsk.core.ObjectCollection.create()
+        tool_bodies.add(tool_body)
         intersect_bodies(
             root_component=component,
-            target_body=target_body,
-            tool_bodies=all_bodies,
+            target_body=base_body,
+            tool_bodies=tool_bodies,
             operation=adsk.fusion.FeatureOperations.CutFeatureOperation,
         )
 
-        return self.intersected_profile
-
-    def calculate_area(self):
-        if not self.intersected_profile:
-            raise ValueError("Intersection has not been applied yet")
-
-        area_props = self.intersected_profile.areaProperties()
-        return area_props.area
-
-    def get_profile(self):
-        return self.intersected_profile
+        # Clean up the temporary tool body
+        # @TODO wtf is this?
+        # tool_body.deleteMe()
 
     def __str__(self):
-        return f"Intersection(intersecting_geometry={self.intersecting_geometry})"
+        return f"Difference(subtracted_geometry={self.subtracted_geometry})"
 
 
 class Union(Modifier):
@@ -126,9 +109,6 @@ class Union(Modifier):
 
         return result
 
-    def calculate_area(self):
-        # Note: This is still a simplified calculation and may not be accurate for overlapping geometries
-        return sum(geometry.calculate_area() for geometry in self.geometries)
 
-    def __str__(self):
-        return f"Union({', '.join(str(g) for g in self.geometries)})"
+def __str__(self):
+    return f"Union({', '.join(str(g) for g in self.geometries)})"

@@ -52,7 +52,7 @@ class ModifiableGeometry(Geometry):
         # Apply modifiers
         for modifier in self.modifier_stack:
             log(f"Applying modifier: {modifier}")
-            modifier.apply(component, profiles)
+            modifier.apply(component, body)
 
         return body
 

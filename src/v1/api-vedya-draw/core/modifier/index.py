@@ -7,7 +7,3 @@ class Modifier(ABC):
     @abstractmethod
     def apply(self, sketch: adsk.fusion.Sketch):
         pass
-
-    @abstractmethod
-    def calculate_area(self):
-        pass
