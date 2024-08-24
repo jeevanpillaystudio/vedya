@@ -60,9 +60,9 @@ def start_func(root_comp: adsk.fusion.Component):
                 width=WIDTH,
                 length=LENGTH,
                 thickness=THICKNESS,
-                # modifiers=Difference(
-                #     Circle(radius=MAGNET_HOLE_RADIUS, thickness=THICKNESS)
-                # ),
+                modifiers=Difference(
+                    Circle(radius=MAGNET_HOLE_RADIUS, thickness=THICKNESS)
+                ),
             ),
             # Circle(
             #     radius=MAGNET_HOLE_RADIUS,

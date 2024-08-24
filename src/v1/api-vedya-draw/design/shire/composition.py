@@ -23,7 +23,7 @@ class CompositionGeometry(Geometry):
         for x in range(self.count):
             for element in self.elements:
                 element.center_x = element.xyBound().x * x
-                element.center_y = 0
+                element.center_y = 0.0
                 log(
                     f"DEBUG: Drawing element from center_x, center_y {element.center_x}, {element.center_y}"
                 )

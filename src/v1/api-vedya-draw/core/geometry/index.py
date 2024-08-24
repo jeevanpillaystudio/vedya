@@ -57,9 +57,14 @@ class ModifiableGeometry(Geometry):
         ).item(0)
 
         # modifier checker
-        # if self.modifer:
-        #     # modify: re. only apply modifier after drawn
-        #     body = self.modifer.apply(component, body, plane_offset=self.plane_offset)
+        if self.modifer:
+            # modify: re. only apply modifier after drawn
+            body = self.modifer.apply(
+                component,
+                body,
+                parent_center_x=self.center_x,
+                parent_center_y=self.center_y,
+            )
 
         # return
         return body

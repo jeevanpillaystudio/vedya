@@ -21,12 +21,15 @@ class Boolean(Modifier):
         self,
         component: adsk.fusion.Component,
         base_body: adsk.fusion.BRepBody,
-        plane_offset: float = 0,
+        parent_center_x: float,
+        parent_center_y: float,
     ) -> adsk.fusion.BRepBody:
         tool_bodies = adsk.core.ObjectCollection.create()
 
         for geometry in self.geometries:
-            geometry.set_plane_offset(plane_offset)
+            # @TODO move this shit somewhere else
+            geometry.center_x = parent_center_x
+            geometry.center_y = parent_center_y
             geometry.pre_draw(component)
             geometry.draw()
             tool_body = geometry.post_draw(component=component)

@@ -18,17 +18,30 @@ class Circle(ModifiableGeometry):
         self.center_x = center_x
         self.center_y = center_y
 
-    def draw(self):
+    def draw(self) -> adsk.fusion.SketchCircle:
+        if self.sketch is None:
+            raise ValueError("Sketch is not initialized")
+
         # Draw the base circle
-        self._draw_circle(self.sketch)
-
-        # Apply modifiers
-        # self.apply_modifiers(sketch)
-
-    def _draw_circle(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchCircle:
-        return sketch.sketchCurves.sketchCircles.addByCenterRadius(
+        return self.sketch.sketchCurves.sketchCircles.addByCenterRadius(
             adsk.core.Point3D.create(self.center_x, self.center_y, 0), self.radius
         )
+
+    @property
+    def center_x(self):
+        return self._center_x
+
+    @center_x.setter
+    def center_x(self, center_x: float):
+        self._center_x = center_x
+
+    @property
+    def center_y(self):
+        return self._center_y
+
+    @center_y.setter
+    def center_y(self, center_y: float):
+        self._center_y = center_y
 
     def calculate_area(self) -> float:
         return math.pi * self.radius**2
