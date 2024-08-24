@@ -1,13 +1,10 @@
 # Base Layer: Geometry
 from typing import List
-import adsk.fusion
+import adsk.fusion, adsk.core
 from abc import ABC, abstractmethod
-
-from ...utils.lib import log
 
 from ...core.modifier.index import Modifier
 from ..geometry_utils import create_sketch, extrude_profile_by_area
-import adsk.fusion
 
 
 class Geometry(ABC):
@@ -33,7 +30,7 @@ class ModifiableGeometry(Geometry):
     def calculate_area(self) -> float:
         pass
 
-    def pre_draw(self, component: adsk.fusion.Component = 0):
+    def pre_draw(self, component: adsk.fusion.Component = None):
         self.sketch = create_sketch(
             component=component,
             offset=self.plane_offset,
@@ -45,24 +42,31 @@ class ModifiableGeometry(Geometry):
         pass
 
     def post_draw(self, component: adsk.fusion.Component) -> adsk.fusion.BRepBody:
-        body = None
+        # extrude checker
+        if not self.extrude_height > 0:
+            raise NotImplementedError("Extrusion not implemented")
 
-        # Extr
-        if self.extrude_height > 0:
-            body = extrude_profile_by_area(
-                component=component,
-                profiles=self.sketch.profiles,
-                area=self.calculate_area(),
-                extrude_height=self.extrude_height,
-                name="draw-extrude",
-                operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
-            ).item(0)
+        # extrude
+        body = extrude_profile_by_area(
+            component=component,
+            profiles=self.sketch.profiles,
+            area=self.calculate_area(),
+            extrude_height=self.extrude_height,
+            name="draw-extrude",
+            operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+        ).item(0)
 
-        # Apply modifiers
+        # modifier checker
         if self.modifer:
+            # modify: re. only apply modifier after drawn
             body = self.modifer.apply(component, body, plane_offset=self.plane_offset)
 
+        # return
         return body
 
     def set_plane_offset(self, offset: float):
         self.plane_offset = offset
+
+    @abstractmethod
+    def xyBound(self) -> adsk.core.Point3D:
+        pass

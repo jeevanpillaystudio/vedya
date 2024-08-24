@@ -37,3 +37,6 @@ class Circle(ModifiableGeometry):
         return (
             f"Circle(radius={self.radius}, center=({self.center_x}, {self.center_y}))"
         )
+
+    def xyBound(self) -> adsk.core.Point3D:
+        return adsk.core.Point3D.create(self.radius, self.radius, 0)

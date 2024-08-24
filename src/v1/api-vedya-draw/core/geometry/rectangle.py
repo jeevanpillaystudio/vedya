@@ -72,3 +72,6 @@ class Rectangle(ModifiableGeometry):
 
     def __str__(self):
         return f"Rectangle(length={self.length}, width={self.width}, rotation={self.rotation})"
+
+    def xyBound(self):
+        return adsk.core.Point3D.create(self.length, self.width, 0)

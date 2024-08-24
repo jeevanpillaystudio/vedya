@@ -10,21 +10,18 @@ class CompositionGeometry(Geometry):
         self,
         elements: List[ModifiableGeometry],
         count: int,
-        spacing: float = 0,
     ):
         self.elements = elements
         self.count = count
-        self.spacing = spacing
 
     # @TODO sketches should not be shared by all elements in a layer
     def draw(
         self,
         component: adsk.fusion.Component,
     ) -> None:
-        # for y in range(self.count_y):
         for x in range(self.count):
             for element in self.elements:
-                offset = element.width * x + self.spacing * x
+                offset = element.xyBound().x * x
                 element.set_plane_offset(offset)
                 element.pre_draw(component)
                 element.draw()

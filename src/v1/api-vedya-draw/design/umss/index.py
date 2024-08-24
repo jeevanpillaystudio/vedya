@@ -71,7 +71,6 @@ def start_func(root_comp: adsk.fusion.Component):
             # ),
         ],
         count=NUM_TILES_X,
-        spacing=0.0,
     )
 
     # create composition
