@@ -21,12 +21,13 @@ class Boolean(Modifier):
         self,
         component: adsk.fusion.Component,
         base_body: adsk.fusion.BRepBody,
-        extra_plane_offset: float = 0,
+        plane_offset: float = 0,
     ) -> adsk.fusion.BRepBody:
         tool_bodies = adsk.core.ObjectCollection.create()
 
         for geometry in self.geometries:
-            geometry.pre_draw(component, extra_plane_offset=extra_plane_offset)
+            geometry.set_plane_offset(plane_offset)
+            geometry.pre_draw(component)
             geometry.draw()
             tool_body = geometry.post_draw(component=component)
             tool_bodies.add(tool_body)

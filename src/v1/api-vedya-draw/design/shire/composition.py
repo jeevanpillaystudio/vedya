@@ -1,7 +1,6 @@
 from typing import List
 import adsk.fusion
 from ...core.geometry.index import Geometry, ModifiableGeometry
-from ...core.geometry_utils import create_sketch
 from ...core.component_utils import create_component
 
 
@@ -25,10 +24,11 @@ class CompositionGeometry(Geometry):
         # for y in range(self.count_y):
         for x in range(self.count):
             for element in self.elements:
-                extra_plane_offset = element.width * x + self.spacing * x
-                element.pre_draw(component, extra_plane_offset=extra_plane_offset)
+                offset = element.width * x + self.spacing * x
+                element.set_plane_offset(offset)
+                element.pre_draw(component)
                 element.draw()
-                element.post_draw(component, extra_plane_offset=extra_plane_offset)
+                element.post_draw(component)
 
     def calculate_area(self) -> float:
         return sum([element.calculate_area() for element in self.elements])
