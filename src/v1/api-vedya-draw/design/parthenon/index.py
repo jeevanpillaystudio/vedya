@@ -64,7 +64,7 @@ def start_func(root_comp: adsk.fusion.Component):
                         radius=LENGTH / 2, extrude_height=DEPTH_PER_LAYER
                     ).add_modifier(
                         Difference(
-                            Circle(radius=LENGTH / 4, extrude_height=DEPTH_PER_LAYER)
+                            [Circle(radius=LENGTH / 4, extrude_height=DEPTH_PER_LAYER)]
                         )
                     )
                 )
