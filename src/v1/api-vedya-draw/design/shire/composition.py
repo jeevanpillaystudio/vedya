@@ -26,7 +26,7 @@ class Composition:
     def __init__(self, layers: List[CompositionGeometry]):
         self.layers = layers
 
-    def draw(self, component: adsk.fusion.Component) -> None:
+    def create(self, component: adsk.fusion.Component) -> None:
         for i, layer in enumerate(self.layers):
             geometry_component = create_component(component, f"geometry-{i}")
             layer.draw(geometry_component)

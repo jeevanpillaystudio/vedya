@@ -79,4 +79,4 @@ def start_func(root_comp: adsk.fusion.Component):
     )
 
     # create composition
-    composition.draw(root_comp)
+    composition.create(root_comp)
