@@ -34,7 +34,7 @@ from ...core.geometry.rectangle import Rectangle
 
 # from ...core.modifier.boolean import Intersect
 # from ...core.modifier.extrude import Extrude
-from ...design.shire.composition import Composition, CompositionLayer
+from ...design.shire.composition import Composition, CompositionGeometry
 from ...utils.lib import log
 
 WIDTH = 64.0
@@ -52,19 +52,17 @@ def start_func(root_comp: adsk.fusion.Component):
     log(f"DEBUG: Start execute function for {PROJECT_NAME}")
 
     # create composition layer
-    background_layer = CompositionLayer(
+    background_layer = CompositionGeometry(
         [
-            Rectangle(width=WIDTH, length=LENGTH, extrude_height=DEPTH_PER_LAYER)
+            Rectangle(width=WIDTH, length=LENGTH, thickness=DEPTH_PER_LAYER)
             .add_modifier(
-                Difference(Circle(radius=LENGTH / 2, extrude_height=DEPTH_PER_LAYER))
+                Difference(Circle(radius=LENGTH / 2, thickness=DEPTH_PER_LAYER))
             )
             .add_modifier(
                 Union(
-                    Circle(
-                        radius=LENGTH / 2, extrude_height=DEPTH_PER_LAYER
-                    ).add_modifier(
+                    Circle(radius=LENGTH / 2, thickness=DEPTH_PER_LAYER).add_modifier(
                         Difference(
-                            [Circle(radius=LENGTH / 4, extrude_height=DEPTH_PER_LAYER)]
+                            [Circle(radius=LENGTH / 4, thickness=DEPTH_PER_LAYER)]
                         )
                     )
                 )

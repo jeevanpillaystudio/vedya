@@ -7,19 +7,20 @@ from .index import ModifiableGeometry
 class Circle(ModifiableGeometry):
     def __init__(
         self,
-        extrude_height: float,
+        thickness: float,
         radius: float,
         center_x: float = 0.0,
         center_y: float = 0.0,
+        plane_offset: float = 0,
     ):
-        super().__init__(extrude_height)
+        super().__init__(thickness, plane_offset)
         self.radius = radius
         self.center_x = center_x
         self.center_y = center_y
 
-    def draw(self, sketch: adsk.fusion.Sketch):
+    def draw(self):
         # Draw the base circle
-        self._draw_circle(sketch)
+        self._draw_circle(self.sketch)
 
         # Apply modifiers
         # self.apply_modifiers(sketch)

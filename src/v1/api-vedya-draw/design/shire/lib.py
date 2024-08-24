@@ -3,7 +3,7 @@ import random
 import adsk.core, adsk.fusion
 
 # designer
-from design.shire.composition import Composition, CompositionLayer
+from design.shire.composition import Composition, CompositionGeometry
 
 # modifier
 from ...core.modifier.index import Modifier
@@ -81,7 +81,7 @@ from .config import (
 #             )
 
 
-background_layer = CompositionLayer(
+background_layer = CompositionGeometry(
     [
         Rectangle(AppConfig.MaxLength, AppConfig.MaxWidth)
         # .add_modifier(

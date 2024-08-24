@@ -1,25 +1,34 @@
 import math
+from typing import List
 import adsk.core
 import adsk.fusion
-
+from ..modifier.index import Modifier
 from .index import ModifiableGeometry
 
 
 class Rectangle(ModifiableGeometry):
     def __init__(
-        self, extrude_height: float, length: float, width: float, rotation: float = 0
+        self,
+        thickness: float,
+        length: float,
+        width: float,
+        rotation: float = 0,
+        plane_offset: float = 0,
+        modifiers: Modifier = None,
     ):
-        super().__init__(extrude_height)
+        super().__init__(thickness, plane_offset, modifiers)
         self.length = length
         self.width = width
         self.rotation = rotation
 
-    def draw(self, sketch: adsk.fusion.Sketch):
+    def draw(self):
         # @TODO should be two seperate geometries; Rectangle and RotatedRectangle
         if self.rotation == 0:
-            self._draw_rectangle(sketch, self.length, self.width)
+            self._draw_rectangle(self.sketch, self.length, self.width)
         else:
-            self._draw_rotated_rectangle(sketch, self.length, self.width, self.rotation)
+            self._draw_rotated_rectangle(
+                self.sketch, self.length, self.width, self.rotation
+            )
 
     def calculate_area(self):
         return self.length * self.width

@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from ...utils.lib import log
 
 from ...core.modifier.index import Modifier
-from ..geometry_utils import extrude_profile_by_area
+from ..geometry_utils import create_sketch, extrude_profile_by_area
 import adsk.fusion
 
 
@@ -21,28 +21,33 @@ class Geometry(ABC):
 
 
 class ModifiableGeometry(Geometry):
-    def __init__(self, extrude_height: float):
-        self.modifier_stack: List[Modifier] = []
-        self.extrude_height = extrude_height
-
-    @abstractmethod
-    def draw(self, sketch: adsk.fusion.Sketch):
-        pass
+    def __init__(
+        self, thickness: float, plane_offset: float = 0, modifier: Modifier = None
+    ):
+        self.modifer = modifier
+        self.extrude_height = thickness
+        self.sketch = None
+        self.plane_offset = plane_offset
 
     @abstractmethod
     def calculate_area(self) -> float:
         pass
 
-    def post_draw(
-        self, component: adsk.fusion.Component, profiles: List[adsk.fusion.Profile]
-    ) -> adsk.fusion.BRepBody:
+    def pre_draw(self, component: adsk.fusion.Component):
+        self.sketch = create_sketch(component, "layer-sketch", offset=self.plane_offset)
+
+    @abstractmethod
+    def draw(self):
+        pass
+
+    def post_draw(self, component: adsk.fusion.Component) -> adsk.fusion.BRepBody:
         body = None
 
         # Extr
         if self.extrude_height > 0:
             body = extrude_profile_by_area(
                 component=component,
-                profiles=profiles,
+                profiles=self.sketch.profiles,
                 area=self.calculate_area(),
                 extrude_height=self.extrude_height,
                 name="draw-extrude",
@@ -50,12 +55,7 @@ class ModifiableGeometry(Geometry):
             ).item(0)
 
         # Apply modifiers
-        for modifier in self.modifier_stack:
-            log(f"Applying modifier: {modifier}")
-            modifier.apply(component, body)
+        if self.modifer:
+            body = self.modifer.apply(component, body)
 
         return body
-
-    def add_modifier(self, modifier):
-        self.modifier_stack.append(modifier)
-        return self
