@@ -1,25 +1,37 @@
 from typing import List
 import adsk.fusion
-from ...core.geometry.index import ModifiableGeometry
+from ...core.geometry.index import Geometry, ModifiableGeometry
 from ...core.geometry_utils import create_sketch
 from ...core.component_utils import create_component
 
 
-class CompositionGeometry:
+# @NOTE assuming all elements are on xYConstructionPlane
+class CompositionGeometry(Geometry):
     def __init__(
         self,
         elements: List[ModifiableGeometry],
-        plane_offset: float = 0.0,
+        count: int,
+        spacing: float = 0,
     ):
         self.elements = elements
-        self.plane_offset = plane_offset
+        self.count = count
+        self.spacing = spacing
 
     # @TODO sketches should not be shared by all elements in a layer
-    def draw(self, component: adsk.fusion.Component) -> None:
-        for element in self.elements:
-            element.pre_draw(component)
-            element.draw()
-            element.post_draw(component)
+    def draw(
+        self,
+        component: adsk.fusion.Component,
+    ) -> None:
+        # for y in range(self.count_y):
+        for x in range(self.count):
+            for element in self.elements:
+                extra_plane_offset = element.width * x + self.spacing * x
+                element.pre_draw(component, extra_plane_offset=extra_plane_offset)
+                element.draw()
+                element.post_draw(component)
+
+    def calculate_area(self) -> float:
+        return sum([element.calculate_area() for element in self.elements])
 
 
 class Composition:

@@ -26,6 +26,7 @@ import adsk.core, adsk.fusion
 
 # modifier
 from ...core.modifier.boolean import Difference
+from ...core.modifier.array import Array
 
 # geometry
 from ...core.geometry.circle import Circle
@@ -54,7 +55,7 @@ def start_func(root_comp: adsk.fusion.Component):
 
     # create composition layer
     tile_geometry = CompositionGeometry(
-        [
+        elements=[
             Rectangle(
                 width=WIDTH,
                 length=LENGTH,
@@ -64,12 +65,14 @@ def start_func(root_comp: adsk.fusion.Component):
                     Circle(radius=MAGNET_HOLE_RADIUS, thickness=THICKNESS)
                 ),
             ),
-            Circle(
-                radius=MAGNET_HOLE_RADIUS,
-                thickness=MAGNET_BASE_THICKNESS,
-                plane_offset=-MAGNET_BASE_THICKNESS,
-            ),
+            # Circle(
+            #     radius=MAGNET_HOLE_RADIUS,
+            #     thickness=MAGNET_BASE_THICKNESS,
+            #     plane_offset=-MAGNET_BASE_THICKNESS,
+            # ),
         ],
+        count=NUM_TILES_X,
+        spacing=0,
     )
 
     # create composition

@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from ...utils.lib import log
 
 from ...core.modifier.index import Modifier
-from ..geometry_utils import create_sketch, extrude_profile_by_area
+from ..geometry_utils import create_offset_plane, create_sketch, extrude_profile_by_area
 import adsk.fusion
 
 
@@ -33,8 +33,8 @@ class ModifiableGeometry(Geometry):
     def calculate_area(self) -> float:
         pass
 
-    def pre_draw(self, component: adsk.fusion.Component):
-        self.sketch = create_sketch(component, "layer-sketch", offset=self.plane_offset)
+    def pre_draw(self, component: adsk.fusion.Component, extra_plane_offset: float = 0):
+        self.sketch = create_sketch(component=component, offset=self.plane_offset + extra_plane_offset, name="layer-sketch")
 
     @abstractmethod
     def draw(self):
