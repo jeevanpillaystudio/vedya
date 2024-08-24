@@ -55,7 +55,7 @@ def start_func(root_comp: adsk.fusion.Component):
 
     # create composition layer
     tile_geometry = CompositionGeometry(
-        elements=[
+        geometry=[
             Rectangle(
                 width=WIDTH,
                 length=LENGTH,
@@ -70,7 +70,7 @@ def start_func(root_comp: adsk.fusion.Component):
             #     plane_offset=-MAGNET_BASE_THICKNESS,
             # ),
         ],
-        count=NUM_TILES_X,
+        array_modifier=Array(NUM_TILES_X, NUM_TILES_Y),
     )
 
     # create composition

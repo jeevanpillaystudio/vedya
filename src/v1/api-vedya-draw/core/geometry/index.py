@@ -8,6 +8,11 @@ from ..geometry_utils import create_sketch, extrude_profile_by_area
 
 
 class Geometry(ABC):
+    def __init__(self, center_x: float = 0, center_y: float = 0, thickness: float = 0):
+        self.center_x = center_x
+        self.center_y = center_y
+        self.thickness = thickness
+
     @abstractmethod
     def draw(self, sketch: adsk.fusion.Sketch):
         pass
@@ -16,13 +21,44 @@ class Geometry(ABC):
     def calculate_area(self) -> float:
         pass
 
+    @property
+    def center_x(self):
+        return self._center_x
+
+    @center_x.setter
+    def center_x(self, center_x: float):
+        self._center_x = center_x
+
+    @property
+    def center_y(self):
+        return self._center_y
+
+    @center_y.setter
+    def center_y(self, center_y: float):
+        self._center_y = center_y
+
+    @property
+    def thickness(self):
+        return self._thickness
+
+    @thickness.setter
+    def thickness(self, thickness: float):
+        self._thickness = thickness
+
 
 class ModifiableGeometry(Geometry):
     def __init__(
-        self, thickness: float, plane_offset: float = 0, modifier: Modifier = None
+        self,
+        thickness: float,
+        plane_offset: float = 0,
+        modifier: Modifier = None,
+        center_x: float = 0,
+        center_y: float = 0,
     ):
+        super().__init__(center_x, center_y, thickness)
         self.modifer = modifier
-        self.extrude_height = thickness
+
+        # @TODO: remove; where to put...
         self.sketch = None
         self.plane_offset = plane_offset
 
@@ -43,7 +79,7 @@ class ModifiableGeometry(Geometry):
 
     def post_draw(self, component: adsk.fusion.Component) -> adsk.fusion.BRepBody:
         # extrude checker
-        if not self.extrude_height > 0:
+        if not self.thickness > 0:
             raise NotImplementedError("Extrusion not implemented")
 
         # extrude
@@ -51,7 +87,7 @@ class ModifiableGeometry(Geometry):
             component=component,
             profiles=self.sketch.profiles,
             area=self.calculate_area(),
-            extrude_height=self.extrude_height,
+            extrude_height=self.thickness,
             name="draw-extrude",
             operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
         ).item(0)

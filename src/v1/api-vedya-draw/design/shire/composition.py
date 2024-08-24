@@ -1,5 +1,6 @@
 from typing import List
 import adsk.fusion
+from ...core.modifier.array import Array
 from ...utils.lib import log
 from ...core.geometry.index import Geometry, ModifiableGeometry
 from ...core.component_utils import create_component
@@ -9,30 +10,21 @@ from ...core.component_utils import create_component
 class CompositionGeometry(Geometry):
     def __init__(
         self,
-        elements: List[ModifiableGeometry],
-        count: int,
+        geometry: List[ModifiableGeometry],
+        array_modifier: Array = None,
     ):
-        self.elements = elements
-        self.count = count
+        self.geometries = geometry
+        self.array_modifier = array_modifier or Array(1, 1)
 
-    # @TODO sketches should not be shared by all elements in a layer
     def draw(
         self,
         component: adsk.fusion.Component,
     ) -> None:
-        for x in range(self.count):
-            for element in self.elements:
-                element.center_x = element.xyBound().x * x
-                element.center_y = 0.0
-                log(
-                    f"DEBUG: Drawing element from center_x, center_y {element.center_x}, {element.center_y}"
-                )
-                element.pre_draw(component)
-                element.draw()
-                element.post_draw(component)
+        for geometry in self.geometries:
+            self.array_modifier.apply(geometry, component)
 
     def calculate_area(self) -> float:
-        return sum([element.calculate_area() for element in self.elements])
+        return sum([element.calculate_area() for element in self.geometries])
 
 
 class Composition:

@@ -27,22 +27,6 @@ class Circle(ModifiableGeometry):
             adsk.core.Point3D.create(self.center_x, self.center_y, 0), self.radius
         )
 
-    @property
-    def center_x(self):
-        return self._center_x
-
-    @center_x.setter
-    def center_x(self, center_x: float):
-        self._center_x = center_x
-
-    @property
-    def center_y(self):
-        return self._center_y
-
-    @center_y.setter
-    def center_y(self, center_y: float):
-        self._center_y = center_y
-
     def calculate_area(self) -> float:
         return math.pi * self.radius**2
 
