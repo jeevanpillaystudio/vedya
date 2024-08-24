@@ -60,7 +60,6 @@ def start_func(root_comp: adsk.fusion.Component):
                 width=WIDTH,
                 length=LENGTH,
                 thickness=THICKNESS,
-                plane_offset=0.0,
                 modifiers=Difference(
                     Circle(radius=MAGNET_HOLE_RADIUS, thickness=THICKNESS)
                 ),
@@ -72,7 +71,7 @@ def start_func(root_comp: adsk.fusion.Component):
             # ),
         ],
         count=NUM_TILES_X,
-        spacing=0,
+        spacing=0.0,
     )
 
     # create composition

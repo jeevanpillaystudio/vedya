@@ -34,13 +34,19 @@ class ModifiableGeometry(Geometry):
         pass
 
     def pre_draw(self, component: adsk.fusion.Component, extra_plane_offset: float = 0):
-        self.sketch = create_sketch(component=component, offset=self.plane_offset + extra_plane_offset, name="layer-sketch")
+        self.sketch = create_sketch(
+            component=component,
+            offset=self.plane_offset + extra_plane_offset,
+            name="layer-sketch",
+        )
 
     @abstractmethod
     def draw(self):
         pass
 
-    def post_draw(self, component: adsk.fusion.Component) -> adsk.fusion.BRepBody:
+    def post_draw(
+        self, component: adsk.fusion.Component, extra_plane_offset: float = 0
+    ) -> adsk.fusion.BRepBody:
         body = None
 
         # Extr
@@ -56,6 +62,10 @@ class ModifiableGeometry(Geometry):
 
         # Apply modifiers
         if self.modifer:
-            body = self.modifer.apply(component, body)
+            body = self.modifer.apply(
+                component,
+                body,
+                extra_plane_offset=self.plane_offset + extra_plane_offset,
+            )
 
         return body

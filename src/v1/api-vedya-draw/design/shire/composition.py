@@ -28,7 +28,7 @@ class CompositionGeometry(Geometry):
                 extra_plane_offset = element.width * x + self.spacing * x
                 element.pre_draw(component, extra_plane_offset=extra_plane_offset)
                 element.draw()
-                element.post_draw(component)
+                element.post_draw(component, extra_plane_offset=extra_plane_offset)
 
     def calculate_area(self) -> float:
         return sum([element.calculate_area() for element in self.elements])
