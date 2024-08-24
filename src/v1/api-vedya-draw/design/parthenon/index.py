@@ -22,7 +22,7 @@ Funcitonality to generate Partenon from Greece
 PROJECT_NAME = "PARTHENON"
 
 import adsk.core, adsk.fusion
-from ...core.modifier.boolean import Difference
+from ...core.modifier.boolean import Difference, Intersect, Union
 from ...core.geometry.circle import Circle
 
 # from ...core.modifier.boolean import Intersect
@@ -54,13 +54,20 @@ def start_func(root_comp: adsk.fusion.Component):
     # create composition layer
     background_layer = CompositionLayer(
         [
-            Rectangle(
-                width=WIDTH, length=LENGTH, extrude_height=DEPTH_PER_LAYER
-            ).add_modifier(
+            Rectangle(width=WIDTH, length=LENGTH, extrude_height=DEPTH_PER_LAYER)
+            .add_modifier(
                 Difference(Circle(radius=LENGTH / 2, extrude_height=DEPTH_PER_LAYER))
-            ),
-            Circle(radius=LENGTH / 2, extrude_height=DEPTH_PER_LAYER).add_modifier(
-                Difference(Circle(radius=LENGTH / 4, extrude_height=DEPTH_PER_LAYER))
+            )
+            .add_modifier(
+                Union(
+                    Circle(
+                        radius=LENGTH / 2, extrude_height=DEPTH_PER_LAYER
+                    ).add_modifier(
+                        Difference(
+                            Circle(radius=LENGTH / 4, extrude_height=DEPTH_PER_LAYER)
+                        )
+                    )
+                )
             ),
             # Circle(radius=LENGTH / 2, extrude_height=DEPTH_PER_LAYER),
         ]
