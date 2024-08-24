@@ -25,7 +25,7 @@ PROJECT_NAME = "PARTHENON"
 import adsk.core, adsk.fusion
 
 # modifier
-from ...core.modifier.boolean import Difference
+from ...core.modifier.boolean import Difference, Union
 from ...core.modifier.array import Array
 
 # geometry
@@ -34,8 +34,8 @@ from ...core.geometry.rectangle import Rectangle
 from ...design.shire.composition import Composition, CompositionGeometry
 from ...utils.lib import log
 
-NUM_TILES_X = 4
-NUM_TILES_Y = 4
+NUM_TILES_X = 1
+NUM_TILES_Y = 1
 WIDTH = 32.0  # 128.0 / NUM_TILES_X
 LENGTH = 32.0  # 128.0 / NUM_TILES_Y
 THICKNESS = 3.0
@@ -60,15 +60,17 @@ def start_func(root_comp: adsk.fusion.Component):
                 width=WIDTH,
                 length=LENGTH,
                 thickness=THICKNESS,
-                modifiers=Difference(
-                    Circle(radius=MAGNET_HOLE_RADIUS, thickness=THICKNESS)
-                ),
+                modifiers=[
+                    Difference(Circle(radius=MAGNET_HOLE_RADIUS, thickness=THICKNESS)),
+                    Union(
+                        Circle(
+                            radius=MAGNET_HOLE_RADIUS + 0.5,
+                            thickness=MAGNET_BASE_THICKNESS,
+                            plane_offset=0.0,
+                        )
+                    ),
+                ],
             ),
-            # Circle(
-            #     radius=MAGNET_HOLE_RADIUS,
-            #     thickness=MAGNET_BASE_THICKNESS,
-            #     plane_offset=-MAGNET_BASE_THICKNESS,
-            # ),
         ],
         array_modifier=Array(NUM_TILES_X, NUM_TILES_Y),
     )

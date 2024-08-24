@@ -51,12 +51,14 @@ class ModifiableGeometry(Geometry):
         self,
         thickness: float,
         plane_offset: float = 0,
-        modifier: Modifier = None,
         center_x: float = 0,
         center_y: float = 0,
+        modifiers: List[Modifier] = None,
     ):
-        super().__init__(center_x, center_y, thickness)
-        self.modifer = modifier
+        super().__init__(center_x=center_x, center_y=center_y, thickness=thickness)
+
+        # modifier
+        self.modifiers = modifiers or []
 
         # @TODO: remove; where to put...
         self.sketch = None
@@ -93,20 +95,33 @@ class ModifiableGeometry(Geometry):
         ).item(0)
 
         # modifier checker
-        if self.modifer:
+        if self.modifiers:
             # modify: re. only apply modifier after drawn
-            body = self.modifer.apply(
-                component,
-                body,
-                parent_center_x=self.center_x,
-                parent_center_y=self.center_y,
-            )
+            for modifier in self.modifiers:
+                body = modifier.apply(
+                    component,
+                    body,
+                    parent_center_x=self.center_x,
+                    parent_center_y=self.center_y,
+                )
 
         # return
         return body
 
     def set_plane_offset(self, offset: float):
         self.plane_offset = offset
+
+    def create_body(
+        self,
+        component: adsk.fusion.Component,
+        parent_center_x: float,
+        parent_center_y: float,
+    ) -> adsk.fusion.BRepBody:
+        self.center_x = parent_center_x
+        self.center_y = parent_center_y
+        self.pre_draw(component)
+        self.draw()
+        return self.post_draw(component=component)
 
     @abstractmethod
     def xyBound(self) -> adsk.core.Point3D:

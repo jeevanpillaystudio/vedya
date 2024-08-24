@@ -27,12 +27,9 @@ class Boolean(Modifier):
         tool_bodies = adsk.core.ObjectCollection.create()
 
         for geometry in self.geometries:
-            # @TODO move this shit somewhere else
-            geometry.center_x = parent_center_x
-            geometry.center_y = parent_center_y
-            geometry.pre_draw(component)
-            geometry.draw()
-            tool_body = geometry.post_draw(component=component)
+            tool_body = geometry.create_body(
+                component, parent_center_x, parent_center_y
+            )
             tool_bodies.add(tool_body)
 
         if not base_body or tool_bodies.count == 0:

@@ -13,12 +13,13 @@ class Array(Modifier):
         original_center = (geometry.center_x, geometry.center_y)
         for x in range(self.count_x):
             for y in range(self.count_y):
-                offset_x, offset_y = geometry.xyBound().x * x, geometry.xyBound().y * y
-                geometry.center_x = original_center[0] + offset_x
-                geometry.center_y = original_center[1] + offset_y
-                geometry.pre_draw(component=component)
-                geometry.draw()
-                geometry.post_draw(component=component)
+                offset_x, offset_y = (
+                    geometry.xyBound().x * x,
+                    geometry.xyBound().y * y,
+                )
+                new_center_x = original_center[0] + offset_x
+                new_center_y = original_center[1] + offset_y
+                geometry.create_body(component, new_center_x, new_center_y)
         geometry.center_x, geometry.center_y = (
             original_center  # Reset to original position
         )

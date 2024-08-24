@@ -1,4 +1,3 @@
-import math
 from typing import List
 import adsk.core
 import adsk.fusion
@@ -15,9 +14,15 @@ class Rectangle(ModifiableGeometry):
         center_x: float = 0,
         center_y: float = 0,
         plane_offset: float = 0,
-        modifiers: Modifier = None,
+        modifiers: List[Modifier] = None,
     ):
-        super().__init__(thickness, plane_offset, modifiers, center_x, center_y)
+        super().__init__(
+            thickness=thickness,
+            plane_offset=plane_offset,
+            modifiers=modifiers,
+            center_x=center_x,
+            center_y=center_y,
+        )
         self.length = length
         self.width = width
 
