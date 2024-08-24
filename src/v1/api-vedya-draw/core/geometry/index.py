@@ -57,9 +57,9 @@ class ModifiableGeometry(Geometry):
         ).item(0)
 
         # modifier checker
-        if self.modifer:
-            # modify: re. only apply modifier after drawn
-            body = self.modifer.apply(component, body, plane_offset=self.plane_offset)
+        # if self.modifer:
+        #     # modify: re. only apply modifier after drawn
+        #     body = self.modifer.apply(component, body, plane_offset=self.plane_offset)
 
         # return
         return body

@@ -1,5 +1,6 @@
 from typing import List
 import adsk.fusion
+from ...utils.lib import log
 from ...core.geometry.index import Geometry, ModifiableGeometry
 from ...core.component_utils import create_component
 
@@ -21,8 +22,11 @@ class CompositionGeometry(Geometry):
     ) -> None:
         for x in range(self.count):
             for element in self.elements:
-                offset = element.xyBound().x * x
-                element.set_plane_offset(offset)
+                element.center_x = element.xyBound().x * x
+                element.center_y = 0
+                log(
+                    f"DEBUG: Drawing element from center_x, center_y {element.center_x}, {element.center_y}"
+                )
                 element.pre_draw(component)
                 element.draw()
                 element.post_draw(component)

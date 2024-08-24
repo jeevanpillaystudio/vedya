@@ -12,6 +12,7 @@ def create_offset_plane(
 ) -> adsk.fusion.ConstructionPlane:
     if plane is None:
         plane = component.xYConstructionPlane
+    log(f"DEBUG: Creating offset plane with offset {offset}, plane {plane.name}")
     planes = component.constructionPlanes
     planeInput = planes.createInput()
     offsetValue = adsk.core.ValueInput.createByReal(offset)
