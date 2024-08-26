@@ -1,7 +1,7 @@
 import adsk.core
 import math
 
-from .index import Geometry
+from ..geometry import Geometry
 
 
 class Astroid(Geometry):
@@ -11,7 +11,7 @@ class Astroid(Geometry):
         self.scale_x = scale_x
         self.scale_y = scale_y
 
-    def draw(self, sketch):
+    def run(self, sketch):
         sketch.sketchCurves.sketchFittedSplines.add(
             create_astroid_points(self.n, self.num_points, self.scale_x, self.scale_y)
         )

@@ -24,17 +24,8 @@ PROJECT_NAME = "PARTHENON"
 import adsk.core, adsk.fusion
 from ...core.modifier.boolean import Difference, Intersect, Union
 from ...core.geometry.circle import Circle
-
-# from ...core.modifier.boolean import Intersect
-
-# from ...core.geometry.circle import Circle
 from ...core.geometry.rectangle import Rectangle
-
-# from ...core.modifier.extrude import Extrude
-
-# from ...core.modifier.boolean import Intersect
-# from ...core.modifier.extrude import Extrude
-from ...design.shire.composition import Composition, CompositionGeometry
+from ...core.fabrication.composition.index import Composition, CompositionGeometry
 from ...utils.lib import log
 
 WIDTH = 64.0

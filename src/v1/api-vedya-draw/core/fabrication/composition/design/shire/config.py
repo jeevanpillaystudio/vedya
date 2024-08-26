@@ -1,6 +1,3 @@
-from ...core.math.millimeter import Millimeter
-
-
 SCALE_FACTOR = 1.0
 
 

@@ -3,7 +3,7 @@ import random
 import adsk.core, adsk.fusion
 
 # designer
-from design.shire.composition import Composition, CompositionGeometry
+from core.fabrication.composition.index import Composition, CompositionGeometry
 
 # modifier
 from ...core.modifier.index import Modifier
@@ -11,9 +11,9 @@ from ...core.modifier.boolean import Difference, Difference, Union
 from ...core.modifier.array import Array
 
 # geometry
-from ...core.geometry.index import Geometry
+from ...core.geometry.core.geometry import Geometry
 from ...core.geometry.sol import SeedOfLife
-from ...core.geometry.astroid import Astroid
+from ...core.geometry.core.shapes.astroid import Astroid
 
 # transform
 from ...core.transform.depth import Depth

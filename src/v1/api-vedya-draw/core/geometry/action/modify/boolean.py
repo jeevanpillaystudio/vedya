@@ -1,19 +1,14 @@
 from typing import List, Union as UnionType
 import adsk.fusion, adsk.core
-from ..component_utils import intersect_bodies
-from ...utils.lib import log
-from ..geometry_utils import create_sketch
-
-from ..geometry.index import ModifiableGeometry
+from ...geometry import OwnableGeometry
+from ...libs.component_utils import intersect_bodies
 from .index import Modifier
 
 
 class Boolean(Modifier):
-    def __init__(
-        self, geometries: UnionType[ModifiableGeometry, List[ModifiableGeometry]]
-    ):
+    def __init__(self, geometries: UnionType[OwnableGeometry, List[OwnableGeometry]]):
         self.geometries = (
-            [geometries] if isinstance(geometries, ModifiableGeometry) else geometries
+            [geometries] if isinstance(geometries, OwnableGeometry) else geometries
         )
         self.operation_type = None  # To be set by subclasses
 
@@ -21,14 +16,13 @@ class Boolean(Modifier):
         self,
         component: adsk.fusion.Component,
         base_body: adsk.fusion.BRepBody,
-        parent_center_x: float,
-        parent_center_y: float,
     ) -> adsk.fusion.BRepBody:
+        sketch_manager = SketchManager(component)
         tool_bodies = adsk.core.ObjectCollection.create()
 
         for geometry in self.geometries:
-            tool_body = geometry.create_body(
-                component, parent_center_x, parent_center_y
+            tool_body = geometry.run(
+                sketch_manager,
             )
             tool_bodies.add(tool_body)
 
@@ -44,10 +38,6 @@ class Boolean(Modifier):
             operation=self.operation_type,
         )
 
-        # Clean up the temporary tool bodies
-        # for i in range(tool_bodies.count):
-        #     tool_bodies.item(i).deleteMe()
-
         return result_body
 
     def __str__(self):
@@ -57,18 +47,18 @@ class Boolean(Modifier):
 
 
 class Intersect(Boolean):
-    def __init__(self, geometry: ModifiableGeometry):
+    def __init__(self, geometry: OwnableGeometry):
         super().__init__(geometry)
         self.operation_type = adsk.fusion.FeatureOperations.IntersectFeatureOperation
 
 
 class Difference(Boolean):
-    def __init__(self, geometry: ModifiableGeometry):
+    def __init__(self, geometry: OwnableGeometry):
         super().__init__(geometry)
         self.operation_type = adsk.fusion.FeatureOperations.CutFeatureOperation
 
 
 class Union(Boolean):
-    def __init__(self, *geometries: ModifiableGeometry):
+    def __init__(self, *geometries: OwnableGeometry):
         super().__init__(geometries)
         self.operation_type = adsk.fusion.FeatureOperations.JoinFeatureOperation

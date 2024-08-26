@@ -2,7 +2,7 @@ import adsk.fusion
 
 from typing import List
 from .circle import Circle
-from .index import Geometry
+from .core.geometry import Geometry
 from ..transform.radial import Radial
 from ..modifier.array import Array
 
@@ -16,13 +16,13 @@ class SeedOfLife(Geometry):
             Circle(radius), num_circles, Radial(radius)
         )
 
-    def draw(self, sketch: adsk.fusion.Sketch):
+    def run(self, sketch: adsk.fusion.Sketch):
         # Create a collection to store all circles
         all_circles: List[Geometry] = [self.center_circle] + self.outer_circles.elements
 
         # Draw all circles in a single loop
         for circle in all_circles:
-            circle.draw(sketch)
+            circle.run(sketch)
 
     def calculate_area(self):
         return self.center_circle.calculate_area() + self.outer_circles.calculate_area()

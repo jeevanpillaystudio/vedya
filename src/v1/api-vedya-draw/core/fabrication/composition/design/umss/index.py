@@ -20,25 +20,21 @@ dimensions of 128mm x 128mm tiles.
     - [ ] Tiles should be interlocked with each other using backets
 """
 
-PROJECT_NAME = "PARTHENON"
+PROJECT_NAME = "UMSS"
 
 import adsk.core, adsk.fusion
+from core.fabrication.composition.composition_geometry import CompositionGeometry
+from core.fabrication.composition.index import Composition
+from core.geometry.action.modify.boolean import Difference, Union
+from core.geometry.circle import Circle
+from ...core.geometry.rectangle import Rectangle
 
 # modifier
-from ...core.modifier.boolean import Difference, Union
-from ...core.modifier.array import Array
+# from ...core.modifier.boolean import Difference, Union
+# from ...core.modifier.array import Array
 
 # geometry
-from ...core.geometry.circle import Circle
-from ...core.geometry.rectangle import Rectangle
-from ...design.shire.composition import Composition, CompositionGeometry
 from ...utils.lib import log
-
-NUM_TILES_X = 1
-NUM_TILES_Y = 1
-WIDTH = 32.0  # 128.0 / NUM_TILES_X
-LENGTH = 32.0  # 128.0 / NUM_TILES_Y
-THICKNESS = 3.0
 
 MAGNET_BASE_THICKNESS = 1.5
 MAGNET_HOLE_RADIUS = 2.9  # 5.8mm / 2; r.e we measured 5.8mm on the diameter
@@ -54,33 +50,30 @@ def start_func(root_comp: adsk.fusion.Component):
     log(f"DEBUG: Start execute function for {PROJECT_NAME}")
 
     # create composition layer
-    tile_geometry = CompositionGeometry(
-        geometry=[
-            Rectangle(
-                width=WIDTH,
-                length=LENGTH,
-                thickness=THICKNESS,
-                modifiers=[
-                    Difference(Circle(radius=MAGNET_HOLE_RADIUS, thickness=THICKNESS)),
-                    Union(
-                        Circle(
-                            radius=MAGNET_HOLE_RADIUS + 0.5,
-                            thickness=MAGNET_BASE_THICKNESS,
-                            plane_offset=0.0,
-                        )
-                    ),
-                ],
+    tile_geometry = Rectangle(
+        length=32.0,
+        width=32.0,
+        thickness=3.0,
+        center_x=0.0,
+        center_y=0.0,
+        count_x=1,
+        count_y=1,
+        modifiers=[
+            Difference(
+                Circle(
+                    radius=MAGNET_HOLE_RADIUS,
+                    thickness=MAGNET_BASE_THICKNESS,
+                )
             ),
         ],
-        array_modifier=Array(NUM_TILES_X, NUM_TILES_Y),
     )
 
-    # create composition
     composition = Composition(
-        [
+        geometries=[
             tile_geometry,
-        ]
+        ],
+        extrude=True,
     )
 
-    # create composition
-    composition.create(root_comp)
+    # # create composition
+    composition.run(root_comp)

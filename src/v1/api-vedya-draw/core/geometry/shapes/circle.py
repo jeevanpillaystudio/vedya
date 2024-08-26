@@ -1,7 +1,7 @@
 import math
 import adsk.core, adsk.fusion
 
-from .index import ModifiableGeometry
+from .core.geometry import ModifiableGeometry
 
 
 class Circle(ModifiableGeometry):
@@ -18,12 +18,9 @@ class Circle(ModifiableGeometry):
         self.center_x = center_x
         self.center_y = center_y
 
-    def draw(self) -> adsk.fusion.SketchCircle:
-        if self.sketch is None:
-            raise ValueError("Sketch is not initialized")
-
+    def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchCircle:
         # Draw the base circle
-        return self.sketch.sketchCurves.sketchCircles.addByCenterRadius(
+        return sketch.sketchCurves.sketchCircles.addByCenterRadius(
             adsk.core.Point3D.create(self.center_x, self.center_y, 0), self.radius
         )
 

@@ -1,5 +1,5 @@
 import adsk.core
-from .index import Geometry
+from .core.geometry import Geometry
 
 
 class Tessellate(Geometry):
@@ -11,7 +11,7 @@ class Tessellate(Geometry):
         self.columns = columns
         self.spacing = spacing
 
-    def draw(self, sketch: adsk.fusion.Sketch):
+    def run(self, sketch: adsk.fusion.Sketch):
         # Implementation for tessellating the base geometry
         pass
 

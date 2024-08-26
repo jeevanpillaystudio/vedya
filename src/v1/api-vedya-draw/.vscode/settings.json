@@ -8,7 +8,7 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
+            "source.organizeImports": "always"
         },
         "editor.tabSize": 4,
         "editor.insertSpaces": true,

@@ -1,11 +1,11 @@
 from typing import List
 import adsk.core
 import adsk.fusion
-from ..modifier.index import Modifier
-from .index import ModifiableGeometry
+from core.fabrication.composition.composition_geometry import CompositionGeometry
+from core.geometry.action.modify.index import Modifier
 
 
-class Rectangle(ModifiableGeometry):
+class Rectangle(CompositionGeometry):
     def __init__(
         self,
         thickness: float,
@@ -26,12 +26,8 @@ class Rectangle(ModifiableGeometry):
         self.length = length
         self.width = width
 
-    def draw(self) -> adsk.fusion.SketchLineList:
-        # @TODO should be two seperate geometries; Rectangle and RotatedRectangle
-        if self.sketch is None:
-            raise ValueError("Sketch is not initialized")
-
-        return self.sketch.sketchCurves.sketchLines.addTwoPointRectangle(
+    def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchLineList:
+        return sketch.sketchCurves.sketchLines.addTwoPointRectangle(
             adsk.core.Point3D.create(
                 -self.length / 2 + self.center_x, self.width / 2 + self.center_y, 0
             ),
