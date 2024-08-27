@@ -1,4 +1,6 @@
 import math
+
+from ..modifiers.boolean import Boolean
 from ..composition_geometry import CompositionGeometry
 import adsk.fusion, adsk.core
 
@@ -14,6 +16,7 @@ class Circle(CompositionGeometry):
         parent: CompositionGeometry = None,
         center_x: float = 0.0,
         center_y: float = 0.0,
+        boolean: Boolean = None,
     ):
         CompositionGeometry.__init__(
             self,
@@ -22,6 +25,7 @@ class Circle(CompositionGeometry):
             center_x=center_x,
             center_y=center_y,
             thickness=thickness,
+            boolean=boolean,
         )
 
         # body

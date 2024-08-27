@@ -1,4 +1,4 @@
-from ..modifiers.boolean import Difference
+from ..modifiers.boolean import Boolean
 from ..composition_geometry import CompositionGeometry
 import adsk.fusion, adsk.core
 
@@ -13,7 +13,7 @@ class Rectangle(CompositionGeometry):
         thickness: float,
         length: float,
         width: float,
-        boolean: Difference = None,
+        boolean: Boolean = None,
         parent: CompositionGeometry = None,
         center_x: float = 0,
         center_y: float = 0,

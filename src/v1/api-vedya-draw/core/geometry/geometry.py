@@ -1,6 +1,7 @@
 # Base Layer: Geometry
 from typing import List
 from abc import ABC, abstractmethod
+import adsk.fusion, adsk.core
 
 
 class Geometry(ABC):
@@ -13,7 +14,5 @@ class Geometry(ABC):
         pass
 
     @abstractmethod
-    def run(self):
+    def run(self) -> adsk.fusion.BRepBodies:
         pass
-
-    

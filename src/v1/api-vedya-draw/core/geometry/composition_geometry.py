@@ -1,8 +1,9 @@
 # @NOTE assuming all elements are on xYConstructionPlane
 from typing import List
-import adsk.fusion
+import adsk.fusion, adsk.core
 
-from .modifiers.boolean import Difference
+from .libs.component_utils import create_component
+from .modifiers.boolean import Boolean
 from .modifiers.extrude import Extrude
 from ..utils import log
 from .ownable_geometry import OwnableGeometry
@@ -10,13 +11,13 @@ from .ownable_geometry import OwnableGeometry
 
 class CompositionGeometry(OwnableGeometry, Extrude):
     # body
-    boolean: Difference
+    boolean: Boolean
 
     def __init__(
         self,
         parent: OwnableGeometry,
         children: List[OwnableGeometry],
-        boolean: Difference = None,
+        boolean: Boolean = None,
         center_x: float = 0.0,
         center_y: float = 0.0,
         thickness: float = 0.0,
@@ -36,7 +37,7 @@ class CompositionGeometry(OwnableGeometry, Extrude):
     """
 
     # def run(self, component: adsk.fusion.Component) -> None:
-    def run(self, component: adsk.fusion.Component) -> None:
+    def run(self, component: adsk.fusion.Component) -> adsk.fusion.BRepBodies:
         # # run array looper
         # for geometry in self.children:
         #     for x in range(self.count_x):
@@ -50,9 +51,22 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         #             log(f"DEBUG: Running geometry {geometry}, x={x}, y={y}")
         #             Extrude.run(component)
         #             # Modifiers.run(component)
+        bodies = Extrude.run(self, component)
+        log(f"DEBUG: Created bodies {len(bodies)}")
 
-        Extrude.run(self, component)
-        self.boolean.run(component)
+        # Iterate every child of Boolean and draw it
+        # if self.boolean is not None:
+        #     tool_bodies = adsk.core.ObjectCollection.create()
+        #     for i, geometry in enumerate(self.boolean.geometries):
+        #         geometry_component = create_component(component, f"geometry-{i}")
+        #         child_bodies: adsk.fusion.BRepBodies = geometry.run(geometry_component)
+        #         log(f"DEBUG: Created child bodies {len(child_bodies)}")
+        #         # for body in child_bodies:
+        #         #     tool_bodies.add(body)
+        #         # log(f"DEBUG: Created child bodies {len(child_bodies)}")
+        #     # log(f"DEBUG: Created bodies {len(tool_bodies)}")
+
+        return bodies
 
     def calculate_area(self) -> float:
         return sum([element.calculate_area() for element in self.children])

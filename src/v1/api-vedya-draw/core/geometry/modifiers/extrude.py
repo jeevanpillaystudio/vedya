@@ -12,7 +12,7 @@ class Extrude:
     def draw(self, sketch: adsk.fusion.Sketch):
         pass
 
-    def run(self, component: adsk.fusion.Component):
+    def run(self, component: adsk.fusion.Component) -> adsk.fusion.BRepBodies:
         # create the sketch
         self.sketch = create_sketch(
             component=component, name="extrude-sketch", offset=self.plane_offset
@@ -22,11 +22,11 @@ class Extrude:
         self.draw(sketch=self.sketch)
 
         # extrude
-        self.extrude(component=component)
+        return self.extrude(component=component)
 
-    def extrude(self, component: adsk.fusion.Component):
+    def extrude(self, component: adsk.fusion.Component) -> adsk.fusion.BRepBodies:
         # extrude
-        extrude_profile_by_area(
+        return extrude_profile_by_area(
             component=component,
             profiles=self.sketch.profiles,
             area=self.calculate_area(),
