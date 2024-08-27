@@ -13,6 +13,14 @@ def transform_to_sphere(x, y, L, H, R):
     return x_prime, y_prime, z_prime
 
 
+def transform_sphere_to_cartesian(x, y, z, L, H, R):
+    phi = np.arccos(z / R)  # Map z to phi (0 to pi)
+    theta = np.arctan2(y, x)  # Map x and y to theta (0 to 2pi)
+    x_prime = L * theta / (2 * np.pi)
+    y_prime = H * phi / np.pi
+    return x_prime, y_prime
+
+
 def transform_circle_to_sphere(L, H, R, circle_radius, circle_height, resolution):
     num_r_steps = int(2 * circle_radius / resolution)
     num_theta_steps = int(2 * np.pi * circle_radius / resolution)

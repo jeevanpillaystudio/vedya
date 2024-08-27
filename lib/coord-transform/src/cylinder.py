@@ -12,6 +12,13 @@ def transform_to_cylinder(x, y, L, R):
     return x_prime, y_prime, z_prime
 
 
+def transform_cylinder_to_cartesian(x, y, z, L, R):
+    theta = np.arctan2(y, x)
+    x_prime = L * theta / (2 * np.pi)
+    y_prime = z
+    return x_prime, y_prime
+
+
 def transform_rectangle_to_cylinder(L, H, R, resolution):
     x_steps = int(L / resolution)
     y_steps = int(H / resolution)
