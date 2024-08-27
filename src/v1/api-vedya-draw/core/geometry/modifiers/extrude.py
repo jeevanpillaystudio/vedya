@@ -9,7 +9,7 @@ from ..libs.geometry_utils import create_sketch, extrude_profile_by_area
 class Extrude:
     def __init__(self, thickness: float, plane_offset: float):
         self.thickness = thickness
-        self.plane_offset = plane_offset
+        self.plane_offset = plane_offset # @NOTE this is based on the parent component & also only changes rleatively to XY Plane...
         self.parent_component = None
         self.body_component = None
         
