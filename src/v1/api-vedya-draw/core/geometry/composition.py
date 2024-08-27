@@ -31,9 +31,9 @@ class Composition:
         self.geometries.append(geometry)
         print(f"DEBUG: Added geometry {geometry} to composition")
 
-    def create(self, component: adsk.fusion.Component) -> None:
+    def create(self) -> None:
         for i, layer in enumerate(self.geometries):
-            geometry_component = create_component(component, f"geometry-{i}")
+            geometry_component = create_component(self.root_comp, f"geometry-{i}")
             layer.run(geometry_component)
 
     def __str__(self):
