@@ -6,8 +6,8 @@ def generate_2d_flowfield(
     width, height, scale, octaves, persistence, lacunarity
 ) -> np.ndarray:
     # Create a grid of points
-    x = np.linspace(0, width, width)
-    y = np.linspace(0, height, height)
+    x = np.linspace(0, 5, width)
+    y = np.linspace(0, 5, height)
     x, y = np.meshgrid(x, y)
 
     # Initialize the flow field
@@ -18,8 +18,8 @@ def generate_2d_flowfield(
         for j in range(width):
             angle = (
                 pnoise2(
-                    j * scale,
-                    i * scale,
+                    x[i, j] * scale,
+                    y[i, j] * scale,
                     octaves=octaves,
                     persistence=persistence,
                     lacunarity=lacunarity,

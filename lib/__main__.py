@@ -85,10 +85,10 @@ def render(input, post_render):
 @click.argument("output", type=click.Path(exists=False))
 def example(output):
     # Parameters
-    width = 100
-    height = 100
+    width = 150
+    height = 150
     scale = 0.1
-    octaves = 4
+    octaves = 6
     persistence = 0.5
     lacunarity = 2.0
 
@@ -109,9 +109,9 @@ def plot_2d_flowfield(flow_field):
     u = flow_field[:, :, 0]
     v = flow_field[:, :, 1]
 
-    plt.figure(figsize=(10, 10))
-    plt.quiver(x, y, u, v, color="blue")
-    plt.title("2D Flowfield")
+    # Visualization
+    plt.quiver(x, y, u, v, scale=50)
+    plt.title("Flow Field Pattern using Perlin Noise")
     plt.show()
 
 
