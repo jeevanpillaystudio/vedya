@@ -46,7 +46,7 @@ from ....geometry.composition import Composition
 from ....utils import log
 
 MAGNET_BASE_THICKNESS = 1.5
-MAGNET_HOLE_RADIUS = 2.9  # 5.8mm / 2; r.e we measured 5.8mm on the diameter
+MAGNET_HOLE_RADIUS = 3  # 5.8mm / 2; r.e we measured 5.8mm on the diameter
 
 
 def start_func(root_comp: adsk.fusion.Component):
@@ -73,8 +73,18 @@ def start_func(root_comp: adsk.fusion.Component):
                     radius=MAGNET_HOLE_RADIUS,
                     center_x=0.0,
                     center_y=0.0,
+                    plane_offset=-0.0,
                 )
             ),
+        )
+    )
+    composition.add_geometry(
+        Circle(
+            thickness=MAGNET_BASE_THICKNESS,
+            radius=MAGNET_HOLE_RADIUS,
+            center_x=0.0,
+            center_y=0.0,
+            plane_offset=-0.0,
         )
     )
 
