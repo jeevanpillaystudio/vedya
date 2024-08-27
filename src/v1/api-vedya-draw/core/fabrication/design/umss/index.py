@@ -23,6 +23,7 @@ dimensions of 128mm x 128mm tiles.
 PROJECT_NAME = "UMSS"
 
 import adsk.core, adsk.fusion
+from ....geometry.shapes.circle import Circle
 from ....geometry.shapes.rectangle import Rectangle
 
 # from core.geometry.index import Composition
@@ -61,6 +62,14 @@ def start_func(root_comp: adsk.fusion.Component):
         Rectangle(
             length=32.0,
             width=32.0,
+            thickness=3.0,
+            center_x=0.0,
+            center_y=0.0,
+        )
+    )
+    composition.add_geometry(
+        Circle(
+            radius=4.0,
             thickness=3.0,
             center_x=0.0,
             center_y=0.0,

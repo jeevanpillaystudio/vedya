@@ -1,11 +1,11 @@
 import math
-from core.geometry.composition_geometry import CompositionGeometry
+from ..composition_geometry import CompositionGeometry
+import adsk.fusion, adsk.core
 
 
 class Circle(CompositionGeometry):
     # body
     radius: float
-    thickness: float
 
     def __init__(
         self,
@@ -27,11 +27,11 @@ class Circle(CompositionGeometry):
         # body
         self.radius = radius
 
-    # def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchCircle:
-    #     # Draw the base circle
-    #     return sketch.sketchCurves.sketchCircles.addByCenterRadius(
-    #         adsk.core.Point3D.create(self.center_x, self.center_y, 0), self.radius
-    #     )
+    def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchCircle:
+        # Draw the base circle
+        return sketch.sketchCurves.sketchCircles.addByCenterRadius(
+            adsk.core.Point3D.create(self.center_x, self.center_y, 0), self.radius
+        )
 
     def calculate_area(self) -> float:
         return math.pi * self.radius**2

@@ -1,6 +1,4 @@
-from typing import List
 from ..composition_geometry import CompositionGeometry
-
 import adsk.fusion, adsk.core
 
 
