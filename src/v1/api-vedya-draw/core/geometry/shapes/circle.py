@@ -2,12 +2,11 @@ import math
 from core.geometry.composition_geometry import CompositionGeometry
 
 
-
 class Circle(CompositionGeometry):
     # body
     radius: float
     thickness: float
-    
+
     def __init__(
         self,
         thickness: float,
@@ -22,13 +21,11 @@ class Circle(CompositionGeometry):
             children=None,
             center_x=center_x,
             center_y=center_y,
+            thickness=thickness,
         )
-        
+
         # body
         self.radius = radius
-        
-        # to be removed
-        self.thickness = thickness
 
     # def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchCircle:
     #     # Draw the base circle
