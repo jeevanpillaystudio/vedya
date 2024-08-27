@@ -1,4 +1,6 @@
 import click
+from matplotlib import pyplot as plt
+import numpy as np
 
 from src.render_form import (
     render_3d_plot,
@@ -9,6 +11,8 @@ from src.coord_transform import (
     transform_circle_to_cylinder,
     transform_rectangle_to_cylinder,
 )
+
+from src.examples.flow_field_visual import generate_2d_flowfield
 
 """
 # @TODO
@@ -70,8 +74,45 @@ def transform(input, output, target):
 
 @cli.command("render")
 @click.argument("input", type=click.Path(exists=True))
-def render(input):
-    render_2d_stencil(img_path=input)
+@click.option("--post-render", type=click.Choice(["2d-stencil"]))
+def render(input, post_render):
+    # post-render option
+    if post_render == "2d-stencil":
+        render_2d_stencil(img_path=input)  # @TODO fix pathing...
+
+
+@cli.command("example")
+@click.argument("output", type=click.Path(exists=False))
+def example(output):
+    # Parameters
+    width = 100
+    height = 100
+    scale = 0.1
+    octaves = 4
+    persistence = 0.5
+    lacunarity = 2.0
+
+    # Generate and plot the 2D Flowfield
+    flow_field = generate_2d_flowfield(
+        width, height, scale, octaves, persistence, lacunarity
+    )
+    plot_2d_flowfield(flow_field)
+
+
+# @TODO move to render_form plot...
+def plot_2d_flowfield(flow_field):
+    height, width, _ = flow_field.shape
+    x = np.linspace(0, width, width)
+    y = np.linspace(0, height, height)
+    x, y = np.meshgrid(x, y)
+
+    u = flow_field[:, :, 0]
+    v = flow_field[:, :, 1]
+
+    plt.figure(figsize=(10, 10))
+    plt.quiver(x, y, u, v, color="blue")
+    plt.title("2D Flowfield")
+    plt.show()
 
 
 if __name__ == "__main__":
