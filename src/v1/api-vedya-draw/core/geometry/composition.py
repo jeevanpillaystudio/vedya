@@ -10,11 +10,17 @@ from .composition_geometry import CompositionGeometry
 # only in xyPlane
 class Composition:
     # top level only
+    root_comp: adsk.fusion.Component
     geometries: List[CompositionGeometry]
     base_plane_offset: float
 
-    def __init__(self, plane_offset: float = 0.0):
+    def __init__(
+        self,
+        root_comp: adsk.fusion.Component,
+        plane_offset: float = 0.0,
+    ):
         super().__init__()
+        self.root_comp = root_comp
         self.geometries: List[CompositionGeometry] = []
         self.base_plane_offset = plane_offset
 

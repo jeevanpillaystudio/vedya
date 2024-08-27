@@ -1,10 +1,11 @@
 from typing import List
-from core.geometry.composition_geometry import CompositionGeometry
-from core.geometry.modifiers.extrude import Extrude
+from ..composition_geometry import CompositionGeometry
+
+# from core.geometry.modifiers.extrude import Extrude
 import adsk.fusion, adsk.core
 
 
-class Rectangle(CompositionGeometry, Extrude):
+class Rectangle(CompositionGeometry):
     # body
     length: float
     width: float
