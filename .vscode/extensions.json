@@ -1,5 +1,10 @@
 {
     "recommendations": [
-        "esbenp.prettier-vscode"
+        // typescript
+        "esbenp.prettier-vscode",
+
+        // python
+        "ms-python.black-formatter",
+        "ms-python.vscode-pylance"
     ]
 }
