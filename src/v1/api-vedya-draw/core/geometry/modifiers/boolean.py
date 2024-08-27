@@ -1,13 +1,6 @@
 from typing import List, Union as UnionType
 import adsk.fusion, adsk.core
 from ..libs.component_utils import intersect_bodies
-
-# from core.geometry.libs.component_utils import intersect_bodies
-from ...utils import log
-
-# from core.geometry.composition_geometry import CompositionGeometry
-
-# from ..libs.component_utils import intersect_bodies
 from ..ownable_geometry import OwnableGeometry
 
 
