@@ -1,11 +1,10 @@
 from typing import List, Union as UnionType
 import adsk.fusion, adsk.core
-from ...geometry import OwnableGeometry
-from ...libs.component_utils import intersect_bodies
-from .index import Modifier
 
+from ..libs.component_utils import intersect_bodies
+from ..ownable_geometry import OwnableGeometry
 
-class Boolean(Modifier):
+class Boolean:
     def __init__(self, geometries: UnionType[OwnableGeometry, List[OwnableGeometry]]):
         self.geometries = (
             [geometries] if isinstance(geometries, OwnableGeometry) else geometries

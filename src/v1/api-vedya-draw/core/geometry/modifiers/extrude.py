@@ -1,13 +1,10 @@
 from abc import abstractmethod
 
-from ...libs.geometry_utils import create_sketch, extrude_profile_by_area
-
-
-from ..action import Action
 import adsk.fusion
+from ..libs.geometry_utils import create_sketch, extrude_profile_by_area
 
 
-class Extrude(Action):
+class Extrude:
     def __init__(self, height: float):
         self.height = height
 

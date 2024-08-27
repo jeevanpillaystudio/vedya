@@ -26,7 +26,7 @@ from ...core.modifier.boolean import Difference, Intersect, Union
 from ...core.geometry.circle import Circle
 from ...core.geometry.rectangle import Rectangle
 from ...core.fabrication.composition.index import Composition, CompositionGeometry
-from ...utils.lib import log
+from ...utils import log
 
 WIDTH = 64.0
 LENGTH = 96.0

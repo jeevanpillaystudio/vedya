@@ -34,7 +34,7 @@ from .lib import (
     create_middle_cut,
     create_torus_astroid,
 )
-from ...utils.lib import log
+from ...utils import log
 
 
 def start_func(root_comp: adsk.fusion.Component):

@@ -23,18 +23,20 @@ dimensions of 128mm x 128mm tiles.
 PROJECT_NAME = "UMSS"
 
 import adsk.core, adsk.fusion
-from core.fabrication.composition.composition_geometry import CompositionGeometry
-from core.fabrication.composition.index import Composition
-from core.geometry.action.modify.boolean import Difference, Union
-from core.geometry.circle import Circle
-from ...core.geometry.rectangle import Rectangle
+# from core.geometry.index import Composition
+from core.geometry.shapes.rectangle import Rectangle
+# from core.geometry.composition_geometry import CompositionGeometry
+# from core.fabrication.composition.index import Composition
+# from core.geometry.action.modify.boolean import Difference, Union
+# from core.geometry.circle import Circle
+# from ...core.geometry.rectangle import Rectangle
 
 # modifier
 # from ...core.modifier.boolean import Difference, Union
 # from ...core.modifier.array import Array
 
 # geometry
-from ...utils.lib import log
+from ....utils import log
 
 MAGNET_BASE_THICKNESS = 1.5
 MAGNET_HOLE_RADIUS = 2.9  # 5.8mm / 2; r.e we measured 5.8mm on the diameter
@@ -56,24 +58,24 @@ def start_func(root_comp: adsk.fusion.Component):
         thickness=3.0,
         center_x=0.0,
         center_y=0.0,
-        count_x=1,
-        count_y=1,
-        modifiers=[
-            Difference(
-                Circle(
-                    radius=MAGNET_HOLE_RADIUS,
-                    thickness=MAGNET_BASE_THICKNESS,
-                )
-            ),
-        ],
+        # count_x=1,
+        # count_y=1,
+        # modifiers=[
+        #     Difference(
+        #         Circle(
+        #             radius=MAGNET_HOLE_RADIUS,
+        #             thickness=MAGNET_BASE_THICKNESS,
+        #         )
+        #     ),
+        # ],
     )
 
-    composition = Composition(
-        geometries=[
-            tile_geometry,
-        ],
-        extrude=True,
-    )
+    # composition = Composition(
+    #     geometries=[
+    #         tile_geometry,
+    #     ],
+    #     extrude=True,
+    # )
 
     # # create composition
-    composition.run(root_comp)
+    # composition.run(root_comp)

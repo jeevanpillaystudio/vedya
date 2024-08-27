@@ -1,11 +1,6 @@
 import adsk.core, adsk.fusion, adsk.cam, traceback
 
-
-from .utils.lib import (
-    log,
-    timer,
-    create_seed,
-)
+from .core.utils import create_seed, log, timer
 from .core.context import FusionDesignContext
 from .core.types import DesignType, FabricationMode, FabricationType
 
@@ -16,7 +11,7 @@ from .core.types import DesignType, FabricationMode, FabricationType
 # design
 # from .design.shire.index import start_func
 # from .design.parthenon.index import start_func
-from .design.umss.index import start_func
+from .core.fabrication.design.umss.index import start_func
 
 
 @timer

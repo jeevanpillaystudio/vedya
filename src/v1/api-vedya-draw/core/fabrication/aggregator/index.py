@@ -1,7 +1,7 @@
 import adsk.core, adsk.fusion
 from ...component_utils import intersect_bodies, copy_body, create_component
 from ....design.shire.lib import aggregate_all_bodies, create_component_name
-from ....utils.lib import log
+from ....utils import log
 
 FABRICATION_NAME = "aggregator"
 

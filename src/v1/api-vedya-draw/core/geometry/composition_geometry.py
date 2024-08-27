@@ -1,39 +1,27 @@
 # @NOTE assuming all elements are on xYConstructionPlane
 from typing import List
-
-from utils.lib import log
-
-from ...geometry.geometry import OwnableGeometry
-from ...geometry.action.create.extrude import Extrude
-from ...geometry.action.modify.index import Modifier
-
-import adsk.fusion, adsk.core
+from ..utils import log
+from .ownable_geometry import OwnableGeometry
 
 
-class CompositionGeometry(OwnableGeometry, Extrude, Modifiers):
-    # body
-    modifiers: List[Modifier] = []
-
+class CompositionGeometry(OwnableGeometry):
     def __init__(
         self,
-        children: OwnableGeometry,
-        count_x: int = 1,
-        count_y: int = 1,
+        parent: OwnableGeometry,
+        children: List[OwnableGeometry],
+        center_x: float = 0,
+        center_y: float = 0,
     ):
         # init
-        OwnableGeometry.__init__(self, children=children, parent=None)
-
-        # @NOTE: this is a placeholder for the array modifier
-        self.count_x = count_x
-        self.count_y = count_y
+        OwnableGeometry.__init__(self, children=children, parent=parent, center_x=center_x, center_y=center_y)
 
     """
     @params component: adsk.fusion.Component - the component to run the
     geometry calculations on
     @returns None
     """
-
-    def run(self, component: adsk.fusion.Component) -> None:
+    # def run(self, component: adsk.fusion.Component) -> None:
+    def run(self) -> None:
         # run array looper
         for geometry in self.children:
             for x in range(self.count_x):
@@ -45,8 +33,10 @@ class CompositionGeometry(OwnableGeometry, Extrude, Modifiers):
                     also, can extend to include other actions like cut, boolean, etc.
                     """
                     log(f"DEBUG: Running geometry {geometry}, x={x}, y={y}")
-                    Extrude.run(component)
-                    Modifiers.run(component)
+                    # Extrude.run(component)
+                    # Modifiers.run(component)
 
     def calculate_area(self) -> float:
         return sum([element.calculate_area() for element in self.children])
+    
+    

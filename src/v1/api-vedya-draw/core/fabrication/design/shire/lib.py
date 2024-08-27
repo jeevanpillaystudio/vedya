@@ -3,7 +3,7 @@ import random
 import adsk.core, adsk.fusion
 
 # designer
-from core.fabrication.composition.index import Composition, CompositionGeometry
+from core.geometry.index import Composition, CompositionGeometry
 
 # modifier
 from ...core.modifier.index import Modifier
@@ -36,7 +36,7 @@ from ...core.geometry_utils import (
 from ...core.component_utils import (
     create_component,
 )
-from ...utils.lib import (
+from ...utils import (
     log,
 )
 

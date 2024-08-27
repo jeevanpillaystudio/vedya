@@ -4,7 +4,7 @@ from ..aggregator.index import run_aggregator
 from ...geometry_utils import create_offset_plane
 from ...component_utils import create_component
 from ....design.shire.lib import create_component_name
-from ....utils.lib import log, timer
+from ....utils import log, timer
 import adsk.core, adsk.fusion
 
 FABRICATION_NAME = "slicer"
