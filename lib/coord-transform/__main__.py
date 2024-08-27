@@ -1,9 +1,9 @@
 import plotly.graph_objects as go
-from .geometry.cylinder import (
+from .src.cylinder import (
     transform_circle_to_cylinder,
     transform_rectangle_to_cylinder,
 )
-from .geometry.sphere import (
+from .src.sphere import (
     transform_circle_to_sphere,
     transform_rectangle_to_sphere,
 )
