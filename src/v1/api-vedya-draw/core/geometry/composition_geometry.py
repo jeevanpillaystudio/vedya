@@ -55,16 +55,18 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         log(f"DEBUG: Created bodies {len(bodies)}")
 
         # Iterate every child of Boolean and draw it
-        # if self.boolean is not None:
-        #     tool_bodies = adsk.core.ObjectCollection.create()
-        #     for i, geometry in enumerate(self.boolean.geometries):
-        #         geometry_component = create_component(component, f"geometry-{i}")
-        #         child_bodies: adsk.fusion.BRepBodies = geometry.run(geometry_component)
-        #         log(f"DEBUG: Created child bodies {len(child_bodies)}")
-        #         # for body in child_bodies:
-        #         #     tool_bodies.add(body)
-        #         # log(f"DEBUG: Created child bodies {len(child_bodies)}")
-        #     # log(f"DEBUG: Created bodies {len(tool_bodies)}")
+        if self.boolean is not None:
+            tool_bodies = adsk.core.ObjectCollection.create()
+            for i, geometry in enumerate(self.boolean.geometries):
+                geometry.plane_offset = self.plane_offset  # @TODO fix this
+                geometry_component = create_component(component, f"geometry-{i}")
+                child_bodies: adsk.fusion.BRepBodies = geometry.run(geometry_component)
+                for body in child_bodies:
+                    tool_bodies.add(body)
+                log(f"DEBUG: Created child bodies {len(child_bodies)}")
+            # @TODO do we run this for every existing bodyy that waas created?
+            for body in bodies:
+                self.boolean.run(component, body, tool_bodies)
 
         return bodies
 

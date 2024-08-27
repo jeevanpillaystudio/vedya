@@ -1,5 +1,6 @@
 from typing import List, Union as UnionType
 import adsk.fusion, adsk.core
+from ..libs.component_utils import intersect_bodies
 
 # from core.geometry.libs.component_utils import intersect_bodies
 from ...utils import log
@@ -17,33 +18,18 @@ class Boolean:
         )
         self.operation_type = None  # To be set by subclasses
 
-    # def run(
-    #     self,
-    #     component: adsk.fusion.Component,
-    #     base_body: adsk.fusion.BRepBody,
-    # ) -> CompositionGeometry:
-    #     # sketch_manager = SketchManager(component)
-    #     # tool_bodies = adsk.core.ObjectCollection.create()
-
-    #     # for geometry in self.geometries:
-    #     # tool_body = geometry.run(
-    #     # sketch_manager,
-    #     # )
-    #     # tool_bodies.add(tool_body)
-
-    #     if not base_body or tool_bodies.count == 0:
-    #         raise ValueError(
-    #             f"Invalid bodies for {self.__class__.__name__.lower()} operation"
-    #         )
-
-    #     result_body = intersect_bodies(
-    #         root_component=component,
-    #         target_body=base_body,
-    #         tool_bodies=tool_bodies,
-    #         operation=self.operation_type,
-    #     )
-
-    #     return result_body
+    def run(
+        self,
+        component: adsk.fusion.Component,
+        body: adsk.fusion.BRepBody,
+        tool_bodies: adsk.fusion.BRepBodies,
+    ):
+        intersect_bodies(
+            root_component=component,
+            target_body=body,
+            tool_bodies=tool_bodies,
+            operation=self.operation_type,
+        )
 
     def __str__(self):
         return (
