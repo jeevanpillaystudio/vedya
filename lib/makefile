@@ -6,5 +6,8 @@ venv:
 
 install:
 	pip install -r requirements.txt
-	pip install -r coord-transform/requirements.txt 
-	pip install -r render-form/requirements.txt
+	pip install -r src/coord_transform/requirements.txt 
+	pip install -r src/render_form/requirements.txt
+
+install-examples:
+	pip install -r src/examples/flow_field_visual/requirements.txt
