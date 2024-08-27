@@ -7,11 +7,16 @@ from ..libs.geometry_utils import create_sketch, extrude_profile_by_area
 
 
 class Extrude:
-    def __init__(self, thickness: float, plane_offset: float):
+    x_count: int
+    y_count: int
+    
+    def __init__(self, thickness: float, plane_offset: float, x_count: int = 5, y_count: int = 10):
         self.thickness = thickness
         self.plane_offset = plane_offset # @NOTE this is based on the parent component & also only changes rleatively to XY Plane...
         self.parent_component = None
         self.body_component = None
+        self.x_count = x_count
+        self.y_count = y_count
         
     def setup(self, parent_component: adsk.fusion.Component):
         self.parent_component = parent_component

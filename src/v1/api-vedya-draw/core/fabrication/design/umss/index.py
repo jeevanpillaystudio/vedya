@@ -60,31 +60,39 @@ def start_func(root_comp: adsk.fusion.Component):
 
     composition = Composition(root_comp=root_comp, plane_offset=0.0)
     composition.add_geometry(
-        Circle(
+        # Circle(
+        #     thickness=MAGNET_BASE_THICKNESS,
+        #     radius=MAGNET_HOLE_RADIUS,
+        #     center_x=0.0,
+        #     center_y=0.0,
+        #     plane_offset=-1.5,
+        #     # boolean=Union(
+        #     #     Rectangle(
+        #     #         length=32.0,
+        #     #         width=32.0,
+        #     #         thickness=MAGNET_BASE_THICKNESS,
+        #     #         center_x=0.0,
+        #     #         center_y=0.0,
+        #     #         plane_offset=0.0,
+        #     #         boolean=Difference(
+        #     #             Circle(
+        #     #                 thickness=MAGNET_BASE_THICKNESS,
+        #     #                 radius=MAGNET_HOLE_RADIUS,
+        #     #                 center_x=0.0,
+        #     #                 center_y=0.0,
+        #     #                 plane_offset=-0.0,
+        #     #             )
+        #     #         ),
+        #     #     )
+        #     # )
+        # )
+        Rectangle(
+            length=32.0,
+            width=32.0,
             thickness=MAGNET_BASE_THICKNESS,
-            radius=MAGNET_HOLE_RADIUS,
             center_x=0.0,
             center_y=0.0,
-            plane_offset=-1.5,
-            boolean=Union(
-                Rectangle(
-                    length=32.0,
-                    width=32.0,
-                    thickness=MAGNET_BASE_THICKNESS,
-                    center_x=0.0,
-                    center_y=0.0,
-                    plane_offset=0.0,
-                    boolean=Difference(
-                        Circle(
-                            thickness=MAGNET_BASE_THICKNESS,
-                            radius=MAGNET_HOLE_RADIUS,
-                            center_x=0.0,
-                            center_y=0.0,
-                            plane_offset=-0.0,
-                        )
-                    ),
-                )
-            )
+            plane_offset=0.0,
         )
     )
 

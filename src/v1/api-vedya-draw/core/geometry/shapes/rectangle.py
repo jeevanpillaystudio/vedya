@@ -49,3 +49,6 @@ class Rectangle(CompositionGeometry):
 
     def __str__(self):
         return f"Rectangle(length={self.length}, width={self.width}, center_x={self.center_x}, center_y={self.center_y}), plane_offset={self.plane_offset}"
+
+    def xy_bound(self) -> float:
+        return self.width

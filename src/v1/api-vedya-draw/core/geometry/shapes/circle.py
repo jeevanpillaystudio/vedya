@@ -46,3 +46,6 @@ class Circle(CompositionGeometry):
         return (
             f"Circle(radius={self.radius}, center=({self.center_x}, {self.center_y}))"
         )
+
+    def xy_bound(self) -> float:
+        return self.radius
