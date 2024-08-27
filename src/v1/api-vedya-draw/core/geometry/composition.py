@@ -23,7 +23,6 @@ class Composition:
     def add_geometry(
         self, geometry: CompositionGeometry, plane_offset: float = 0.0
     ) -> None:
-        geometry.plane_offset = self.base_plane_offset + plane_offset
         self.geometries.append(geometry)
         print(f"DEBUG: Added geometry {geometry} to composition")
 

@@ -7,8 +7,9 @@ from ..libs.geometry_utils import create_sketch, extrude_profile_by_area
 
 
 class Extrude:
-    def __init__(self, height: float):
+    def __init__(self, height: float, plane_offset: float):
         self.height = height
+        self.plane_offset = plane_offset
         self.parent_component = None
         self.body_component = None
         
@@ -44,3 +45,11 @@ class Extrude:
             name="draw-extrude",
             operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
         )
+
+    @property
+    def plane_offset(self):
+        return self._plane_offset
+
+    @plane_offset.setter
+    def plane_offset(self, plane_offset: float):
+        self._plane_offset = plane_offset

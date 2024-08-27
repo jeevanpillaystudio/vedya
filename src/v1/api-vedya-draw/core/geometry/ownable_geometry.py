@@ -32,7 +32,6 @@ class OwnableGeometry(Geometry):
         self.parent = parent
         self.center_x = center_x
         self.center_y = center_y
-        self.plane_offset = 0
 
     @property
     def center_x(self):
@@ -49,14 +48,6 @@ class OwnableGeometry(Geometry):
     @center_y.setter
     def center_y(self, center_y: float):
         self._center_y = center_y
-
-    @property
-    def plane_offset(self):
-        return self._plane_offset
-
-    @plane_offset.setter
-    def plane_offset(self, plane_offset: float):
-        self._plane_offset = plane_offset
 
     @abstractmethod
     def run(self) -> adsk.fusion.BRepBodies:

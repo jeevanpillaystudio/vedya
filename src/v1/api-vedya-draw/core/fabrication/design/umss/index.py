@@ -66,6 +66,7 @@ def start_func(root_comp: adsk.fusion.Component):
             thickness=MAGNET_BASE_THICKNESS,
             center_x=0.0,
             center_y=0.0,
+            plane_offset=0.0,
             boolean=Difference(
                 Circle(
                     thickness=MAGNET_BASE_THICKNESS,

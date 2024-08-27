@@ -20,11 +20,12 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         center_x: float = 0.0,
         center_y: float = 0.0,
         thickness: float = 0.0,
+        plane_offset: float = 0.0,
     ):
         OwnableGeometry.__init__(
             self, children=children, parent=parent, center_x=center_x, center_y=center_y
         )
-        Extrude.__init__(self, height=thickness)
+        Extrude.__init__(self, height=thickness, plane_offset=plane_offset)
 
         # to be removed
         self.boolean = boolean
