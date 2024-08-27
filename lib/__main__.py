@@ -1,11 +1,11 @@
-import os
 import click
 
-from render_form import (
+from src.render_form import (
     render_3d_plot,
     render_2d_stencil,
 )
-from coord_transform import (
+
+from src.coord_transform import (
     transform_circle_to_cylinder,
     transform_rectangle_to_cylinder,
 )
@@ -64,6 +64,8 @@ def transform(input, output, target):
         )
     elif target == "sphere":
         raise NotImplementedError("sphere transformation is not yet implemented")
+    else:
+        raise ValueError("invalid target")
 
 
 @cli.command("render")
