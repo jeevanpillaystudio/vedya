@@ -23,7 +23,7 @@ dimensions of 128mm x 128mm tiles.
 PROJECT_NAME = "UMSS"
 
 import adsk.core, adsk.fusion
-from ....geometry.modifiers.boolean import Difference
+from ....geometry.modifiers.boolean import Difference, Union
 from ....geometry.shapes.circle import Circle
 from ....geometry.shapes.rectangle import Rectangle
 
@@ -60,31 +60,31 @@ def start_func(root_comp: adsk.fusion.Component):
 
     composition = Composition(root_comp=root_comp, plane_offset=0.0)
     composition.add_geometry(
-        Rectangle(
-            length=32.0,
-            width=32.0,
-            thickness=MAGNET_BASE_THICKNESS,
-            center_x=0.0,
-            center_y=0.0,
-            plane_offset=0.0,
-            boolean=Difference(
-                Circle(
-                    thickness=MAGNET_BASE_THICKNESS,
-                    radius=MAGNET_HOLE_RADIUS,
-                    center_x=0.0,
-                    center_y=0.0,
-                    plane_offset=-0.0,
-                )
-            ),
-        )
-    )
-    composition.add_geometry(
         Circle(
             thickness=MAGNET_BASE_THICKNESS,
             radius=MAGNET_HOLE_RADIUS,
             center_x=0.0,
             center_y=0.0,
-            plane_offset=-0.0,
+            plane_offset=-1.5,
+            boolean=Union(
+                Rectangle(
+                    length=32.0,
+                    width=32.0,
+                    thickness=MAGNET_BASE_THICKNESS,
+                    center_x=0.0,
+                    center_y=0.0,
+                    plane_offset=0.0,
+                    boolean=Difference(
+                        Circle(
+                            thickness=MAGNET_BASE_THICKNESS,
+                            radius=MAGNET_HOLE_RADIUS,
+                            center_x=0.0,
+                            center_y=0.0,
+                            plane_offset=-0.0,
+                        )
+                    ),
+                )
+            )
         )
     )
 
