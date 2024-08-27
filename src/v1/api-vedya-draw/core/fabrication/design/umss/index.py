@@ -61,7 +61,6 @@ def start_func(root_comp: adsk.fusion.Component):
     composition = Composition(root_comp=root_comp, plane_offset=0.0)
     composition.add_geometry(
         Rectangle(
-            component=root_comp,
             length=32.0,
             width=32.0,
             thickness=MAGNET_BASE_THICKNESS,
@@ -69,7 +68,6 @@ def start_func(root_comp: adsk.fusion.Component):
             center_y=0.0,
             boolean=Difference(
                 Circle(
-                    component=root_comp,
                     thickness=MAGNET_BASE_THICKNESS,
                     radius=MAGNET_HOLE_RADIUS,
                     center_x=0.0,

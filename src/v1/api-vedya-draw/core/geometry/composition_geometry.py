@@ -1,13 +1,11 @@
 # @NOTE assuming all elements are on xYConstructionPlane
 from typing import List
-import uuid
 import adsk.fusion, adsk.core
 
-from .libs.component_utils import create_component
 from .modifiers.boolean import Boolean
 from .modifiers.extrude import Extrude
-from ..utils import log
 from .ownable_geometry import OwnableGeometry
+from ..utils import log
 
 
 class CompositionGeometry(OwnableGeometry, Extrude):
@@ -18,7 +16,6 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         self,
         parent: OwnableGeometry,
         children: List[OwnableGeometry],
-        component: adsk.fusion.Component,
         boolean: Boolean = None,
         center_x: float = 0.0,
         center_y: float = 0.0,
@@ -27,7 +24,7 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         OwnableGeometry.__init__(
             self, children=children, parent=parent, center_x=center_x, center_y=center_y
         )
-        Extrude.__init__(self, height=thickness, parent_component=component)
+        Extrude.__init__(self, height=thickness)
 
         # to be removed
         self.boolean = boolean
@@ -59,6 +56,7 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         # run boolean operation
         if self.boolean is not None:
             for geometry in self.boolean.geometries:
+                geometry.setup(self.body_component)
                 child_bodies = geometry.run()
             self.boolean.run(self.body_component, bodies, child_bodies)
 

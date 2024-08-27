@@ -1,4 +1,5 @@
 from abc import abstractmethod
+import uuid
 
 import adsk.fusion
 from ..libs.component_utils import create_component
@@ -6,12 +7,14 @@ from ..libs.geometry_utils import create_sketch, extrude_profile_by_area
 
 
 class Extrude:
-    def __init__(self, height: float, parent_component: adsk.fusion.Component):
+    def __init__(self, height: float):
         self.height = height
+        self.parent_component = None
+        self.body_component = None
+        
+    def setup(self, parent_component: adsk.fusion.Component):
         self.parent_component = parent_component
-        self.body_component = self.create_component(
-            name="extrude-component"
-        )  # @TODO: change this to a better name
+        self.body_component = create_component(self.parent_component, f"extrude-component-{uuid.uuid4()}")
 
     @abstractmethod
     def draw(self, sketch: adsk.fusion.Sketch):
@@ -41,6 +44,3 @@ class Extrude:
             name="draw-extrude",
             operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
         )
-
-    def create_component(self, name: str) -> adsk.fusion.Component:
-        return create_component(self.parent_component, name)

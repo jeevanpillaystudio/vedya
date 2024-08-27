@@ -13,7 +13,6 @@ class Circle(CompositionGeometry):
         self,
         thickness: float,
         radius: float,
-        component: adsk.fusion.Component,
         parent: CompositionGeometry = None,
         center_x: float = 0.0,
         center_y: float = 0.0,
@@ -22,7 +21,6 @@ class Circle(CompositionGeometry):
         CompositionGeometry.__init__(
             self,
             parent=parent,
-            component=component,
             children=None,
             center_x=center_x,
             center_y=center_y,

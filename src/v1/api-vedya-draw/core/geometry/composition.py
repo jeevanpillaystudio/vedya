@@ -29,6 +29,7 @@ class Composition:
 
     def create(self) -> None:
         for i, geometry in enumerate(self.geometries):
+            geometry.setup(self.root_comp)
             geometry.run()
 
     def __str__(self):
