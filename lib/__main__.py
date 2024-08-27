@@ -1,5 +1,11 @@
 import click
 
+from render_form import render_plot
+from coord_transform import (
+    transform_circle_to_cylinder,
+    transform_rectangle_to_cylinder,
+)
+
 """
 # @TODO
 - [ ] apply monochromatic color profile to the output; default is grayscale
@@ -14,7 +20,9 @@ import click
 
 @click.command()
 @click.argument("input", type=click.Path(exists=True))
-def main(input):
+@click.argument("output", type=click.Path())
+@click.option("--target", type=click.Choice(["cylinder"]))
+def main(input, output, target):
     # parse the input file
     with open(input, "r") as file:
         for line_number, line in enumerate(file, start=1):
@@ -30,37 +38,21 @@ def main(input):
                 print(f"Error parsing line {line_number}: {line.strip()}")
                 print(f"Reason: {e}")
 
+    # create output if it doesn't exist
+    with open(output, "w") as file:
+        file.write("initializing output file")
 
-# @click.option("--output", help="Output file path")
-# @click.option(
-#     "--target",
-#     help="Target coordinate system",
-#     type=click.Choice(["cylinder", "sphere"]),
-# )
-# @click.option(
-#     "--resolution",
-#     default=0.1,
-#     help="Resolution of the target coordinate system",
-# )
-# @click.option(
-#     "--L",
-#     help="Length of the target coordinate system",
-# )
-# @click.option(
-#     "--H",
-#     help="Height of the target coordinate system",
-# )
-# @click.option(
-#     "--R",
-#     help="Radius of the target coordinate system",
-# )
-# def main(input, output, target, resolution, length, height, radius):
-#     if target == "cylinder":
-#         print("Cylindrical transformation")
-#     elif target == "sphere":
-#         print("Spherical transformation")
-#     else:
-#         print("Unknown target coordinate system")
+    if target == "cylinder":
+        render_plot(
+            coord_points=transform_rectangle_to_cylinder(
+                L=10, H=4, R=1, resolution=0.1
+            ),
+            target_points=transform_circle_to_cylinder(
+                L=10, R=1, circle_radius=1, circle_height=2, resolution=0.1
+            ),
+            R=1,
+            H=4,
+        )
 
 
 if __name__ == "__main__":
