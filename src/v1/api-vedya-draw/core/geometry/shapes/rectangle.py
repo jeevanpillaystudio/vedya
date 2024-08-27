@@ -1,12 +1,15 @@
 from typing import List
 from core.geometry.composition_geometry import CompositionGeometry
+from core.geometry.modifiers.extrude import Extrude
+import adsk.fusion, adsk.core
 
-class Rectangle(CompositionGeometry):
+
+class Rectangle(CompositionGeometry, Extrude):
     # body
     length: float
     width: float
     thickness: float
-    
+
     def __init__(
         self,
         thickness: float,
@@ -23,23 +26,23 @@ class Rectangle(CompositionGeometry):
             center_x=center_x,
             center_y=center_y,
         )
-        
+
         # body
         self.length = length
         self.width = width
-        
+
         # to be removed
         self.thickness = thickness
 
-    # def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchLineList:
-    #     return sketch.sketchCurves.sketchLines.addTwoPointRectangle(
-    #         adsk.core.Point3D.create(
-    #             -self.length / 2 + self.center_x, self.width / 2 + self.center_y, 0
-    #         ),
-    #         adsk.core.Point3D.create(
-    #             self.length / 2 + self.center_x, -self.width / 2 + self.center_y, 0
-    #         ),
-    #     )
+    def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchLineList:
+        return sketch.sketchCurves.sketchLines.addTwoPointRectangle(
+            adsk.core.Point3D.create(
+                -self.length / 2 + self.center_x, self.width / 2 + self.center_y, 0
+            ),
+            adsk.core.Point3D.create(
+                self.length / 2 + self.center_x, -self.width / 2 + self.center_y, 0
+            ),
+        )
 
     def calculate_area(self):
         return self.length * self.width

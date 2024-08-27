@@ -1,8 +1,10 @@
 from typing import List, Union as UnionType
 import adsk.fusion, adsk.core
+from core.geometry.composition_geometry import CompositionGeometry
 
 from ..libs.component_utils import intersect_bodies
 from ..ownable_geometry import OwnableGeometry
+
 
 class Boolean:
     def __init__(self, geometries: UnionType[OwnableGeometry, List[OwnableGeometry]]):
@@ -12,10 +14,9 @@ class Boolean:
         self.operation_type = None  # To be set by subclasses
 
     def apply(
-        self,
         component: adsk.fusion.Component,
         base_body: adsk.fusion.BRepBody,
-    ) -> adsk.fusion.BRepBody:
+    ) -> CompositionGeometry:
         sketch_manager = SketchManager(component)
         tool_bodies = adsk.core.ObjectCollection.create()
 
