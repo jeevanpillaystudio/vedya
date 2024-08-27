@@ -7,8 +7,8 @@ from ..libs.geometry_utils import create_sketch, extrude_profile_by_area
 
 
 class Extrude:
-    def __init__(self, height: float, plane_offset: float):
-        self.height = height
+    def __init__(self, thickness: float, plane_offset: float):
+        self.height = thickness
         self.plane_offset = plane_offset
         self.parent_component = None
         self.body_component = None

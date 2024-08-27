@@ -25,7 +25,7 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         OwnableGeometry.__init__(
             self, children=children, parent=parent, center_x=center_x, center_y=center_y
         )
-        Extrude.__init__(self, height=thickness, plane_offset=plane_offset)
+        Extrude.__init__(self, thickness=thickness, plane_offset=plane_offset)
 
         # to be removed
         self.boolean = boolean
