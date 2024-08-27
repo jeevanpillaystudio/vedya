@@ -30,7 +30,7 @@ class Extrude:
             component=component,
             profiles=self.sketch.profiles,
             area=self.calculate_area(),
-            extrude_height=self.thickness,
+            extrude_height=self.height,
             name="draw-extrude",
             operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
         )

@@ -57,15 +57,16 @@ def start_func(root_comp: adsk.fusion.Component):
     log(f"DEBUG: Start execute function for {PROJECT_NAME}")
 
     composition = Composition(root_comp=root_comp, plane_offset=2.0)
-    # composition.add_geometry(
-    # Rectangle(
-    #     length=32.0,
-    #     width=32.0,
-    #     thickness=3.0,
-    #     center_x=0.0,
-    #     center_y=0.0,
-    # )
-    # )
+    composition.add_geometry(
+        Rectangle(
+            length=32.0,
+            width=32.0,
+            thickness=3.0,
+            center_x=0.0,
+            center_y=0.0,
+        )
+    )
+    log(str(composition))
 
     # # create composition
     # composition.create(root_comp)

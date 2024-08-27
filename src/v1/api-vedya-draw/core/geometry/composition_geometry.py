@@ -1,10 +1,12 @@
 # @NOTE assuming all elements are on xYConstructionPlane
 from typing import List
+
+from .modifiers.extrude import Extrude
 from ..utils import log
 from .ownable_geometry import OwnableGeometry
 
 
-class CompositionGeometry(OwnableGeometry):
+class CompositionGeometry(OwnableGeometry, Extrude):
     def __init__(
         self,
         parent: OwnableGeometry,
@@ -12,8 +14,8 @@ class CompositionGeometry(OwnableGeometry):
         center_x: float = 0,
         center_y: float = 0,
     ):
-        # init
         OwnableGeometry.__init__(self, children=children, parent=parent, center_x=center_x, center_y=center_y)
+        Extrude.__init__(self, height=1.0)
 
     """
     @params component: adsk.fusion.Component - the component to run the
