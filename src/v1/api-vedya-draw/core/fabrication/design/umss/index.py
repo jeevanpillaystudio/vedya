@@ -58,16 +58,18 @@ def start_func(root_comp: adsk.fusion.Component):
     # start
     log(f"DEBUG: Start execute function for {PROJECT_NAME}")
 
-    composition = Composition(root_comp=root_comp, plane_offset=2.0)
+    composition = Composition(root_comp=root_comp, plane_offset=0.0)
     composition.add_geometry(
         Rectangle(
+            component=root_comp,
             length=32.0,
             width=32.0,
-            thickness=3.0,
+            thickness=MAGNET_BASE_THICKNESS,
             center_x=0.0,
             center_y=0.0,
             boolean=Difference(
                 Circle(
+                    component=root_comp,
                     thickness=MAGNET_BASE_THICKNESS,
                     radius=MAGNET_HOLE_RADIUS,
                     center_x=0.0,

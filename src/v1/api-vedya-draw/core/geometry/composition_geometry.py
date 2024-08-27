@@ -1,5 +1,6 @@
 # @NOTE assuming all elements are on xYConstructionPlane
 from typing import List
+import uuid
 import adsk.fusion, adsk.core
 
 from .libs.component_utils import create_component
@@ -17,6 +18,7 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         self,
         parent: OwnableGeometry,
         children: List[OwnableGeometry],
+        component: adsk.fusion.Component,
         boolean: Boolean = None,
         center_x: float = 0.0,
         center_y: float = 0.0,
@@ -25,7 +27,7 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         OwnableGeometry.__init__(
             self, children=children, parent=parent, center_x=center_x, center_y=center_y
         )
-        Extrude.__init__(self, height=thickness)
+        Extrude.__init__(self, height=thickness, parent_component=component)
 
         # to be removed
         self.boolean = boolean
@@ -37,7 +39,7 @@ class CompositionGeometry(OwnableGeometry, Extrude):
     """
 
     # def run(self, component: adsk.fusion.Component) -> None:
-    def run(self, component: adsk.fusion.Component) -> adsk.fusion.BRepBodies:
+    def run(self) -> adsk.fusion.BRepBodies:
         # # run array looper
         # for geometry in self.children:
         #     for x in range(self.count_x):
@@ -51,23 +53,16 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         #             log(f"DEBUG: Running geometry {geometry}, x={x}, y={y}")
         #             Extrude.run(component)
         #             # Modifiers.run(component)
-        bodies = Extrude.run(self, component)
+        bodies = Extrude.run(self)
         log(f"DEBUG: Created bodies {len(bodies)}")
 
-        # Iterate every child of Boolean and draw it
+        # run boolean operation
         if self.boolean is not None:
-            tool_bodies = adsk.core.ObjectCollection.create()
-            for i, geometry in enumerate(self.boolean.geometries):
-                geometry.plane_offset = self.plane_offset  # @TODO fix this
-                geometry_component = create_component(component, f"geometry-{i}")
-                child_bodies: adsk.fusion.BRepBodies = geometry.run(geometry_component)
-                for body in child_bodies:
-                    tool_bodies.add(body)
-                log(f"DEBUG: Created child bodies {len(child_bodies)}")
-            # @TODO do we run this for every existing bodyy that waas created?
-            for body in bodies:
-                self.boolean.run(component, body, tool_bodies)
+            for geometry in self.boolean.geometries:
+                child_bodies = geometry.run()
+            self.boolean.run(self.body_component, bodies, child_bodies)
 
+        # return the bodies
         return bodies
 
     def calculate_area(self) -> float:

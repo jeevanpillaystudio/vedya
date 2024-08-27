@@ -1,9 +1,5 @@
 from typing import List
 import adsk.fusion, adsk.core
-from .libs.component_utils import create_component
-
-# import adsk.fusion
-# from .libs.component_utils import create_component
 from .composition_geometry import CompositionGeometry
 
 
@@ -33,8 +29,7 @@ class Composition:
 
     def create(self) -> None:
         for i, geometry in enumerate(self.geometries):
-            geometry_component = create_component(self.root_comp, f"geometry-{i}")
-            geometry.run(geometry_component)
+            geometry.run()
 
     def __str__(self):
         return f"Composition: {[str(geometry) for geometry in self.geometries]}"

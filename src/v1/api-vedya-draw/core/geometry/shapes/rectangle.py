@@ -13,6 +13,7 @@ class Rectangle(CompositionGeometry):
         thickness: float,
         length: float,
         width: float,
+        component: adsk.fusion.Component,
         boolean: Boolean = None,
         parent: CompositionGeometry = None,
         center_x: float = 0,
@@ -26,6 +27,7 @@ class Rectangle(CompositionGeometry):
             center_y=center_y,
             thickness=thickness,
             boolean=boolean,
+            component=component,
         )
 
         # body
