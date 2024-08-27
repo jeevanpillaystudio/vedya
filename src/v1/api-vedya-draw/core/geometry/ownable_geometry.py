@@ -30,10 +30,11 @@ class OwnableGeometry(Geometry):
         self.parent = parent
         self.center_x = 0
         self.center_y = 0
+        self.plane_offset = 0
 
     @property
     def center_x(self):
-        return super().center_x + self.parent.center_x if self.parent else 0
+        return self._center_x
     
     @center_x.setter
     def center_x(self, center_x: float):
@@ -41,8 +42,16 @@ class OwnableGeometry(Geometry):
         
     @property
     def center_y(self):
-        return super().center_y + self.parent.center_y if self.parent else 0
+        return self._center_y 
 
     @center_y.setter
     def center_y(self, center_y: float):
         self._center_y = center_y
+        
+    @property
+    def plane_offset(self):
+        return self._plane_offset
+    
+    @plane_offset.setter
+    def plane_offset(self, plane_offset: float):
+        self._plane_offset = plane_offset

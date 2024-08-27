@@ -1,7 +1,6 @@
 from typing import List
 from core.geometry.composition_geometry import CompositionGeometry
 
-
 class Rectangle(CompositionGeometry):
     # body
     length: float
@@ -13,7 +12,7 @@ class Rectangle(CompositionGeometry):
         thickness: float,
         length: float,
         width: float,
-        parent: CompositionGeometry,
+        parent: CompositionGeometry = None,
         center_x: float = 0,
         center_y: float = 0,
     ):
@@ -46,4 +45,4 @@ class Rectangle(CompositionGeometry):
         return self.length * self.width
 
     def __str__(self):
-        return f"Rectangle(length={self.length}, width={self.width}, center_x={self.center_x}, center_y={self.center_y})"
+        return f"Rectangle(length={self.length}, width={self.width}, center_x={self.center_x}, center_y={self.center_y}), plane_offset={self.plane_offset}"

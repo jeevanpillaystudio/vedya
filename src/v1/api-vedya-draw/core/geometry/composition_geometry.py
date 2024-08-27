@@ -38,5 +38,3 @@ class CompositionGeometry(OwnableGeometry):
 
     def calculate_area(self) -> float:
         return sum([element.calculate_area() for element in self.children])
-    
-    

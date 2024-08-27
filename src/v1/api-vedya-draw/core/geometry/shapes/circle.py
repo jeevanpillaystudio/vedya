@@ -12,7 +12,7 @@ class Circle(CompositionGeometry):
         self,
         thickness: float,
         radius: float,
-        parent: CompositionGeometry,
+        parent: CompositionGeometry = None,
         center_x: float = 0.0,
         center_y: float = 0.0,
     ):
