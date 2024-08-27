@@ -2,7 +2,6 @@ from ..modifiers.boolean import Boolean
 from ..composition_geometry import CompositionGeometry
 import adsk.fusion, adsk.core
 
-
 class Rectangle(CompositionGeometry):
     # body
     length: float
@@ -37,10 +36,10 @@ class Rectangle(CompositionGeometry):
     def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchLineList:
         return sketch.sketchCurves.sketchLines.addTwoPointRectangle(
             adsk.core.Point3D.create(
-                -self.length / 2 + self.center_x, self.width / 2 + self.center_y, 0
+                self.center_x, self.center_y, 0
             ),
             adsk.core.Point3D.create(
-                self.length / 2 + self.center_x, -self.width / 2 + self.center_y, 0
+                self.center_x + self.length, self.center_y + self.width, 0
             ),
         )
 
@@ -48,7 +47,7 @@ class Rectangle(CompositionGeometry):
         return self.length * self.width
 
     def __str__(self):
-        return f"Rectangle(length={self.length}, width={self.width}, center_x={self.center_x}, center_y={self.center_y}), plane_offset={self.plane_offset}"
+        return f"Rectangle(length={self.length}, width={self.width}, start_x={self.center_x}, start_y={self.center_y}), plane_offset={self.plane_offset}"
 
     def xy_bound(self) -> float:
-        return self.width
+        return max(self.length, self.width)

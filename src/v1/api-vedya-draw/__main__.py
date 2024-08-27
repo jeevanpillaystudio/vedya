@@ -1,12 +1,12 @@
 from core.geometry.composition import Composition
-from core.geometry.shapes.rectangle import Rectangle
+from core.geometry.shapes.rectangle import CenterRectangle
 
 
 def run():
     composition = Composition(plane_offset=2.0)
     composition.add_geometry(
         # Difference(
-        Rectangle(
+        CenterRectangle(
             length=32.0,
             width=32.0,
             thickness=3.0,
