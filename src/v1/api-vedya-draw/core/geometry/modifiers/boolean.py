@@ -1,9 +1,10 @@
 from typing import List, Union as UnionType
 import adsk.fusion, adsk.core
+from ...utils import log
 
 # from core.geometry.composition_geometry import CompositionGeometry
 
-from ..libs.component_utils import intersect_bodies
+# from ..libs.component_utils import intersect_bodies
 from ..ownable_geometry import OwnableGeometry
 
 
@@ -13,6 +14,9 @@ class Boolean:
             [geometries] if isinstance(geometries, OwnableGeometry) else geometries
         )
         self.operation_type = None  # To be set by subclasses
+
+    def run(self, component: adsk.fusion.Component):
+        log(f"DEBUG: Running boolean operation {self.__class__.__name__}")
 
     # def run(
     #     component: adsk.fusion.Component,

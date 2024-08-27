@@ -2,16 +2,21 @@
 from typing import List
 import adsk.fusion
 
+from .modifiers.boolean import Difference
 from .modifiers.extrude import Extrude
 from ..utils import log
 from .ownable_geometry import OwnableGeometry
 
 
 class CompositionGeometry(OwnableGeometry, Extrude):
+    # body
+    boolean: Difference
+
     def __init__(
         self,
         parent: OwnableGeometry,
         children: List[OwnableGeometry],
+        boolean: Difference = None,
         center_x: float = 0.0,
         center_y: float = 0.0,
         thickness: float = 0.0,
@@ -20,6 +25,9 @@ class CompositionGeometry(OwnableGeometry, Extrude):
             self, children=children, parent=parent, center_x=center_x, center_y=center_y
         )
         Extrude.__init__(self, height=thickness)
+
+        # to be removed
+        self.boolean = boolean
 
     """
     @params component: adsk.fusion.Component - the component to run the
@@ -44,6 +52,7 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         #             # Modifiers.run(component)
 
         Extrude.run(self, component)
+        self.boolean.run(component)
 
     def calculate_area(self) -> float:
         return sum([element.calculate_area() for element in self.children])

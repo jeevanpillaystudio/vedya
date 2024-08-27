@@ -7,7 +7,6 @@ class Rectangle(CompositionGeometry):
     # body
     length: float
     width: float
-    boolean: Difference
 
     def __init__(
         self,
@@ -26,14 +25,12 @@ class Rectangle(CompositionGeometry):
             center_x=center_x,
             center_y=center_y,
             thickness=thickness,
+            boolean=boolean,
         )
 
         # body
         self.length = length
         self.width = width
-
-        # to be removed
-        self.boolean = boolean
 
     def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchLineList:
         return sketch.sketchCurves.sketchLines.addTwoPointRectangle(

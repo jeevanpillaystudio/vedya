@@ -32,9 +32,9 @@ class Composition:
         print(f"DEBUG: Added geometry {geometry} to composition")
 
     def create(self) -> None:
-        for i, layer in enumerate(self.geometries):
+        for i, geometry in enumerate(self.geometries):
             geometry_component = create_component(self.root_comp, f"geometry-{i}")
-            layer.run(geometry_component)
+            geometry.run(geometry_component)
 
     def __str__(self):
         return f"Composition: {[str(geometry) for geometry in self.geometries]}"
