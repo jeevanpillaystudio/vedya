@@ -1,3 +1,4 @@
+from ..modifiers.boolean import Difference
 from ..composition_geometry import CompositionGeometry
 import adsk.fusion, adsk.core
 
@@ -6,12 +7,14 @@ class Rectangle(CompositionGeometry):
     # body
     length: float
     width: float
+    boolean: Difference
 
     def __init__(
         self,
         thickness: float,
         length: float,
         width: float,
+        boolean: Difference = None,
         parent: CompositionGeometry = None,
         center_x: float = 0,
         center_y: float = 0,
@@ -28,6 +31,9 @@ class Rectangle(CompositionGeometry):
         # body
         self.length = length
         self.width = width
+
+        # to be removed
+        self.boolean = boolean
 
     def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchLineList:
         return sketch.sketchCurves.sketchLines.addTwoPointRectangle(
