@@ -1,5 +1,5 @@
 import adsk.core, adsk.fusion
-from ..utils import log
+from ...utils import log
 
 FP_TOLERANCE = 1e-2  # 0.1 Precision for floating point comparison
 

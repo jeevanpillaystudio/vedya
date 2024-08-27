@@ -1,7 +1,7 @@
 from typing import List
 from ..composition_geometry import CompositionGeometry
 
-# from core.geometry.modifiers.extrude import Extrude
+from ..modifiers.extrude import Extrude
 import adsk.fusion, adsk.core
 
 
