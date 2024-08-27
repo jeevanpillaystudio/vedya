@@ -69,4 +69,4 @@ def start_func(root_comp: adsk.fusion.Component):
     log(str(composition))
 
     # # create composition
-    # composition.create(root_comp)
+    composition.create(root_comp)
