@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 
 # @NOTE
 #   - [ ] R, H are coupled with cylinder coordinate system...
-def render_plot(coord_points: np.array, target_points: np.array, R, H) -> None:
+def render_3d_plot(coord_points: np.array, target_points: np.array, R, H) -> None:
     fig = go.Figure()
 
     # points of the coordinate system

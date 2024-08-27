@@ -1,10 +1,10 @@
-# from . import plot_cylinder_with_filled_circle, plot_sphere_with_filled_circle, create_cylinder_scad_model
 import numpy as np
 import cv2
 
-def main() -> None:
+
+def render_2d_stencil(img_path: str) -> None:
     # Load the image
-    image = cv2.imread('lib/img-to-stencil/public/roman-soldier-cc.png')
+    image = cv2.imread(img_path)
 
     # Convert to grayscale
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -18,9 +18,15 @@ def main() -> None:
     # Use morphological operations to improve edge connectivity
     kernel = np.ones((3, 3), np.uint8)
     edges = cv2.dilate(edges, kernel, iterations=1)
-    
-    adaptive_thresh = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                        cv2.THRESH_BINARY, blockSize=5, C=12)
+
+    adaptive_thresh = cv2.adaptiveThreshold(
+        gray_image,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        blockSize=5,
+        C=12,
+    )
     stencil = cv2.bitwise_not(adaptive_thresh)
 
     # Find contours based on the edges detected
@@ -33,9 +39,7 @@ def main() -> None:
     stencil = cv2.bitwise_not(stencil)
 
     # Save or display the resulting stencil
-    cv2.imwrite('stencil_output.png', stencil)
-    cv2.imshow('Stencil', stencil)
+    # cv2.imwrite("stencil_output.png", stencil) # @TODO dont save for now
+    cv2.imshow("Stencil", stencil)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-if __name__ == "__main__":
-    main()

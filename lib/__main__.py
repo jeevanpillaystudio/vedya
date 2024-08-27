@@ -1,6 +1,10 @@
+import os
 import click
 
-from render_form import render_plot
+from render_form import (
+    render_3d_plot,
+    render_2d_stencil,
+)
 from coord_transform import (
     transform_circle_to_cylinder,
     transform_rectangle_to_cylinder,
@@ -18,11 +22,16 @@ from coord_transform import (
 """
 
 
-@click.command()
+@click.group()
+def cli():
+    pass
+
+
+@cli.command("transform")
 @click.argument("input", type=click.Path(exists=True))
 @click.argument("output", type=click.Path())
-@click.option("--target", type=click.Choice(["cylinder"]))
-def main(input, output, target):
+@click.option("--target", type=click.Choice(["cylinder", "sphere"]))
+def transform(input, output, target):
     # parse the input file
     with open(input, "r") as file:
         for line_number, line in enumerate(file, start=1):
@@ -43,7 +52,7 @@ def main(input, output, target):
         file.write("initializing output file")
 
     if target == "cylinder":
-        render_plot(
+        render_3d_plot(
             coord_points=transform_rectangle_to_cylinder(
                 L=10, H=4, R=1, resolution=0.1
             ),
@@ -53,7 +62,15 @@ def main(input, output, target):
             R=1,
             H=4,
         )
+    elif target == "sphere":
+        raise NotImplementedError("sphere transformation is not yet implemented")
+
+
+@cli.command("render")
+@click.argument("input", type=click.Path(exists=True))
+def render(input):
+    render_2d_stencil(img_path=input)
 
 
 if __name__ == "__main__":
-    main()
+    cli()
