@@ -31,7 +31,6 @@ class Rectangle(CompositionGeometry):
         
         # to be removed
         self.thickness = thickness
-        self.plane_offset = 0.0
 
     # def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchLineList:
     #     return sketch.sketchCurves.sketchLines.addTwoPointRectangle(

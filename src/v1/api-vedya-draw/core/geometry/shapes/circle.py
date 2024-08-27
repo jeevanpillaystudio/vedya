@@ -1,28 +1,40 @@
 import math
-import adsk.core, adsk.fusion
-
-from .core.geometry import ModifiableGeometry
+from core.geometry.composition_geometry import CompositionGeometry
 
 
-class Circle(ModifiableGeometry):
+
+class Circle(CompositionGeometry):
+    # body
+    radius: float
+    thickness: float
+    
     def __init__(
         self,
         thickness: float,
         radius: float,
+        parent: CompositionGeometry,
         center_x: float = 0.0,
         center_y: float = 0.0,
-        plane_offset: float = 0,
     ):
-        super().__init__(thickness, plane_offset)
-        self.radius = radius
-        self.center_x = center_x
-        self.center_y = center_y
-
-    def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchCircle:
-        # Draw the base circle
-        return sketch.sketchCurves.sketchCircles.addByCenterRadius(
-            adsk.core.Point3D.create(self.center_x, self.center_y, 0), self.radius
+        CompositionGeometry.__init__(
+            self,
+            parent=parent,
+            children=None,
+            center_x=center_x,
+            center_y=center_y,
         )
+        
+        # body
+        self.radius = radius
+        
+        # to be removed
+        self.thickness = thickness
+
+    # def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchCircle:
+    #     # Draw the base circle
+    #     return sketch.sketchCurves.sketchCircles.addByCenterRadius(
+    #         adsk.core.Point3D.create(self.center_x, self.center_y, 0), self.radius
+    #     )
 
     def calculate_area(self) -> float:
         return math.pi * self.radius**2
@@ -31,6 +43,3 @@ class Circle(ModifiableGeometry):
         return (
             f"Circle(radius={self.radius}, center=({self.center_x}, {self.center_y}))"
         )
-
-    def xyBound(self) -> adsk.core.Point3D:
-        return adsk.core.Point3D.create(self.radius, self.radius, 0)
