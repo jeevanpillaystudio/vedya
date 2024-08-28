@@ -20,9 +20,7 @@ class Composition:
         self.geometries: List[CompositionGeometry] = []
         self.base_plane_offset = plane_offset
 
-    def add_geometry(
-        self, geometry: CompositionGeometry, plane_offset: float = 0.0
-    ) -> None:
+    def add_geometry(self, geometry: CompositionGeometry) -> None:
         self.geometries.append(geometry)
         print(f"DEBUG: Added geometry {geometry} to composition")
 

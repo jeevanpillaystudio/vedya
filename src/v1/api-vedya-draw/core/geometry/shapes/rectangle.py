@@ -36,10 +36,10 @@ class Rectangle(CompositionGeometry):
     def draw(self, sketch: adsk.fusion.Sketch) -> adsk.fusion.SketchLineList:
         return sketch.sketchCurves.sketchLines.addTwoPointRectangle(
             adsk.core.Point3D.create(
-                self.center_x, self.center_y, 0
+                self.center_x - self.length / 2, self.center_y - self.width / 2, 0
             ),
             adsk.core.Point3D.create(
-                self.center_x + self.length, self.center_y + self.width, 0
+                self.center_x + self.length / 2, self.center_y + self.width / 2, 0
             ),
         )
 
