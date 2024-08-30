@@ -95,17 +95,30 @@ def start_func(root_comp: adsk.fusion.Component):
             plane_offset=0.0,
             count_x=5,
             count_y=5,
-            boolean=Difference(
-                Circle(
-                    thickness=MAGNET_BASE_THICKNESS,
-                    radius=MAGNET_HOLE_RADIUS,
-                    center_x=0.0,
-                    center_y=0.0,
-                    plane_offset=0.0,
-                    count_x=1,
-                    count_y=1,
+            boolean=[
+                Difference(
+                    Circle(
+                        thickness=MAGNET_BASE_THICKNESS,
+                        radius=MAGNET_HOLE_RADIUS,
+                        center_x=0.0,
+                        center_y=0.0,
+                        plane_offset=0.0,
+                        count_x=1,
+                        count_y=1,
+                    ),
+                ),
+                Union(
+                    Circle(
+                        thickness=MAGNET_BASE_THICKNESS,
+                        radius=MAGNET_HOLE_RADIUS,
+                        center_x=0.0,
+                        center_y=0.0,
+                        plane_offset=-1.5,
+                        count_x=1,
+                        count_y=1,
+                    )
                 )
-            ),
+            ],
         )
     )
 

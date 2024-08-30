@@ -10,13 +10,13 @@ from ..utils import log
         
 class CompositionGeometry(OwnableGeometry, Extrude):
     # body
-    boolean: Boolean
+    boolean: List[Boolean]  
 
     def __init__(
         self,
         parent: OwnableGeometry,
         children: List[OwnableGeometry],
-        boolean: Boolean = None,
+        boolean: List[Boolean] = None,
         center_x: float = 0.0,
         center_y: float = 0.0,
         thickness: float = 0.0,
@@ -59,12 +59,13 @@ class CompositionGeometry(OwnableGeometry, Extrude):
 
                 # run boolean operation
                 if self.boolean is not None:
-                    for geometry in self.boolean.geometries:
-                        geometry.setup(self.body_component)
+                    for boolean in self.boolean:
+                        for geometry in boolean.geometries:
+                            geometry.setup(self.body_component)
                         geometry.center_x = self.center_x
                         geometry.center_y = self.center_y
                         child_bodies = geometry.run()
-                    self.boolean.run(self.body_component, bodies, child_bodies)
+                        boolean.run(self.body_component, bodies, child_bodies)
 
         # return the bodies
         return bodies
