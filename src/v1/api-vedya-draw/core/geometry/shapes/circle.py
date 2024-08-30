@@ -18,6 +18,8 @@ class Circle(CompositionGeometry):
         center_y: float = 0.0,
         boolean: Boolean = None,
         plane_offset: float = 0.0,
+        count_x: int = 1,
+        count_y: int = 1,   
     ):
         CompositionGeometry.__init__(
             self,
@@ -28,6 +30,8 @@ class Circle(CompositionGeometry):
             thickness=thickness,
             boolean=boolean,
             plane_offset=plane_offset,
+            count_x=count_x,
+            count_y=count_y,
         )
 
         # body

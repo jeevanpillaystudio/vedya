@@ -17,6 +17,8 @@ class Rectangle(CompositionGeometry):
         center_x: float = 0,
         center_y: float = 0,
         plane_offset: float = 0.0,
+        count_x: int = 1,
+        count_y: int = 1,
     ):
         CompositionGeometry.__init__(
             self,
@@ -27,6 +29,8 @@ class Rectangle(CompositionGeometry):
             thickness=thickness,
             boolean=boolean,
             plane_offset=plane_offset,
+            count_x=count_x,
+            count_y=count_y,
         )
 
         # body

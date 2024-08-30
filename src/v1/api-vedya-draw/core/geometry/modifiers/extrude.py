@@ -10,7 +10,7 @@ class Extrude:
     x_count: int
     y_count: int
     
-    def __init__(self, thickness: float, plane_offset: float, x_count: int = 5, y_count: int = 10):
+    def __init__(self, thickness: float, plane_offset: float, x_count: int = 1, y_count: int = 1):
         self.thickness = thickness
         self.plane_offset = plane_offset # @NOTE this is based on the parent component & also only changes rleatively to XY Plane...
         self.parent_component = None
