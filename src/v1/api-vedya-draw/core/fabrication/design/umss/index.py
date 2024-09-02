@@ -52,8 +52,11 @@ TILE_WIDTH = 30.0
 TILE_THICKNESS = 3.0
 
 # 2. magnet
-MAGNET_HOLE_RADIUS = 3.0  # 6mm / 2; r.e we measured 5.8mm on the diameter
-MAGNET_BASE_THICKNESS = 3.
+MAGNET_HOLE_RADIUS = 3.0  # 6mm / 2
+MAGNET_BASE_THICKNESS = 3.0
+
+# 3. fillet
+FILLET_RADIUS = 1.5
 
 def start_func(root_comp: adsk.fusion.Component):
     """
@@ -66,65 +69,42 @@ def start_func(root_comp: adsk.fusion.Component):
 
     composition = Composition(root_comp=root_comp, plane_offset=0.0)
     composition.add_geometry(
-        # Circle(
-        #     thickness=MAGNET_BASE_THICKNESS,
-        #     radius=MAGNET_HOLE_RADIUS,
-        #     center_x=0.0,
-        #     center_y=0.0,
-        #     plane_offset=-1.5,
-        #     # boolean=Union(
-        #     #     Rectangle(
-        #     #         length=32.0,
-        #     #         width=32.0,
-        #     #         thickness=MAGNET_BASE_THICKNESS,
-        #     #         center_x=0.0,
-        #     #         center_y=0.0,
-        #     #         plane_offset=0.0,
-        #     #         boolean=Difference(
-        #     #             Circle(
-        #     #                 thickness=MAGNET_BASE_THICKNESS,
-        #     #                 radius=MAGNET_HOLE_RADIUS,
-        #     #                 center_x=0.0,
-        #     #                 center_y=0.0,
-        #     #                 plane_offset=-0.0,
-        #     #             )
-        #     #         ),
-        #     #     )
-        #     # )
-        # )
-        Rectangle(
-            length=TILE_LENGTH,
-            width=TILE_WIDTH,
-            thickness=TILE_THICKNESS,
+        Circle(
+            thickness=MAGNET_BASE_THICKNESS / 2,
+            radius=MAGNET_HOLE_RADIUS,
             center_x=0.0,
             center_y=0.0,
-            plane_offset=0.0,
+            plane_offset=-1.5,
             count_x=1,
             count_y=1,
             boolean=[
-                Difference(
-                    Circle(
-                        thickness=MAGNET_BASE_THICKNESS,
-                        radius=MAGNET_HOLE_RADIUS,
+                Union(
+                    Rectangle(
+                        length=TILE_LENGTH,
+                        width=TILE_WIDTH,
+                        thickness=TILE_THICKNESS,
                         center_x=0.0,
                         center_y=0.0,
                         plane_offset=0.0,
                         count_x=1,
                         count_y=1,
+                        fillet_radius=FILLET_RADIUS,
+                        boolean=[
+                            Difference(
+                                Circle(
+                                    thickness=MAGNET_BASE_THICKNESS,
+                                    radius=MAGNET_HOLE_RADIUS,
+                                    center_x=0.0,
+                                    center_y=0.0,
+                                    plane_offset=0.0,
+                                    count_x=1,
+                                    count_y=1,
+                                )
+                            )
+                        ],
                     ),
                 ),
-                # Union(
-                #     Circle(
-                #         thickness=MAGNET_BASE_THICKNESS,
-                #         radius=MAGNET_HOLE_RADIUS,
-                #         center_x=0.0,
-                #         center_y=0.0,
-                #         plane_offset=-1.5,
-                #         count_x=1,
-                #         count_y=1,
-                #     )
-                # )
-            ],
+            ]
         )
     )
 

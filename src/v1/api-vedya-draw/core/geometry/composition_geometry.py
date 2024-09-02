@@ -23,30 +23,24 @@ class CompositionGeometry(OwnableGeometry, Extrude):
         plane_offset: float = 0.0,
         count_x: int = 1,
         count_y: int = 1,
+        fillet_radius: float = 0.0,
     ):
         OwnableGeometry.__init__(
             self, children=children, parent=parent, center_x=center_x, center_y=center_y
         )
-        Extrude.__init__(self, thickness=thickness, plane_offset=plane_offset, x_count=count_x, y_count=count_y)
+        Extrude.__init__(
+            self,
+            thickness=thickness,
+            plane_offset=plane_offset,
+            x_count=count_x,
+            y_count=count_y,
+            fillet_radius=fillet_radius,
+        )
 
         # to be removed
         self.boolean = boolean
 
-    # def run(self, component: adsk.fusion.Component) -> None:
     def run(self) -> adsk.fusion.BRepBodies:
-        # # run array looper
-        # for geometry in self.children:
-        #     for x in range(self.count_x):
-        #         for y in range(self.count_y):
-        #             """
-        #             RUN ACTIONS
-
-        #             @NOTE: this is where we run the extrude and modify actions
-        #             also, can extend to include other actions like cut, boolean, etc.
-        #             """
-        #             log(f"DEBUG: Running geometry {geometry}, x={x}, y={y}")
-        #             Extrude.run(component)
-        #             # Modifiers.run(component)
         initial_center_x = self.center_x
         initial_center_y = self.center_y
 
@@ -66,6 +60,8 @@ class CompositionGeometry(OwnableGeometry, Extrude):
                         geometry.center_y = self.center_y
                         child_bodies = geometry.run()
                         boolean.run(self.body_component, bodies, child_bodies)
+                        
+                Extrude.fillet(self, bodies)
 
         # return the bodies
         return bodies

@@ -20,6 +20,7 @@ class Circle(CompositionGeometry):
         plane_offset: float = 0.0,
         count_x: int = 1,
         count_y: int = 1,   
+        fillet_radius: float = 0.0,
     ):
         CompositionGeometry.__init__(
             self,
@@ -32,6 +33,7 @@ class Circle(CompositionGeometry):
             plane_offset=plane_offset,
             count_x=count_x,
             count_y=count_y,
+            fillet_radius=fillet_radius,
         )
 
         # body

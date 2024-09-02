@@ -15,6 +15,7 @@ class Rectangle(CompositionGeometry):
         width: float,
         boolean: List[Boolean] = None,
         parent: CompositionGeometry = None,
+        fillet_radius: float = 0.0,
         center_x: float = 0,
         center_y: float = 0,
         plane_offset: float = 0.0,
@@ -32,6 +33,7 @@ class Rectangle(CompositionGeometry):
             plane_offset=plane_offset,
             count_x=count_x,
             count_y=count_y,
+            fillet_radius=fillet_radius,
         )
 
         # body
