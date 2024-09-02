@@ -45,9 +45,15 @@ from ....geometry.composition import Composition
 # geometry
 from ....utils import log
 
-MAGNET_BASE_THICKNESS = 1.5
-MAGNET_HOLE_RADIUS = 3  # 5.8mm / 2; r.e we measured 5.8mm on the diameter
+# dimensions
+# 1. tile
+TILE_LENGTH = 30.0
+TILE_WIDTH = 30.0
+TILE_THICKNESS = 3.0
 
+# 2. magnet
+MAGNET_HOLE_RADIUS = 3.0  # 6mm / 2; r.e we measured 5.8mm on the diameter
+MAGNET_BASE_THICKNESS = 3.
 
 def start_func(root_comp: adsk.fusion.Component):
     """
@@ -87,14 +93,14 @@ def start_func(root_comp: adsk.fusion.Component):
         #     # )
         # )
         Rectangle(
-            length=32.0,
-            width=32.0,
-            thickness=MAGNET_BASE_THICKNESS,
+            length=TILE_LENGTH,
+            width=TILE_WIDTH,
+            thickness=TILE_THICKNESS,
             center_x=0.0,
             center_y=0.0,
             plane_offset=0.0,
-            count_x=5,
-            count_y=5,
+            count_x=1,
+            count_y=1,
             boolean=[
                 Difference(
                     Circle(
@@ -107,17 +113,17 @@ def start_func(root_comp: adsk.fusion.Component):
                         count_y=1,
                     ),
                 ),
-                Union(
-                    Circle(
-                        thickness=MAGNET_BASE_THICKNESS,
-                        radius=MAGNET_HOLE_RADIUS,
-                        center_x=0.0,
-                        center_y=0.0,
-                        plane_offset=-1.5,
-                        count_x=1,
-                        count_y=1,
-                    )
-                )
+                # Union(
+                #     Circle(
+                #         thickness=MAGNET_BASE_THICKNESS,
+                #         radius=MAGNET_HOLE_RADIUS,
+                #         center_x=0.0,
+                #         center_y=0.0,
+                #         plane_offset=-1.5,
+                #         count_x=1,
+                #         count_y=1,
+                #     )
+                # )
             ],
         )
     )
