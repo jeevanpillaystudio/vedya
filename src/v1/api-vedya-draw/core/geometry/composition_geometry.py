@@ -8,48 +8,45 @@ from .modifiers.extrude import Extrude
 from .ownable_geometry import OwnableGeometry
 from ..utils import log
         
-class CompositionGeometry(OwnableGeometry, Extrude):
+class CompositionGeometry(OwnableGeometry):
     # body
     boolean: List[Boolean]  
 
     def __init__(
         self,
+        extrude: Extrude,
         parent: OwnableGeometry,
         children: List[OwnableGeometry],
         boolean: List[Boolean] = None,
         center_x: float = 0.0,
         center_y: float = 0.0,
-        thickness: float = 0.0,
-        plane_offset: float = 0.0,
-        count_x: int = 1,
-        count_y: int = 1,
-        fillet_radius: float = 0.0,
     ):
+        # init
         OwnableGeometry.__init__(
             self, children=children, parent=parent, center_x=center_x, center_y=center_y
-        )
-        Extrude.__init__(
-            self,
-            thickness=thickness,
-            plane_offset=plane_offset,
-            x_count=count_x,
-            y_count=count_y,
-            fillet_radius=fillet_radius,
         )
 
         # to be removed
         self.boolean = boolean
+        self.extrude = extrude
+        
+    def setup(self, component: adsk.fusion.Component):
+        self.extrude.setup(component)
+        
+    @abstractmethod
+    def draw(self, sketch: adsk.fusion.Sketch) -> None:
+        pass
 
-    def run(self) -> adsk.fusion.BRepBodies:
+    def run(self) -> adsk.fusion.BRepBody:
         initial_center_x = self.center_x
         initial_center_y = self.center_y
 
-        for x in range(self.x_count):
-            for y in range(self.y_count):
+        for x in range(self.extrude.x_count):
+            for y in range(self.extrude.y_count):
                 self.center_x = x * self.xy_bound() + initial_center_x
                 self.center_y = y * self.xy_bound() + initial_center_y
-                bodies = Extrude.run(self)
-                log(f"DEBUG: Created bodies {len(bodies)}")
+                body = self.extrude.run(draw_func=lambda sketch: self.draw(sketch))
+                log(f"DEBUG: Created body {body.name}")
 
                 # run boolean operation
                 if self.boolean is not None:
@@ -59,12 +56,12 @@ class CompositionGeometry(OwnableGeometry, Extrude):
                         geometry.center_x = self.center_x
                         geometry.center_y = self.center_y
                         child_bodies = geometry.run()
-                        boolean.run(self.body_component, bodies, child_bodies)
+                        boolean.run(self.body_component, body, child_bodies)
                         
-                Extrude.fillet(self, bodies)
+                self.extrude.fillet(body)
 
         # return the bodies
-        return bodies
+        return body
 
     def calculate_area(self) -> float:
         return sum([element.calculate_area() for element in self.children])

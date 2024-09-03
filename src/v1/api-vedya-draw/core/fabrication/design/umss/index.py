@@ -23,6 +23,7 @@ dimensions of 128mm x 128mm tiles.
 PROJECT_NAME = "UMSS"
 
 import adsk.core, adsk.fusion
+from ....geometry.modifiers.extrude import Extrude, FullExtrude, ThinExtrude
 from ....geometry.modifiers.boolean import Difference, Union
 from ....geometry.shapes.circle import Circle
 from ....geometry.shapes.rectangle import Rectangle
@@ -70,41 +71,45 @@ def start_func(root_comp: adsk.fusion.Component):
     composition = Composition(root_comp=root_comp, plane_offset=0.0)
     composition.add_geometry(
         Circle(
-            thickness=MAGNET_BASE_THICKNESS / 2,
             radius=MAGNET_HOLE_RADIUS,
             center_x=0.0,
             center_y=0.0,
-            plane_offset=-1.5,
-            count_x=1,
-            count_y=1,
-            boolean=[
-                Union(
-                    Rectangle(
-                        length=TILE_LENGTH,
-                        width=TILE_WIDTH,
-                        thickness=TILE_THICKNESS,
-                        center_x=0.0,
-                        center_y=0.0,
-                        plane_offset=0.0,
-                        count_x=1,
-                        count_y=1,
-                        fillet_radius=FILLET_RADIUS,
-                        boolean=[
-                            Difference(
-                                Circle(
-                                    thickness=MAGNET_BASE_THICKNESS,
-                                    radius=MAGNET_HOLE_RADIUS,
-                                    center_x=0.0,
-                                    center_y=0.0,
-                                    plane_offset=0.0,
-                                    count_x=1,
-                                    count_y=1,
-                                )
-                            )
-                        ],
-                    ),
-                ),
-            ]
+            extrude=ThinExtrude(
+                thickness=MAGNET_BASE_THICKNESS / 2,
+                plane_offset=-1.5,
+                x_count=1,
+                y_count=1,
+                stroke_weight=1.0,
+                # fillet_radius=FILLET_RADIUS,
+            ),
+            # boolean=[
+            #     Union(
+            #         Rectangle(
+            #             length=TILE_LENGTH,
+            #             width=TILE_WIDTH,
+            #             thickness=TILE_THICKNESS,
+            #             center_x=0.0,
+            #             center_y=0.0,
+            #             plane_offset=0.0,
+            #             count_x=1,
+            #             count_y=1,
+            #             fillet_radius=FILLET_RADIUS,
+            #             boolean=[
+            #                 Difference(
+            #                     Circle(
+            #                         thickness=MAGNET_BASE_THICKNESS,
+            #                         radius=MAGNET_HOLE_RADIUS,
+            #                         center_x=0.0,
+            #                         center_y=0.0,
+            #                         plane_offset=0.0,
+            #                         count_x=1,
+            #                         count_y=1,
+            #                     )
+            #                 )
+            #             ],
+            #         ),
+            #     ),
+            # ]
         )
     )
 

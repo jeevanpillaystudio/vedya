@@ -61,21 +61,18 @@ def extrude_profile_by_area(
             bodies.add(body)
     if bodies.count > 0:
         return bodies
-    raise ValueError("Failed to find the profile for extrusion")
 
-def fillet_bodies(component: adsk.fusion.Component, bodies: adsk.fusion.BRepBodies, radius: float, tangency_weight: float = 2.0) -> adsk.fusion.BRepBodies:
+def fillet_bodies(component: adsk.fusion.Component, body: adsk.fusion.BRepBody, radius: float, tangency_weight: float = 2.0) -> adsk.fusion.BRepBodies:
     fillets = component.features.filletFeatures
     
     edge_collection = adsk.core.ObjectCollection.create()
     
-    for body in bodies:
-        for face in body.faces:
-            # Check if the face is parallel to the XY plane
-            normal = face.evaluator.getNormalAtPoint(face.pointOnFace)[1]
-            if normal.isParallelTo(adsk.core.Vector3D.create(0, 0, 1)):
-                for edge in face.edges:
-                    edge_collection.add(edge)
-                break  # Assuming only one face is parallel to the XY plane
+    for face in body.faces:
+        # Check if the face is parallel to the XY plane
+        normal = face.evaluator.getNormalAtPoint(face.pointOnFace)[1]
+        if normal.isParallelTo(adsk.core.Vector3D.create(0, 0, 1)):
+            for edge in face.edges:
+                edge_collection.add(edge)
 
     radius1 = adsk.core.ValueInput.createByReal(radius)
     input1 = fillets.createInput()
