@@ -3,8 +3,6 @@ from typing import Callable
 import uuid
 
 import adsk.fusion
-from ....core.utils import log
-from ..libs.component_utils import create_component
 from ..libs.geometry_utils import create_sketch
 
 
@@ -16,7 +14,6 @@ class Extrude:
         plane_offset: float,
         x_count: int = 1,
         y_count: int = 1,
-        fillet_radius: float = 0.0,
         operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
     ):
         self.thickness = thickness
@@ -24,7 +21,6 @@ class Extrude:
         self.operation = operation
         self.x_count = x_count
         self.y_count = y_count
-        self.fillet_radius = fillet_radius
 
     def run(
         self,
@@ -65,12 +61,9 @@ class FullExtrude(Extrude):
         plane_offset: float,
         x_count: int = 1,
         y_count: int = 1,
-        fillet_radius: float = 0.0,
         operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
     ):
-        super().__init__(
-            thickness, plane_offset, x_count, y_count, fillet_radius, operation
-        )
+        super().__init__(thickness, plane_offset, x_count, y_count, operation)
 
     def extrude(
         self,

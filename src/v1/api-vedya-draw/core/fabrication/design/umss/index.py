@@ -80,7 +80,6 @@ def start_func(root_comp: adsk.fusion.Component):
                 x_count=1,
                 y_count=1,
                 # stroke_weight=1.0,
-                fillet_radius=FILLET_RADIUS,
             ),
             boolean=[
                 Union(
