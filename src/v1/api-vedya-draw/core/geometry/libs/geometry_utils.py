@@ -33,4 +33,3 @@ def create_sketch(
     sketch = sketches.add(create_offset_plane(component, offset, plane=plane))
     sketch.name = name
     return sketch
-

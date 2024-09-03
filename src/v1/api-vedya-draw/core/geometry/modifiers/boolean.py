@@ -14,15 +14,16 @@ class Boolean:
     def run(
         self,
         component: adsk.fusion.Component,
-        body: adsk.fusion.BRepBody,
+        bodies: adsk.fusion.BRepBodies,
         tool_bodies: adsk.fusion.BRepBodies,
     ):
-        intersect_bodies(
-            root_component=component,
-            target_body=body,
-            tool_bodies=tool_bodies,
-            operation=self.operation_type,
-        )
+        for body in bodies:
+            intersect_bodies(
+                root_component=component,
+                target_body=body,
+                tool_bodies=tool_bodies,
+                operation=self.operation_type,
+            )
 
     def __str__(self):
         return (

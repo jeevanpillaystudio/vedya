@@ -7,61 +7,47 @@ from ....core.utils import log
 from ..libs.component_utils import create_component
 from ..libs.geometry_utils import create_sketch
 
+
 # base class
 class Extrude:
-    def __init__(self, thickness: float, plane_offset: float, x_count: int = 1, y_count: int = 1, fillet_radius: float = 0.0, operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation):
+    def __init__(
+        self,
+        thickness: float,
+        plane_offset: float,
+        x_count: int = 1,
+        y_count: int = 1,
+        fillet_radius: float = 0.0,
+        operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+    ):
         self.thickness = thickness
-        self.plane_offset = plane_offset # @NOTE this is based on the parent component & also only changes rleatively to XY Plane...
+        self.plane_offset = plane_offset  # @NOTE this is based on the parent component & also only changes rleatively to XY Plane...
         self.operation = operation
-        self.parent_component = None
-        self.body_component = None
         self.x_count = x_count
         self.y_count = y_count
         self.fillet_radius = fillet_radius
-    
-    def setup(self, parent_component: adsk.fusion.Component):
-        self.parent_component = parent_component
-        self.body_component = create_component(self.parent_component, f"extrude-component-{uuid.uuid4()}")
-        
-    def run(self, draw_func: Callable[[adsk.fusion.Sketch], None]) -> adsk.fusion.BRepBodies:    
+
+    def run(
+        self,
+        draw_func: Callable[[adsk.fusion.Sketch], None],
+        component: adsk.fusion.Component,
+    ) -> adsk.fusion.BRepBodies:
         # create the sketch
         self.sketch = create_sketch(
-            component=self.body_component,
+            component=component,
             name="extrude-sketch",
             offset=self.plane_offset,
         )
-        
+
         # draw the thing: re blah blah about maths goes in here, e.g points, etc
         draw_func(self.sketch)
-        
-        # extrude
-        return self.extrude()
-    
-    @abstractmethod
-    def extrude(self) -> adsk.fusion.BRepBody:
-        pass
-    
-    def fillet(self, body: adsk.fusion.BRepBody):
-        if self.fillet_radius <= 0.0:
-            return body
-        fillets = self.body_component.features.filletFeatures
-        edge_collection = adsk.core.ObjectCollection.create()
-        for face in body.faces:
-            # Check if the face is parallel to the XY plane
-            normal = face.evaluator.getNormalAtPoint(face.pointOnFace)[1]
-            if normal.isParallelTo(adsk.core.Vector3D.create(0, 0, 1)):
-                for edge in face.edges:
-                    edge_collection.add(edge)
-                break  # Assuming only one face is parallel to the XY plane
 
-        radius1 = adsk.core.ValueInput.createByReal(self.fillet_radius)
-        input1 = fillets.createInput()
-        input1.isRollingBallCorner = True
-        radius_input = input1.edgeSetInputs.addConstantRadiusEdgeSet(edge_collection, radius1, True)
-        radius_input.continuity = adsk.fusion.SurfaceContinuityTypes.TangentSurfaceContinuityType
-        # constRadiusInput.tangencyWeight = adsk.core.ValueInput.createByReal(tangency_weight)
-        fillets.add(input1)
-    
+        # extrude
+        return self.extrude(component)
+
+    @abstractmethod
+    def extrude(self, component: adsk.fusion.Component) -> adsk.fusion.BRepBodies:
+        pass
+
     @property
     def plane_offset(self):
         return self._plane_offset
@@ -69,37 +55,70 @@ class Extrude:
     @plane_offset.setter
     def plane_offset(self, plane_offset: float):
         self._plane_offset = plane_offset
-        
+
+
 # full extrusion
 class FullExtrude(Extrude):
-    def __init__(self, thickness: float, plane_offset: float, x_count: int = 1, y_count: int = 1, fillet_radius: float = 0.0, operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation):
-        super().__init__(thickness, plane_offset, x_count, y_count, fillet_radius, operation)
-        
-    def extrude(self) -> adsk.fusion.BRepBody:
-        extrudes = self.body_component.features.extrudeFeatures
-        profile = self.sketch.profiles.item(0)
-        extrude_input = extrudes.createInput(profile, self.operation)
-        extrude_input.setDistanceExtent(
-            False, adsk.core.ValueInput.createByReal(self.thickness)
+    def __init__(
+        self,
+        thickness: float,
+        plane_offset: float,
+        x_count: int = 1,
+        y_count: int = 1,
+        fillet_radius: float = 0.0,
+        operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+    ):
+        super().__init__(
+            thickness, plane_offset, x_count, y_count, fillet_radius, operation
         )
-        extrude = extrudes.add(extrude_input)
-        body = extrude.bodies.item(0)
-        body.name = f"{self.body_component.name}-{self.x_count}x{self.y_count}"
-        return body
+
+    def extrude(
+        self,
+        component: adsk.fusion.Component,
+    ) -> adsk.fusion.BRepBodies:
+        bodies = adsk.core.ObjectCollection.create()
+        for profile in self.sketch.profiles:
+            extrudes = component.features.extrudeFeatures
+            extrude_input = extrudes.createInput(profile, self.operation)
+            extrude_input.setDistanceExtent(
+                False, adsk.core.ValueInput.createByReal(self.thickness)
+            )
+            extrude = extrudes.add(extrude_input)
+            body = extrude.bodies.item(0)
+            body.name = f"{component.name}-{self.x_count}x{self.y_count}"
+            bodies.add(body)
+        return bodies
+
 
 # thin extrusion
 class ThinExtrude(Extrude):
-    def __init__(self, thickness: float, plane_offset: float, x_count: int = 1, y_count: int = 1, fillet_radius: float = 0.0, operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation, stroke_weight: float = 0.0, side: adsk.fusion.ThinExtrudeWallLocation = adsk.fusion.ThinExtrudeWallLocation.Side1, start_from: adsk.fusion.BRepBody = None):
-        super().__init__(thickness, plane_offset, x_count, y_count, fillet_radius, operation)
+    def __init__(
+        self,
+        thickness: float,
+        plane_offset: float,
+        x_count: int = 1,
+        y_count: int = 1,
+        fillet_radius: float = 0.0,
+        operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+        stroke_weight: float = 0.0,
+        side: adsk.fusion.ThinExtrudeWallLocation = adsk.fusion.ThinExtrudeWallLocation.Side1,
+        start_from: adsk.fusion.BRepBody = None,
+    ):
+        super().__init__(
+            thickness, plane_offset, x_count, y_count, fillet_radius, operation
+        )
         self.stroke_weight = stroke_weight
         self.side = side
         self.start_from = start_from
-        
-    def extrude(self) -> adsk.fusion.BRepBody:
-        extrudes = self.body_component.features.extrudeFeatures
+
+    def extrude(
+        self,
+        component: adsk.fusion.Component,
+    ) -> adsk.fusion.BRepBody:
+        extrudes = component.features.extrudeFeatures
         profile = self.sketch.profiles.item(0)
         extrude_input = extrudes.createInput(profile, self.operation)
-        
+
         if self.start_from is not None:
             mm0 = adsk.core.ValueInput.createByString("0 mm")
             start_from_extent = adsk.fusion.FromEntityStartDefinition.create(
@@ -107,11 +126,13 @@ class ThinExtrude(Extrude):
             )
             extrude_input.startExtent = start_from_extent
 
-        extrude_input.setThinExtrude(self.side, adsk.core.ValueInput.createByReal(self.stroke_weight))
+        extrude_input.setThinExtrude(
+            self.side, adsk.core.ValueInput.createByReal(self.stroke_weight)
+        )
         extrude_input.setDistanceExtent(
             False, adsk.core.ValueInput.createByReal(self.thickness)
         )
         extrude = extrudes.add(extrude_input)
         body = extrude.bodies.item(0)
-        body.name = f"{self.body_component.name}-{self.x_count}x{self.y_count}"
+        body.name = f"{component.name}-{self.x_count}x{self.y_count}"
         return body

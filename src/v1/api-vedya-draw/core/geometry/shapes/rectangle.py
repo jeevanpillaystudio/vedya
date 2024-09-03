@@ -1,7 +1,11 @@
 from typing import List
+
+from ..modifiers.extrude import Extrude
+from ..modifiers.fillet import Fillet
 from ..modifiers.boolean import Boolean
 from ..composition_geometry import CompositionGeometry
 import adsk.fusion, adsk.core
+
 
 class Rectangle(CompositionGeometry):
     # body
@@ -10,30 +14,24 @@ class Rectangle(CompositionGeometry):
 
     def __init__(
         self,
-        thickness: float,
+        extrude: Extrude,
         length: float,
         width: float,
-        boolean: List[Boolean] = None,
         parent: CompositionGeometry = None,
-        fillet_radius: float = 0.0,
         center_x: float = 0,
         center_y: float = 0,
-        plane_offset: float = 0.0,
-        count_x: int = 1,
-        count_y: int = 1,
+        boolean: List[Boolean] = None,
+        fillet: Fillet = None,
     ):
         CompositionGeometry.__init__(
             self,
+            extrude=extrude,
+            fillet=fillet,
             parent=parent,
             children=None,
             center_x=center_x,
             center_y=center_y,
-            thickness=thickness,
             boolean=boolean,
-            plane_offset=plane_offset,
-            count_x=count_x,
-            count_y=count_y,
-            fillet_radius=fillet_radius,
         )
 
         # body

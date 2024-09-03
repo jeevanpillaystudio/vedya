@@ -52,3 +52,7 @@ class OwnableGeometry(Geometry):
     @abstractmethod
     def run(self) -> adsk.fusion.BRepBodies:
         pass
+
+    @abstractmethod
+    def setup(self, component: adsk.fusion.Component):
+        pass

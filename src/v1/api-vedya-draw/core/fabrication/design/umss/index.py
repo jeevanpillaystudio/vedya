@@ -24,7 +24,7 @@ PROJECT_NAME = "UMSS"
 
 import adsk.core, adsk.fusion
 from ....geometry.modifiers.fillet import Fillet
-from ....geometry.modifiers.extrude import ThinExtrude
+from ....geometry.modifiers.extrude import FullExtrude, ThinExtrude
 from ....geometry.modifiers.boolean import Difference, Union
 from ....geometry.shapes.circle import Circle
 from ....geometry.shapes.rectangle import Rectangle
@@ -74,47 +74,41 @@ def start_func(root_comp: adsk.fusion.Component):
     composition.add_geometry(
         Circle(
             radius=MAGNET_HOLE_RADIUS,
-            center_x=0.0,
-            center_y=0.0,
-            extrude=ThinExtrude(
+            extrude=FullExtrude(
                 thickness=MAGNET_BASE_THICKNESS / 2,
                 plane_offset=-1.5,
                 x_count=1,
                 y_count=1,
-                stroke_weight=1.0,
+                # stroke_weight=1.0,
                 fillet_radius=FILLET_RADIUS,
             ),
-            fillet=Fillet(
-                radius=FILLET_RADIUS,
-            ),
-            # boolean=[
-            #     Union(
-            #         Rectangle(
-            #             length=TILE_LENGTH,
-            #             width=TILE_WIDTH,
-            #             thickness=TILE_THICKNESS,
-            #             center_x=0.0,
-            #             center_y=0.0,
-            #             plane_offset=0.0,
-            #             count_x=1,
-            #             count_y=1,
-            #             fillet_radius=FILLET_RADIUS,
-            #             boolean=[
-            #                 Difference(
-            #                     Circle(
-            #                         thickness=MAGNET_BASE_THICKNESS,
-            #                         radius=MAGNET_HOLE_RADIUS,
-            #                         center_x=0.0,
-            #                         center_y=0.0,
-            #                         plane_offset=0.0,
-            #                         count_x=1,
-            #                         count_y=1,
-            #                     )
-            #                 )
-            #             ],
-            #         ),
-            #     ),
-            # ]
+            boolean=[
+                Union(
+                    Rectangle(
+                        extrude=FullExtrude(
+                            thickness=TILE_THICKNESS,
+                            plane_offset=0.0,
+                            x_count=1,
+                            y_count=1,
+                        ),
+                        length=TILE_LENGTH,
+                        width=TILE_WIDTH,
+                        boolean=[
+                            Difference(
+                                Circle(
+                                    extrude=FullExtrude(
+                                        thickness=MAGNET_BASE_THICKNESS,
+                                        plane_offset=0.0,
+                                        x_count=1,
+                                        y_count=1,
+                                    ),
+                                    radius=MAGNET_HOLE_RADIUS,
+                                )
+                            )
+                        ],
+                    ),
+                ),
+            ],
         )
     )
 

@@ -1,4 +1,5 @@
 import math
+from typing import List
 
 from ..modifiers.fillet import Fillet
 from ..modifiers.extrude import Extrude
@@ -18,7 +19,7 @@ class Circle(CompositionGeometry):
         center_x: float = 0.0,
         center_y: float = 0.0,
         parent: CompositionGeometry = None,
-        boolean: Boolean = None,
+        boolean: List[Boolean] = None,
         fillet: Fillet = None,
     ):
         CompositionGeometry.__init__(
