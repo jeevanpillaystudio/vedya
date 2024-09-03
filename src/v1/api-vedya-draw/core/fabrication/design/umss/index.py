@@ -86,10 +86,10 @@ def start_func(root_comp: adsk.fusion.Component):
                 stroke_weight=1.0,
                 side=adsk.fusion.ThinExtrudeWallLocation.Side2,
             ),
-            fillet=Fillet(
-                radius=FILLET_RADIUS,
-                target_face=FilletFace.Top,
-            ),
+            # fillet=Fillet(
+            #     radius=FILLET_RADIUS,
+            #     target_face=FilletFace.Top,
+            # ),
                 boolean=[
                     Union(
                         Rectangle(
@@ -99,7 +99,7 @@ def start_func(root_comp: adsk.fusion.Component):
                                 x_count=1,
                                 y_count=1,
                             ),
-                            fillet=Fillet(radius=FILLET_RADIUS),
+                            # fillet=Fillet(radius=FILLET_RADIUS),
                             length=TILE_LENGTH,
                             width=TILE_WIDTH,
                             boolean=[
@@ -116,15 +116,15 @@ def start_func(root_comp: adsk.fusion.Component):
                                 )
                             ],
                         ),
-                        Circle(
-                            extrude=FullExtrude(
-                                thickness=MAGNET_ENCLOSURE_THICKNESS,
-                                plane_offset=-1.5,
-                                x_count=1,
-                                y_count=1,
-                            ),
-                            radius=MAGNET_ENCLOSURE_RADIUS,
-                        ),
+                        # Circle(
+                        #     extrude=FullExtrude(
+                        #         thickness=MAGNET_ENCLOSURE_THICKNESS,
+                        #         plane_offset=-1.5,
+                        #         x_count=1,
+                        #         y_count=1,
+                        #     ),
+                        #     radius=MAGNET_ENCLOSURE_RADIUS,
+                        # ),
                     )
                 ],
         )
