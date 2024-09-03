@@ -4,15 +4,11 @@ import adsk.fusion, adsk.core
 class Fillet:
     def __init__(self, radius: float):
         self.radius = radius
-        self.body_component = None
 
-    def setup(self, body_component: adsk.fusion.Component):
-        self.body_component = body_component
-
-    def fillet(self, body: adsk.fusion.BRepBody):
+    def fillet(self, body: adsk.fusion.BRepBody, component: adsk.fusion.Component):
         if self.radius <= 0.0:
             return body
-        fillets = self.body_component.features.filletFeatures
+        fillets = component.features.filletFeatures
         edge_collection = adsk.core.ObjectCollection.create()
         for face in body.faces:
             # Check if the face is parallel to the XY plane
@@ -35,5 +31,6 @@ class Fillet:
         fillets.add(input1)
         return body
 
-    def run(self, body: adsk.fusion.BRepBody):
-        return self.fillet(body)
+    def run(self, bodies: adsk.fusion.BRepBodies, component: adsk.fusion.Component):
+        for body in bodies:
+            self.fillet(body, component)

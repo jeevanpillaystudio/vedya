@@ -91,6 +91,7 @@ def start_func(root_comp: adsk.fusion.Component):
                             x_count=1,
                             y_count=1,
                         ),
+                        fillet=Fillet(radius=FILLET_RADIUS),
                         length=TILE_LENGTH,
                         width=TILE_WIDTH,
                         boolean=[

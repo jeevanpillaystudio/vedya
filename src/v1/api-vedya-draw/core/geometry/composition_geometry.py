@@ -70,6 +70,10 @@ class CompositionGeometry(OwnableGeometry):
                         child_bodies = geometry.run()
                         boolean.run(self.component, bodies, child_bodies)
 
+                # run fillet
+                if self.fillet is not None:
+                    self.fillet.run(bodies, self.component)
+
         # return the bodies
         return bodies
 
