@@ -10,15 +10,11 @@ class OwnableGeometry(Geometry):
     id: str
 
     # body
-    parent: Geometry | None
-    children: List[Geometry] = []
     center_x: float
     center_y: float
 
     def __init__(
         self,
-        children: List[Geometry] = [],
-        parent: Geometry | None = None,
         center_x: float = 0,
         center_y: float = 0,
     ):
@@ -28,8 +24,6 @@ class OwnableGeometry(Geometry):
         self.id = uuid.uuid4()
 
         # connect linked list
-        self.children = children
-        self.parent = parent
         self.center_x = center_x
         self.center_y = center_y
 

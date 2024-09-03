@@ -17,7 +17,6 @@ class Rectangle(CompositionGeometry):
         extrude: Extrude,
         length: float,
         width: float,
-        parent: CompositionGeometry = None,
         center_x: float = 0,
         center_y: float = 0,
         boolean: List[Boolean] = None,
@@ -27,8 +26,6 @@ class Rectangle(CompositionGeometry):
             self,
             extrude=extrude,
             fillet=fillet,
-            parent=parent,
-            children=None,
             center_x=center_x,
             center_y=center_y,
             boolean=boolean,
@@ -52,7 +49,7 @@ class Rectangle(CompositionGeometry):
         return self.length * self.width
 
     def __str__(self):
-        return f"Rectangle(length={self.length}, width={self.width}, start_x={self.center_x}, start_y={self.center_y}), plane_offset={self.plane_offset}"
+        return f"Rectangle(length={self.length}, width={self.width}, start_x={self.center_x}, start_y={self.center_y})"
 
     def xy_bound(self) -> float:
         return max(self.length, self.width)

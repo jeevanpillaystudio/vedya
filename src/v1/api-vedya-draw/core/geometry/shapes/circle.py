@@ -18,7 +18,6 @@ class Circle(CompositionGeometry):
         radius: float,
         center_x: float = 0.0,
         center_y: float = 0.0,
-        parent: CompositionGeometry = None,
         boolean: List[Boolean] = None,
         fillet: Fillet = None,
     ):
@@ -26,8 +25,6 @@ class Circle(CompositionGeometry):
             self,
             extrude=extrude,
             fillet=fillet,
-            parent=parent,
-            children=None,
             center_x=center_x,
             center_y=center_y,
             boolean=boolean,

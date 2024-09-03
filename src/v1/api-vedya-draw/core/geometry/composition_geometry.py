@@ -20,17 +20,13 @@ class CompositionGeometry(OwnableGeometry):
     def __init__(
         self,
         extrude: Extrude,
-        parent: OwnableGeometry,
-        children: List[OwnableGeometry],
         fillet: Fillet = None,
         boolean: List[Boolean] = None,
         center_x: float = 0.0,
         center_y: float = 0.0,
     ):
         # init
-        OwnableGeometry.__init__(
-            self, children=children, parent=parent, center_x=center_x, center_y=center_y
-        )
+        OwnableGeometry.__init__(self, center_x=center_x, center_y=center_y)
 
         # to be removed
         self.boolean = boolean
@@ -58,6 +54,10 @@ class CompositionGeometry(OwnableGeometry):
                 bodies = self.extrude.run(
                     draw_func=lambda sketch: self.draw(sketch), component=self.component
                 )
+                # run fillet
+                if self.fillet is not None:
+                    self.fillet.run(bodies, self.component)
+
                 log(f"DEBUG: {len(bodies)} bodies created")
 
                 # run boolean operation
@@ -69,10 +69,6 @@ class CompositionGeometry(OwnableGeometry):
                             geometry.center_y = self.center_y
                             child_bodies = geometry.run()
                             boolean.run(self.component, bodies, child_bodies)
-
-                # run fillet
-                if self.fillet is not None:
-                    self.fillet.run(bodies, self.component)
 
         # return the bodies
         return bodies
