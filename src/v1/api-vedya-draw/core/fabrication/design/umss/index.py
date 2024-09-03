@@ -86,44 +86,47 @@ def start_func(root_comp: adsk.fusion.Component):
                 stroke_weight=1.0,
                 side=adsk.fusion.ThinExtrudeWallLocation.Side2,
             ),
-            fillet=Fillet(radius=FILLET_RADIUS, target_face=FilletFace.Bottom),
-            #     boolean=[
-            #         Union(
-            #             Rectangle(
-            #                 extrude=FullExtrude(
-            #                     thickness=TILE_THICKNESS,
-            #                     plane_offset=0.0,
-            #                     x_count=1,
-            #                     y_count=1,
-            #                 ),
-            #                 fillet=Fillet(radius=FILLET_RADIUS),
-            #                 length=TILE_LENGTH,
-            #                 width=TILE_WIDTH,
-            #                 boolean=[
-            #                     Difference(
-            #                         Circle(
-            #                             extrude=FullExtrude(
-            #                                 thickness=MAGNET_BASE_THICKNESS,
-            #                                 plane_offset=0.0,
-            #                                 x_count=1,
-            #                                 y_count=1,
-            #                             ),
-            #                             radius=MAGNET_HOLE_RADIUS,
-            #                         )
-            #                     )
-            #                 ],
-            #             ),
-            #             Circle(
-            #                 extrude=FullExtrude(
-            #                     thickness=MAGNET_ENCLOSURE_THICKNESS,
-            #                     plane_offset=-1.5,
-            #                     x_count=1,
-            #                     y_count=1,
-            #                 ),
-            #                 radius=MAGNET_ENCLOSURE_RADIUS,
-            #             ),
-            #         )
-            #     ],
+            fillet=Fillet(
+                radius=FILLET_RADIUS,
+                target_face=FilletFace.Top,
+            ),
+                boolean=[
+                    Union(
+                        Rectangle(
+                            extrude=FullExtrude(
+                                thickness=TILE_THICKNESS,
+                                plane_offset=0.0,
+                                x_count=1,
+                                y_count=1,
+                            ),
+                            fillet=Fillet(radius=FILLET_RADIUS),
+                            length=TILE_LENGTH,
+                            width=TILE_WIDTH,
+                            boolean=[
+                                Difference(
+                                    Circle(
+                                        extrude=FullExtrude(
+                                            thickness=MAGNET_BASE_THICKNESS,
+                                            plane_offset=0.0,
+                                            x_count=1,
+                                            y_count=1,
+                                        ),
+                                        radius=MAGNET_HOLE_RADIUS,
+                                    )
+                                )
+                            ],
+                        ),
+                        Circle(
+                            extrude=FullExtrude(
+                                thickness=MAGNET_ENCLOSURE_THICKNESS,
+                                plane_offset=-1.5,
+                                x_count=1,
+                                y_count=1,
+                            ),
+                            radius=MAGNET_ENCLOSURE_RADIUS,
+                        ),
+                    )
+                ],
         )
     )
 

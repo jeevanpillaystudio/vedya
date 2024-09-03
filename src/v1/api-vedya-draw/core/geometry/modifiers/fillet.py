@@ -7,29 +7,22 @@ class FilletFace:
     Bottom = 2
 
 
-class FilletEdge:
-    Outer = 1
-    Inner = 2
-
-
 class Fillet:
     def __init__(
         self,
         radius: float,
         target_face: FilletFace = FilletFace.Top,
-        target_edge: FilletEdge = FilletEdge.Outer,
     ):
         self.radius = radius
         self.target_face = target_face
-        self.target_edge = target_edge
 
     def fillet(self, body: adsk.fusion.BRepBody, component: adsk.fusion.Component):
         if self.radius <= 0.0:
             return body
         fillets = component.features.filletFeatures
 
-        target_face = self.get_xy_faces(body, self.target_face)
-        edge_collection = self.get_edge(target_face)
+        parallel_face = self.get_xy_parallel_faces(body, self.target_face)
+        edge_collection = self.get_single_target_edge(parallel_face)
 
         log(f"DEBUG: Filleting {len(edge_collection)} edges")
 
@@ -46,15 +39,25 @@ class Fillet:
         fillets.add(input1)
         return body
 
-    # @NOTE now a thin extrude circle has two edges on a single face
-    def get_edge(self, target_face: adsk.fusion.BRepFace) -> adsk.core.ObjectCollection:
-        edge_collection = adsk.core.ObjectCollection.create()
-        for edge in target_face.edges:
-            edge_collection.add(edge)
-        return edge_collection
+    def get_single_target_edge(
+        self, target_face: adsk.fusion.BRepFace
+    ) -> adsk.core.ObjectCollection:
+        # assuming target_edge is outer always! r.e edge with longest length
+        edges = target_face.edges
+        target_edges = adsk.core.ObjectCollection.create()
+        sorted_edges = sorted(
+            edges,
+            key=lambda edge: edge.length,
+            reverse=True,
+        )
+        target_edges.add(sorted_edges[0])
+        return target_edges
+        
 
     # @NOTE only works with XY faces; and assuming only two faces
-    def get_xy_faces(self, body, target_face: FilletFace) -> adsk.fusion.BRepFace:
+    def get_xy_parallel_faces(
+        self, body, target_face: FilletFace
+    ) -> adsk.fusion.BRepFace:
         parallel_faces = adsk.core.ObjectCollection.create()
         for face in body.faces:
             normal = face.evaluator.getNormalAtPoint(face.pointOnFace)[1]
@@ -65,7 +68,7 @@ class Fillet:
         sorted_faces = sorted(
             parallel_faces,
             key=lambda face: face.pointOnFace.z,
-            reverse=target_face == FilletFace.Top,
+            reverse=False,
         )
 
         if target_face == FilletFace.Top:
