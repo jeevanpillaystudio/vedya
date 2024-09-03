@@ -5,7 +5,7 @@ import uuid
 import adsk.fusion
 from ....core.utils import log
 from ..libs.component_utils import create_component
-from ..libs.geometry_utils import create_sketch, extrude_profile_by_area, fillet_bodies
+from ..libs.geometry_utils import create_sketch
 
 # base class
 class Extrude:
@@ -57,8 +57,8 @@ class Extrude:
         radius1 = adsk.core.ValueInput.createByReal(self.fillet_radius)
         input1 = fillets.createInput()
         input1.isRollingBallCorner = True
-        constRadiusInput = input1.edgeSetInputs.addConstantRadiusEdgeSet(edge_collection, radius1, True)
-        constRadiusInput.continuity = adsk.fusion.SurfaceContinuityTypes.TangentSurfaceContinuityType
+        radius_input = input1.edgeSetInputs.addConstantRadiusEdgeSet(edge_collection, radius1, True)
+        radius_input.continuity = adsk.fusion.SurfaceContinuityTypes.TangentSurfaceContinuityType
         # constRadiusInput.tangencyWeight = adsk.core.ValueInput.createByReal(tangency_weight)
         fillets.add(input1)
     
@@ -79,31 +79,40 @@ class FullExtrude(Extrude):
     def extrude(self) -> adsk.fusion.BRepBody:
         extrudes = self.body_component.features.extrudeFeatures
         profile = self.sketch.profiles.item(0)
-        extInput = extrudes.createInput(profile, self.operation)
-        extInput.setDistanceExtent(
+        extrude_input = extrudes.createInput(profile, self.operation)
+        extrude_input.setDistanceExtent(
             False, adsk.core.ValueInput.createByReal(self.thickness)
         )
-        extrude = extrudes.add(extInput)
+        extrude = extrudes.add(extrude_input)
         body = extrude.bodies.item(0)
         body.name = f"{self.body_component.name}-{self.x_count}x{self.y_count}"
         return body
 
 # thin extrusion
 class ThinExtrude(Extrude):
-    def __init__(self, thickness: float, plane_offset: float, x_count: int = 1, y_count: int = 1, fillet_radius: float = 0.0, operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation, stroke_weight: float = 0.0, side: adsk.fusion.ThinExtrudeWallLocation = adsk.fusion.ThinExtrudeWallLocation.Side1):
+    def __init__(self, thickness: float, plane_offset: float, x_count: int = 1, y_count: int = 1, fillet_radius: float = 0.0, operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation, stroke_weight: float = 0.0, side: adsk.fusion.ThinExtrudeWallLocation = adsk.fusion.ThinExtrudeWallLocation.Side1, start_from: adsk.fusion.BRepBody = None):
         super().__init__(thickness, plane_offset, x_count, y_count, fillet_radius, operation)
         self.stroke_weight = stroke_weight
         self.side = side
+        self.start_from = start_from
         
     def extrude(self) -> adsk.fusion.BRepBody:
         extrudes = self.body_component.features.extrudeFeatures
         profile = self.sketch.profiles.item(0)
-        extInput = extrudes.createInput(profile, self.operation)
-        extInput.setThinExtrude(self.side, adsk.core.ValueInput.createByReal(self.stroke_weight))
-        extInput.setDistanceExtent(
+        extrude_input = extrudes.createInput(profile, self.operation)
+        
+        if self.start_from is not None:
+            mm0 = adsk.core.ValueInput.createByString("0 mm")
+            start_from_extent = adsk.fusion.FromEntityStartDefinition.create(
+                self.start_from, mm0
+            )
+            extrude_input.startExtent = start_from_extent
+
+        extrude_input.setThinExtrude(self.side, adsk.core.ValueInput.createByReal(self.stroke_weight))
+        extrude_input.setDistanceExtent(
             False, adsk.core.ValueInput.createByReal(self.thickness)
         )
-        extrude = extrudes.add(extInput)
+        extrude = extrudes.add(extrude_input)
         body = extrude.bodies.item(0)
         body.name = f"{self.body_component.name}-{self.x_count}x{self.y_count}"
         return body
