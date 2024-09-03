@@ -91,15 +91,12 @@ class ThinExtrude(Extrude):
         plane_offset: float,
         x_count: int = 1,
         y_count: int = 1,
-        fillet_radius: float = 0.0,
-        operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
         stroke_weight: float = 0.0,
+        operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
         side: adsk.fusion.ThinExtrudeWallLocation = adsk.fusion.ThinExtrudeWallLocation.Side1,
         start_from: adsk.fusion.BRepBody = None,
     ):
-        super().__init__(
-            thickness, plane_offset, x_count, y_count, fillet_radius, operation
-        )
+        super().__init__(thickness, plane_offset, x_count, y_count, operation)
         self.stroke_weight = stroke_weight
         self.side = side
         self.start_from = start_from
@@ -107,25 +104,28 @@ class ThinExtrude(Extrude):
     def extrude(
         self,
         component: adsk.fusion.Component,
-    ) -> adsk.fusion.BRepBody:
-        extrudes = component.features.extrudeFeatures
-        profile = self.sketch.profiles.item(0)
-        extrude_input = extrudes.createInput(profile, self.operation)
+    ) -> adsk.fusion.BRepBodies:
+        bodies = adsk.core.ObjectCollection.create()
+        for profile in self.sketch.profiles:
+            extrudes = component.features.extrudeFeatures
+            profile = self.sketch.profiles.item(0)
+            extrude_input = extrudes.createInput(profile, self.operation)
 
-        if self.start_from is not None:
-            mm0 = adsk.core.ValueInput.createByString("0 mm")
-            start_from_extent = adsk.fusion.FromEntityStartDefinition.create(
-                self.start_from, mm0
+            if self.start_from is not None:
+                mm0 = adsk.core.ValueInput.createByString("0 mm")
+                start_from_extent = adsk.fusion.FromEntityStartDefinition.create(
+                    self.start_from, mm0
+                )
+                extrude_input.startExtent = start_from_extent
+
+            extrude_input.setThinExtrude(
+                self.side, adsk.core.ValueInput.createByReal(self.stroke_weight)
             )
-            extrude_input.startExtent = start_from_extent
-
-        extrude_input.setThinExtrude(
-            self.side, adsk.core.ValueInput.createByReal(self.stroke_weight)
-        )
-        extrude_input.setDistanceExtent(
-            False, adsk.core.ValueInput.createByReal(self.thickness)
-        )
-        extrude = extrudes.add(extrude_input)
-        body = extrude.bodies.item(0)
-        body.name = f"{component.name}-{self.x_count}x{self.y_count}"
-        return body
+            extrude_input.setDistanceExtent(
+                False, adsk.core.ValueInput.createByReal(self.thickness)
+            )
+            extrude = extrudes.add(extrude_input)
+            body = extrude.bodies.item(0)
+            body.name = f"{component.name}-{self.x_count}x{self.y_count}"
+            bodies.add(body)
+        return bodies

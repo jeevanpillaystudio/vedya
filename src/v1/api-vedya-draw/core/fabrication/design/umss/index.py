@@ -74,12 +74,12 @@ def start_func(root_comp: adsk.fusion.Component):
     composition.add_geometry(
         Circle(
             radius=MAGNET_HOLE_RADIUS,
-            extrude=FullExtrude(
+            extrude=ThinExtrude(
                 thickness=MAGNET_BASE_THICKNESS / 2,
                 plane_offset=-1.5,
                 x_count=1,
                 y_count=1,
-                # stroke_weight=1.0,
+                stroke_weight=1.0,
             ),
             boolean=[
                 Union(
