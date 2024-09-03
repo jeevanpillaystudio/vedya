@@ -57,6 +57,10 @@ TILE_THICKNESS = 3.0
 MAGNET_HOLE_RADIUS = 3.0  # 6mm / 2
 MAGNET_BASE_THICKNESS = 3.0
 
+# 3. magnet enclosure
+MAGNET_ENCLOSURE_RADIUS = 3.0  # 8mm / 2
+MAGNET_ENCLOSURE_THICKNESS = 1.0
+
 # 3. fillet
 FILLET_RADIUS = 1.5
 
@@ -80,7 +84,9 @@ def start_func(root_comp: adsk.fusion.Component):
                 x_count=1,
                 y_count=1,
                 stroke_weight=1.0,
+                side=adsk.fusion.ThinExtrudeWallLocation.Side2,
             ),
+            # fillet=Fillet(radius=FILLET_RADIUS),
             boolean=[
                 Union(
                     Rectangle(
@@ -107,7 +113,16 @@ def start_func(root_comp: adsk.fusion.Component):
                             )
                         ],
                     ),
-                ),
+                    Circle(
+                        extrude=FullExtrude(
+                            thickness=MAGNET_ENCLOSURE_THICKNESS,
+                            plane_offset=-1.5,
+                            x_count=1,
+                            y_count=1,
+                        ),
+                        radius=MAGNET_ENCLOSURE_RADIUS,
+                    ),
+                )
             ],
         )
     )

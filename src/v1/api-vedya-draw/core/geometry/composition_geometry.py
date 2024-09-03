@@ -65,10 +65,10 @@ class CompositionGeometry(OwnableGeometry):
                     for boolean in self.boolean:
                         for geometry in boolean.geometries:
                             geometry.setup(self.component)
-                        geometry.center_x = self.center_x
-                        geometry.center_y = self.center_y
-                        child_bodies = geometry.run()
-                        boolean.run(self.component, bodies, child_bodies)
+                            geometry.center_x = self.center_x
+                            geometry.center_y = self.center_y
+                            child_bodies = geometry.run()
+                            boolean.run(self.component, bodies, child_bodies)
 
                 # run fillet
                 if self.fillet is not None:
