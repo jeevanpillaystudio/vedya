@@ -41,14 +41,26 @@ class Extrude:
     def extrude(self) -> adsk.fusion.BRepBody:
         pass
     
-    def fillet(self, body: adsk.fusion.BRepBody) -> adsk.fusion.BRepBody:
+    def fillet(self, body: adsk.fusion.BRepBody):
         if self.fillet_radius <= 0.0:
             return body
-        return fillet_bodies(
-                
-            body=body,
-            radius=self.fillet_radius,
-        )
+        fillets = self.body_component.features.filletFeatures
+        edge_collection = adsk.core.ObjectCollection.create()
+        for face in body.faces:
+            # Check if the face is parallel to the XY plane
+            normal = face.evaluator.getNormalAtPoint(face.pointOnFace)[1]
+            if normal.isParallelTo(adsk.core.Vector3D.create(0, 0, 1)):
+                for edge in face.edges:
+                    edge_collection.add(edge)
+                break  # Assuming only one face is parallel to the XY plane
+
+        radius1 = adsk.core.ValueInput.createByReal(self.fillet_radius)
+        input1 = fillets.createInput()
+        input1.isRollingBallCorner = True
+        constRadiusInput = input1.edgeSetInputs.addConstantRadiusEdgeSet(edge_collection, radius1, True)
+        constRadiusInput.continuity = adsk.fusion.SurfaceContinuityTypes.TangentSurfaceContinuityType
+        # constRadiusInput.tangencyWeight = adsk.core.ValueInput.createByReal(tangency_weight)
+        fillets.add(input1)
     
     @property
     def plane_offset(self):
