@@ -12,15 +12,11 @@ class Extrude:
         self,
         thickness: float,
         plane_offset: float,
-        x_count: int = 1,
-        y_count: int = 1,
         operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
     ):
         self.thickness = thickness
         self.plane_offset = plane_offset  # @NOTE this is based on the parent component & also only changes rleatively to XY Plane...
         self.operation = operation
-        self.x_count = x_count
-        self.y_count = y_count
 
     def run(
         self,
@@ -59,11 +55,9 @@ class FullExtrude(Extrude):
         self,
         thickness: float,
         plane_offset: float,
-        x_count: int = 1,
-        y_count: int = 1,
         operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
     ):
-        super().__init__(thickness, plane_offset, x_count, y_count, operation)
+        super().__init__(thickness, plane_offset, operation)
 
     def extrude(
         self,
@@ -78,7 +72,7 @@ class FullExtrude(Extrude):
             )
             extrude = extrudes.add(extrude_input)
             body = extrude.bodies.item(0)
-            body.name = f"{component.name}-{self.x_count}x{self.y_count}"
+            body.name = f"{component.name}"
             bodies.add(body)
         return bodies
 
@@ -89,14 +83,12 @@ class ThinExtrude(Extrude):
         self,
         thickness: float,
         plane_offset: float,
-        x_count: int = 1,
-        y_count: int = 1,
         stroke_weight: float = 0.0,
         operation: adsk.fusion.FeatureOperations = adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
         side: adsk.fusion.ThinExtrudeWallLocation = adsk.fusion.ThinExtrudeWallLocation.Side1,
         start_from: adsk.fusion.BRepBody = None,
     ):
-        super().__init__(thickness, plane_offset, x_count, y_count, operation)
+        super().__init__(thickness, plane_offset, operation)
         self.stroke_weight = stroke_weight
         self.side = side
         self.start_from = start_from
@@ -126,6 +118,6 @@ class ThinExtrude(Extrude):
             )
             extrude = extrudes.add(extrude_input)
             body = extrude.bodies.item(0)
-            body.name = f"{component.name}-{self.x_count}x{self.y_count}"
+            body.name = f"{component.name}"
             bodies.add(body)
         return bodies

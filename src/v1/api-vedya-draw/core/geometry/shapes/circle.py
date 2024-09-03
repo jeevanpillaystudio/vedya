@@ -4,7 +4,7 @@ from typing import List
 from ..modifiers.fillet import Fillet
 from ..modifiers.extrude import Extrude
 from ..modifiers.boolean import Boolean
-from ..composition_geometry import CompositionGeometry
+from ..composition_geometry import ArrayType, CompositionGeometry
 import adsk.fusion, adsk.core
 
 
@@ -18,8 +18,11 @@ class Circle(CompositionGeometry):
         radius: float,
         center_x: float = 0.0,
         center_y: float = 0.0,
+        x_count: int = 1,
+        y_count: int = 1,
         boolean: List[Boolean] = None,
         fillet: Fillet = None,
+        array_type: ArrayType = ArrayType.SINGLE_AXIS,
     ):
         CompositionGeometry.__init__(
             self,
@@ -28,6 +31,9 @@ class Circle(CompositionGeometry):
             center_x=center_x,
             center_y=center_y,
             boolean=boolean,
+            array_type=array_type,
+            x_count=x_count,
+            y_count=y_count,
         )
 
         # body
