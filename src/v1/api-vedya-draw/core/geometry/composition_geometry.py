@@ -4,7 +4,7 @@ from typing import List
 import adsk.fusion, adsk.core
 
 from .modifiers.boolean import Boolean
-from .modifiers.extrude import Extrude
+from .modifiers.extrude import Extrude, Fillet
 from .ownable_geometry import OwnableGeometry
 from ..utils import log
         
@@ -15,6 +15,7 @@ class CompositionGeometry(OwnableGeometry):
     def __init__(
         self,
         extrude: Extrude,
+        fillet: Fillet,
         parent: OwnableGeometry,
         children: List[OwnableGeometry],
         boolean: List[Boolean] = None,
@@ -29,10 +30,12 @@ class CompositionGeometry(OwnableGeometry):
         # to be removed
         self.boolean = boolean
         self.extrude = extrude
+        self.fillet = fillet
         
     def setup(self, component: adsk.fusion.Component):
         self.extrude.setup(component)
-        
+        self.fillet.setup(component)
+
     @abstractmethod
     def draw(self, sketch: adsk.fusion.Sketch) -> None:
         pass

@@ -1,7 +1,7 @@
 import math
 
 
-from ..modifiers.extrude import Extrude
+from ..modifiers.extrude import Extrude, Fillet
 from ..modifiers.boolean import Boolean
 from ..composition_geometry import CompositionGeometry
 import adsk.fusion, adsk.core
@@ -19,10 +19,12 @@ class Circle(CompositionGeometry):
         center_y: float = 0.0,
         parent: CompositionGeometry = None,
         boolean: Boolean = None,
+        fillet: Fillet = None,
     ):
         CompositionGeometry.__init__(
             self,
             extrude=extrude,
+            fillet=fillet,
             parent=parent,
             children=None,
             center_x=center_x,
