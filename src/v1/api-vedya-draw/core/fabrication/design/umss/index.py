@@ -23,7 +23,8 @@ dimensions of 128mm x 128mm tiles.
 PROJECT_NAME = "UMSS"
 
 import adsk.core, adsk.fusion
-from ....geometry.modifiers.extrude import Extrude, Fillet, FullExtrude, ThinExtrude
+from ....geometry.modifiers.fillet import Fillet
+from ....geometry.modifiers.extrude import ThinExtrude
 from ....geometry.modifiers.boolean import Difference, Union
 from ....geometry.shapes.circle import Circle
 from ....geometry.shapes.rectangle import Rectangle
@@ -59,6 +60,7 @@ MAGNET_BASE_THICKNESS = 3.0
 # 3. fillet
 FILLET_RADIUS = 1.5
 
+
 def start_func(root_comp: adsk.fusion.Component):
     """
     Function to generate the Parthenon from Greece
@@ -84,7 +86,7 @@ def start_func(root_comp: adsk.fusion.Component):
             ),
             fillet=Fillet(
                 radius=FILLET_RADIUS,
-            )
+            ),
             # boolean=[
             #     Union(
             #         Rectangle(

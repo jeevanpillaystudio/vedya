@@ -1,7 +1,7 @@
 import math
 
-
-from ..modifiers.extrude import Extrude, Fillet
+from ..modifiers.fillet import Fillet
+from ..modifiers.extrude import Extrude
 from ..modifiers.boolean import Boolean
 from ..composition_geometry import CompositionGeometry
 import adsk.fusion, adsk.core

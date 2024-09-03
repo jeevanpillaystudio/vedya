@@ -4,13 +4,15 @@ from typing import List
 import adsk.fusion, adsk.core
 
 from .modifiers.boolean import Boolean
-from .modifiers.extrude import Extrude, Fillet
+from .modifiers.extrude import Extrude
+from .modifiers.fillet import Fillet
 from .ownable_geometry import OwnableGeometry
 from ..utils import log
-        
+
+
 class CompositionGeometry(OwnableGeometry):
     # body
-    boolean: List[Boolean]  
+    boolean: List[Boolean]
 
     def __init__(
         self,
@@ -31,7 +33,7 @@ class CompositionGeometry(OwnableGeometry):
         self.boolean = boolean
         self.extrude = extrude
         self.fillet = fillet
-        
+
     def setup(self, component: adsk.fusion.Component):
         self.extrude.setup(component)
         self.fillet.setup(component)
@@ -60,7 +62,7 @@ class CompositionGeometry(OwnableGeometry):
                         geometry.center_y = self.center_y
                         child_bodies = geometry.run()
                         boolean.run(self.body_component, body, child_bodies)
-                        
+
                 self.extrude.fillet(body)
 
         # return the bodies
