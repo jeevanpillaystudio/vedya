@@ -40,17 +40,8 @@ from ....utils import log
 
 
 data = {
-    "TILE_BASE": {
-        "LENGTH": 32.0,
-        "WIDTH": 32.0,
-        "THICKNESS": 3.0,
-        "PLANE_OFFSET": 0.0
-    },
-    "MAGNET_HOLE": {
-        "RADIUS": 3.5,
-        "THICKNESS": 3.0,
-        "PLANE_OFFSET": 0.0
-    },
+    "TILE_BASE": {"LENGTH": 32.0, "WIDTH": 32.0, "THICKNESS": 3.0, "PLANE_OFFSET": 0.0},
+    "MAGNET_HOLE": {"RADIUS": 3.5, "THICKNESS": 3.0, "PLANE_OFFSET": 0.0},
     # "MAGNET_BASE": {
     #     "RADIUS": 3.0,
     #     "THICKNESS": 1.5,
@@ -64,6 +55,7 @@ data = {
     # }
 }
 
+
 def start_func(root_comp: adsk.fusion.Component):
     """
     Function to generate the Parthenon from Greece
@@ -72,7 +64,7 @@ def start_func(root_comp: adsk.fusion.Component):
     """
     # start
     log(f"DEBUG: Start execute function for {PROJECT_NAME}")
-    
+
     TILE_DATA = data["TILE_BASE"]
     MAGNET_HOLE_DATA = data["MAGNET_HOLE"]
     # MAGNET_BASE_DATA = data["MAGNET_BASE"]
@@ -108,7 +100,7 @@ def start_func(root_comp: adsk.fusion.Component):
             ],
         )
     )
-    
+
     # # lower-level tile - magnet enclosure
     # composition.add_geometry(
     #     Circle(
@@ -135,7 +127,7 @@ def start_func(root_comp: adsk.fusion.Component):
     #         ],
     #     )
     # )
-        
+
     log(str(composition))
 
     # # create composition
