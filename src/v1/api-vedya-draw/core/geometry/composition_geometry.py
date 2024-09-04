@@ -8,7 +8,6 @@ import adsk.fusion, adsk.core
 from .libs.component_utils import create_component
 from .modifiers.boolean import Boolean
 from .modifiers.extrude import Extrude
-from .modifiers.fillet import Fillet
 from .ownable_geometry import OwnableGeometry
 from ..utils import log
 
@@ -25,7 +24,6 @@ class CompositionGeometry(OwnableGeometry):
     def __init__(
         self,
         extrude: Extrude,
-        fillet: Fillet = None,
         boolean: List[Boolean] = None,
         array_type: ArrayType = ArrayType.SINGLE_AXIS,
         center_x: float = 0.0,
@@ -39,7 +37,6 @@ class CompositionGeometry(OwnableGeometry):
         # to be removed
         self.boolean = boolean
         self.extrude = extrude
-        self.fillet = fillet
         self.array_type = array_type
         self.x_count = x_count
         self.y_count = y_count
@@ -68,12 +65,6 @@ class CompositionGeometry(OwnableGeometry):
                     bodies = self.extrude.run(
                         draw_func=lambda sketch: self.draw(sketch), component=self.component
                     )
-                    
-                    # run fillet
-                    if self.fillet is not None:
-                        self.fillet.run(bodies, self.component)
-
-                    log(f"DEBUG: {len(bodies)} bodies created")
 
                     # run boolean operation
                     if self.boolean is not None:
@@ -82,8 +73,8 @@ class CompositionGeometry(OwnableGeometry):
                                 geometry.setup(self.component)
                                 geometry.center_x = self.center_x
                                 geometry.center_y = self.center_y
-                                child_bodies = geometry.run()
-                                # boolean.run(self.component, bodies, child_bodies)
+                                child_bodies =geometry.run()
+                                boolean.run(self.component, bodies, child_bodies)
                                 
         elif self.array_type == ArrayType.RADIAL:
             for index in range(self.x_count):
@@ -94,13 +85,7 @@ class CompositionGeometry(OwnableGeometry):
                     draw_func=lambda sketch: self.draw(sketch), component=self.component
                 )
 
-                # run fillet
-                if self.fillet is not None:
-                    self.fillet.run(bodies, self.component)
-
-                log(f"DEBUG: {len(bodies)} bodies created")
-
-                # run boolean operation
+               # run boolean operation
                 if self.boolean is not None:
                     for boolean in self.boolean:
                         for geometry in boolean.geometries:

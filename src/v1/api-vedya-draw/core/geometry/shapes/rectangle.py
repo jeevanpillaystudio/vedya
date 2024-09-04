@@ -1,9 +1,8 @@
 from typing import List
 
 from ..modifiers.extrude import Extrude
-from ..modifiers.fillet import Fillet
 from ..modifiers.boolean import Boolean
-from ..composition_geometry import CompositionGeometry
+from ..composition_geometry import ArrayType, CompositionGeometry
 import adsk.fusion, adsk.core
 
 
@@ -20,12 +19,16 @@ class Rectangle(CompositionGeometry):
         center_x: float = 0,
         center_y: float = 0,
         boolean: List[Boolean] = None,
-        fillet: Fillet = None,
+        array_type: ArrayType = ArrayType.SINGLE_AXIS,
+        x_count: int = 1,
+        y_count: int = 1,
     ):
         CompositionGeometry.__init__(
             self,
             extrude=extrude,
-            fillet=fillet,
+            array_type=array_type,
+            x_count=x_count,
+            y_count=y_count,
             center_x=center_x,
             center_y=center_y,
             boolean=boolean,

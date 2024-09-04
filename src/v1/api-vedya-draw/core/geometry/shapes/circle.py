@@ -1,7 +1,6 @@
 import math
 from typing import List
 
-from ..modifiers.fillet import Fillet
 from ..modifiers.extrude import Extrude
 from ..modifiers.boolean import Boolean
 from ..composition_geometry import ArrayType, CompositionGeometry
@@ -21,13 +20,11 @@ class Circle(CompositionGeometry):
         x_count: int = 1,
         y_count: int = 1,
         boolean: List[Boolean] = None,
-        fillet: Fillet = None,
         array_type: ArrayType = ArrayType.SINGLE_AXIS,
     ):
         CompositionGeometry.__init__(
             self,
             extrude=extrude,
-            fillet=fillet,
             center_x=center_x,
             center_y=center_y,
             boolean=boolean,

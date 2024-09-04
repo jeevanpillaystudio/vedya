@@ -24,7 +24,6 @@ PROJECT_NAME = "UMSS"
 
 import adsk.core, adsk.fusion
 from ....geometry.composition_geometry import ArrayType
-from ....geometry.modifiers.fillet import Fillet, FilletFace
 from ....geometry.modifiers.extrude import FullExtrude, ThinExtrude
 from ....geometry.modifiers.boolean import Add, Difference, Union
 from ....geometry.shapes.circle import Circle
@@ -48,19 +47,18 @@ from ....geometry.composition import Composition
 # geometry
 from ....utils import log
 
-# dimensions
 # 1. tile
 TILE_LENGTH = 30.0
 TILE_WIDTH = 30.0
 TILE_THICKNESS = 3.0
 
 # 2. magnet
-MAGNET_HOLE_RADIUS = 3.0  # 6mm / 2
+MAGNET_HOLE_RADIUS = 3.0
 MAGNET_BASE_THICKNESS = 3.0
 
 # 3. magnet enclosure
-MAGNET_ENCLOSURE_RADIUS = 3.0  # 8mm / 2
-MAGNET_ENCLOSURE_THICKNESS = 1.0
+MAGNET_ENCLOSURE_RADIUS = 3.0
+MAGNET_ENCLOSURE_THICKNESS = 1.5
 
 # 3. fillet
 FILLET_RADIUS = 1.5
@@ -76,161 +74,62 @@ def start_func(root_comp: adsk.fusion.Component):
     log(f"DEBUG: Start execute function for {PROJECT_NAME}")
 
     composition = Composition(root_comp=root_comp, plane_offset=0.0)
-    # composition.add_geometry(
-    #     Circle(
-    #         radius=MAGNET_HOLE_RADIUS,
-    #         extrude=ThinExtrude(
-    #             thickness=MAGNET_BASE_THICKNESS / 2,
-    #             plane_offset=-1.5,
-    #             x_count=5,
-    #             y_count=1,
-    #             stroke_weight=1.0,
-    #             side=adsk.fusion.ThinExtrudeWallLocation.Side2,
-    #         ),
-    #         # fillet=Fillet(
-    #         #     radius=FILLET_RADIUS,
-    #         #     target_face=FilletFace.Top,
-    #         # ),
-    #             boolean=[
-    #                 Union(
-    #                     Rectangle(
-    #                         extrude=FullExtrude(
-    #                             thickness=TILE_THICKNESS,
-    #                             plane_offset=0.0,
-    #                             x_count=1,
-    #                             y_count=1,
-    #                         ),
-    #                         # fillet=Fillet(radius=FILLET_RADIUS),
-    #                         length=TILE_LENGTH,
-    #                         width=TILE_WIDTH,
-    #                         boolean=[
-    #                             Difference(
-    #                                 Circle(
-    #                                     extrude=FullExtrude(
-    #                                         thickness=MAGNET_BASE_THICKNESS,
-    #                                         plane_offset=0.0,
-    #                                         x_count=1,
-    #                                         y_count=1,
-    #                                     ),
-    #                                     radius=MAGNET_HOLE_RADIUS,
-    #                                 )
-    #                             )
-    #                         ],
-    #                     ),
-    #                     # Circle(
-    #                     #     extrude=FullExtrude(
-    #                     #         thickness=MAGNET_ENCLOSURE_THICKNESS,
-    #                     #         plane_offset=-1.5,
-    #                     #         x_count=1,
-    #                     #         y_count=1,
-    #                     #     ),
-    #                     #     radius=MAGNET_ENCLOSURE_RADIUS,
-    #                     # ),
-    #                 )
-    #             ],
-    #     )
-    # )
 
-    # composition.add_geometry(
-    #     Rectangle(
-    #         extrude=FullExtrude(
-    #             thickness=TILE_THICKNESS,
-    #             plane_offset=0.0,
-    #             x_count=10,
-    #             y_count=10,
-    #         ),
-    #         fillet=Fillet(radius=FILLET_RADIUS),
-    #         length=TILE_LENGTH,
-    #         width=TILE_WIDTH,
-    #         boolean=[
-    #             Difference(
-    #                 Circle(
-    #                     extrude=FullExtrude(
-    #                         thickness=MAGNET_BASE_THICKNESS,
-    #                         plane_offset=0.0,
-    #                         x_count=1,
-    #                         y_count=1,
-    #                     ),
-    #                     fillet=Fillet(radius=FILLET_RADIUS),
-    #                     radius=MAGNET_HOLE_RADIUS,
-    #                 )
-    #             ),
-    #             Union(
-    #                 Circle(
-    #                     radius=MAGNET_HOLE_RADIUS,
-    #                     extrude=ThinExtrude(
-    #                         thickness=MAGNET_BASE_THICKNESS / 2,
-    #                         plane_offset=-1.5,
-    #                         x_count=1,
-    #                         y_count=1,
-    #                         stroke_weight=1.0,
-    #                         side=adsk.fusion.ThinExtrudeWallLocation.Side2,
-    #                     ),
-    #                 )
-    #             ),
-    #             Union(
-    #                 Circle(
-    #                     extrude=FullExtrude(
-    #                         thickness=MAGNET_ENCLOSURE_THICKNESS,
-    #                         plane_offset=-1.5,
-    #                         x_count=1,
-    #                         y_count=1,
-    #                     ),
-    #                     radius=MAGNET_ENCLOSURE_RADIUS,
-    #                 ),
-    #             ),
-    #         ],
-    #     )
-    # )
-    
-    
-    # composition.add_geometry(
-        
-    # )
-    
     composition.add_geometry(
-        Circle(
-            radius=64.0,
-            extrude=ThinExtrude(
-                thickness=1.0,
+        Rectangle(
+            extrude=FullExtrude(
+                thickness=TILE_THICKNESS,
                 plane_offset=0.0,
-                stroke_weight=1.0,
             ),
             array_type=ArrayType.SINGLE_AXIS,
-            x_count=6,
+            x_count=1,
             y_count=1,
+            length=TILE_LENGTH,
+            width=TILE_WIDTH,
             boolean=[
+                Difference(
+                    Circle(
+                        extrude=FullExtrude(
+                            thickness=MAGNET_BASE_THICKNESS,
+                            plane_offset=0.0,
+                        ),
+                        array_type=ArrayType.SINGLE_AXIS,
+                        x_count=1,
+                        y_count=1,
+                        radius=MAGNET_HOLE_RADIUS,
+                    )
+                ),
                 Union(
                     Circle(
-                        radius=32.0,
+                        radius=MAGNET_HOLE_RADIUS,
                         extrude=ThinExtrude(
-                        thickness=1.0,
-                        plane_offset=0.0,
-                        stroke_weight=1.0,
+                            thickness=2.5,
+                            plane_offset=-2,
+                            stroke_weight=1.0,
+                            side=adsk.fusion.ThinExtrudeWallLocation.Side2,
+                        ),
+                        array_type=ArrayType.SINGLE_AXIS,
+                        x_count=1,
+                        y_count=1,
+                    )
+                ),
+                Union(
+                    Circle(
+                        extrude=FullExtrude(
+                            thickness=MAGNET_ENCLOSURE_THICKNESS,
+                            plane_offset=-2,
+                        ),
+                        array_type=ArrayType.SINGLE_AXIS,
+                        x_count=1,
+                        y_count=1,
+                        radius=MAGNET_ENCLOSURE_RADIUS,
                     ),
-                    array_type=ArrayType.RADIAL,
-                    x_count=6,
-                    y_count=1,
-                    boolean=[
-                        Union(
-                            Circle(
-                                extrude=ThinExtrude(
-                                    thickness=1.0,
-                                    plane_offset=0.0,
-                                    stroke_weight=1.0,
-                                ),
-                                array_type=ArrayType.RADIAL,
-                                x_count=6,
-                                y_count=1,
-                                radius=16.0,
-                            )
-                        )
-                    ]
-                )
-            )   
-            ]
+                ),
+            ],
         )
     )
+    
+    
 
     log(str(composition))
 
