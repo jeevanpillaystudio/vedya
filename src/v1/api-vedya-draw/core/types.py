@@ -7,6 +7,7 @@ class FabricationMode:
 
     NORMAL = "Normal"
     SLICER = "Slicer"
+    AGGREGATOR = "Aggregator"
 
 
 class FabricationType:

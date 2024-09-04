@@ -1,8 +1,7 @@
 import adsk.core, adsk.fusion
 import random
 from .types import FabricationMode, FabricationType, DesignType
-from ..utils.lib import log
-
+from .utils import log
 
 class FusionDesignContext:
     def __init__(

@@ -1,45 +1,35 @@
 import math
 
+from ..aggregator.index import run_aggregator
 from ...geometry_utils import create_offset_plane
-from ...component_utils import combine_body, copy_body, create_component
-from ....design.shire.lib import aggregate_all_bodies, create_component_name
-from ....utils.lib import log, timer
+from ...component_utils import create_component
+from ....design.shire.lib import create_component_name
+from ....utils import log, timer
 import adsk.core, adsk.fusion
 
+FABRICATION_NAME = "slicer"
 
-@timer
+
 def start_slicer(
     component: adsk.fusion.Component,
     sliced_layer_depth: float,
     sliced_layer_count: float,
 ):
+    log(f"INFO: starting start_slicer: {component.name}")
+
     # Create a new component for the slicing operation
-    slicer_comp = create_component(component, create_component_name("slicer"))
+    slicer_comp = create_component(component, create_component_name(FABRICATION_NAME))
 
-    # Gather all bodies from the root component and its subcomponents
-    all_bodies = aggregate_all_bodies(component)
-
-    # Combine the rest of the bodies with the main body
-    tool_bodies = adsk.core.ObjectCollection.create()
-    for i in range(all_bodies.count):
-        body_copy = copy_body(slicer_comp, all_bodies.item(i), "slicer-body-" + str(i))
-        tool_bodies.add(body_copy)
-
-    # Perform the combination
-    first_body = tool_bodies.item(0)
-    tool_bodies.removeByIndex(0)
-    combine_body(
-        slicer_comp,
-        first_body,
-        tool_bodies,
-        adsk.fusion.FeatureOperations.JoinFeatureOperation,
-    )
+    # run the aggregator
+    body = run_aggregator(root_component=component, target_component=slicer_comp)
 
     # rename
-    first_body.name = "slicer-body-root"
+    body.name = f"{FABRICATION_NAME}-body-root"
 
     # slice the body
-    slice_body(slicer_comp, first_body, sliced_layer_depth, sliced_layer_count)
+    slice_body(slicer_comp, body, sliced_layer_depth, sliced_layer_count)
+
+    log(f"INFO: completed start_slicer: {component.name}")
 
 
 @timer
@@ -91,8 +81,8 @@ def slice_body(
 
         # Get the new body
         slice_body = newBodies.item(0)
-        slice_body.name = f"slice-body-{i}"
+        slice_body.name = f"{FABRICATION_NAME}-body-{i}"
 
         # replace the original body with the new body
         body = newBodies.item(1)
-        body.name = f"slice-body-remaining"
+        body.name = f"{FABRICATION_NAME}-body-remaining"

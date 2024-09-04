@@ -11,6 +11,10 @@ Functionality to generate the v1 of the Vedya design.
     generated, we selected a single "seed" to generate the design for the art installation. The design
     was then fabricated using a CNC machine to produce the final product. The design was a 3D model
     that was then used to generate the G-code for the CNC machine.
+    
+@TODO
+    - [ ] create an "array" modifier; r.e this makes iterating over a grid of elements easier
+    - [ ] create a "texture" modifier; r.e this implements things such as torus & seed of life
 """
 
 PROJECT_NAME = "shire"
@@ -30,7 +34,7 @@ from .lib import (
     create_middle_cut,
     create_torus_astroid,
 )
-from ...utils.lib import log
+from ...utils import log
 
 
 def start_func(root_comp: adsk.fusion.Component):

@@ -5,4 +5,20 @@
     "python.analysis.extraPaths": [
         "/Users/jeevanpillay/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Python/defs"
     ],
+    "python.defaultInterpreterPath":	"/Users/jeevanpillay/Library/Application Support/Autodesk/webdeploy/production/66fca321b6498e6b4fc9adcaae26d2ac05947169/Autodesk Fusion 360.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python",
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always"
+        },
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.autoIndent": "full",
+        "editor.wordWrap": "on",
+        "editor.cursorBlinking": "smooth",
+        "editor.cursorSmoothCaretAnimation": "on",
+        "editor.cursorStyle": "line",
+        "editor.cursorWidth": 2,
+        "editor.formatOnSave": true,
+    }
 }

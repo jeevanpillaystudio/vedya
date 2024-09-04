@@ -14,7 +14,8 @@ class AppConfig:
 
     Extrude = True
 
-    HoleRadius = 0.48 * 12 * SCALE_FACTOR
+    # HoleRadius: Millimeter = Millimeter(0.48) * 12 * SCALE_FACTOR
+    HoleRadius: float = 0.48 * SCALE_FACTOR
     MaxWidth = 96.0 * SCALE_FACTOR
     MaxLength = 64.0 * SCALE_FACTOR
     LayerDepth = 0.48 * SCALE_FACTOR
