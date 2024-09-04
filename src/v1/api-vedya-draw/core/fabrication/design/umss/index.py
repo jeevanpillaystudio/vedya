@@ -40,8 +40,13 @@ from ....utils import log
 
 
 data = {
-    "TILE_BASE": {"LENGTH": 32.0, "WIDTH": 32.0, "THICKNESS": 3.0, "PLANE_OFFSET": 0.0},
-    "MAGNET_HOLE": {"RADIUS": 3.5, "THICKNESS": 3.0, "PLANE_OFFSET": 0.0},
+    "TILE_BASE": {
+        "LENGTH": 3.20,
+        "WIDTH": 3.20,
+        "THICKNESS": 0.30,
+        "PLANE_OFFSET": 0.0,
+    },
+    "MAGNET_HOLE": {"RADIUS": 0.30, "THICKNESS": 0.30, "PLANE_OFFSET": 0.0},
     # "MAGNET_BASE": {
     #     "RADIUS": 3.0,
     #     "THICKNESS": 1.5,
