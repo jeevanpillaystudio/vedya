@@ -58,40 +58,57 @@ class CompositionGeometry(OwnableGeometry):
         initial_center_x = self.center_x
         initial_center_y = self.center_y
         
-        bodies = []
+        bodies = None
         
         if self.array_type == ArrayType.DOUBLE_AXIS or self.array_type == ArrayType.SINGLE_AXIS:
             for x in range(self.x_count):
                 for y in range(self.y_count):
                     self.center_x = x * self.xy_bound() + initial_center_x
                     self.center_y = y * self.xy_bound() + initial_center_y
-                    bodies.extend(self.extrude.run(
+                    bodies = self.extrude.run(
                         draw_func=lambda sketch: self.draw(sketch), component=self.component
-                    ))
+                    )
+                    
+                    # run fillet
+                    if self.fillet is not None:
+                        self.fillet.run(bodies, self.component)
+
+                    log(f"DEBUG: {len(bodies)} bodies created")
+
+                    # run boolean operation
+                    if self.boolean is not None:
+                        for boolean in self.boolean:
+                            for geometry in boolean.geometries:
+                                geometry.setup(self.component)
+                                geometry.center_x = self.center_x
+                                geometry.center_y = self.center_y
+                                child_bodies = geometry.run()
+                                # boolean.run(self.component, bodies, child_bodies)
+                                
         elif self.array_type == ArrayType.RADIAL:
             for index in range(self.x_count):
                 pos = math.pi * 2 / self.x_count * index
                 self.center_x = math.cos(pos) * self.xy_bound() + initial_center_x
                 self.center_y = math.sin(pos) * self.xy_bound() + initial_center_y
-                bodies.extend(self.extrude.run(
+                bodies = self.extrude.run(
                     draw_func=lambda sketch: self.draw(sketch), component=self.component
-                ))
+                )
 
-        # # run fillet
-        # if self.fillet is not None:
-        #     self.fillet.run(bodies, self.component)
+                # run fillet
+                if self.fillet is not None:
+                    self.fillet.run(bodies, self.component)
 
-        # log(f"DEBUG: {len(bodies)} bodies created")
+                log(f"DEBUG: {len(bodies)} bodies created")
 
-        # # run boolean operation
-        # if self.boolean is not None:
-        #     for boolean in self.boolean:
-        #         for geometry in boolean.geometries:
-        #             geometry.setup(self.component)
-        #             geometry.center_x = self.center_x
-        #             geometry.center_y = self.center_y
-        #             child_bodies = geometry.run()
-        #             boolean.run(self.component, bodies, child_bodies)
+                # run boolean operation
+                if self.boolean is not None:
+                    for boolean in self.boolean:
+                        for geometry in boolean.geometries:
+                            geometry.setup(self.component)
+                            geometry.center_x = self.center_x
+                            geometry.center_y = self.center_y
+                            child_bodies = geometry.run()
+                            boolean.run(self.component, bodies, child_bodies)
 
         return bodies
 

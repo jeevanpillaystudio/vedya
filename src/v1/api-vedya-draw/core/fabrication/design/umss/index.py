@@ -26,7 +26,7 @@ import adsk.core, adsk.fusion
 from ....geometry.composition_geometry import ArrayType
 from ....geometry.modifiers.fillet import Fillet, FilletFace
 from ....geometry.modifiers.extrude import FullExtrude, ThinExtrude
-from ....geometry.modifiers.boolean import Difference, Union
+from ....geometry.modifiers.boolean import Add, Difference, Union
 from ....geometry.shapes.circle import Circle
 from ....geometry.shapes.rectangle import Rectangle
 
@@ -184,17 +184,51 @@ def start_func(root_comp: adsk.fusion.Component):
     # )
     
     
+    # composition.add_geometry(
+        
+    # )
+    
     composition.add_geometry(
         Circle(
+            radius=64.0,
             extrude=ThinExtrude(
                 thickness=1.0,
                 plane_offset=0.0,
                 stroke_weight=1.0,
             ),
             array_type=ArrayType.SINGLE_AXIS,
-            x_count=3,
-            y_count=3,
-            radius=32.0,
+            x_count=6,
+            y_count=1,
+            boolean=[
+                Union(
+                    Circle(
+                        radius=32.0,
+                        extrude=ThinExtrude(
+                        thickness=1.0,
+                        plane_offset=0.0,
+                        stroke_weight=1.0,
+                    ),
+                    array_type=ArrayType.RADIAL,
+                    x_count=6,
+                    y_count=1,
+                    boolean=[
+                        Union(
+                            Circle(
+                                extrude=ThinExtrude(
+                                    thickness=1.0,
+                                    plane_offset=0.0,
+                                    stroke_weight=1.0,
+                                ),
+                                array_type=ArrayType.RADIAL,
+                                x_count=6,
+                                y_count=1,
+                                radius=16.0,
+                            )
+                        )
+                    ]
+                )
+            )   
+            ]
         )
     )
 

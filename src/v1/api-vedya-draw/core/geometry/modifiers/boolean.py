@@ -47,3 +47,8 @@ class Union(Boolean):
     def __init__(self, *geometries: OwnableGeometry):
         super().__init__(geometries)
         self.operation_type = adsk.fusion.FeatureOperations.JoinFeatureOperation
+        
+class Add(Boolean):
+    def __init__(self, *geometries: OwnableGeometry):
+        super().__init__(geometries)
+        self.operation_type = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
