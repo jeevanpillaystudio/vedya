@@ -46,7 +46,7 @@ data = {
         "THICKNESS": 0.30,
         "PLANE_OFFSET": 0.0,
     },
-    "MAGNET_HOLE": {"RADIUS": 0.30, "THICKNESS": 0.30, "PLANE_OFFSET": 0.0},
+    "MAGNET_HOLE": {"RADIUS": 0.31, "THICKNESS": 0.30, "PLANE_OFFSET": 0.0},
     # "MAGNET_BASE": {
     #     "RADIUS": 3.0,
     #     "THICKNESS": 1.5,
