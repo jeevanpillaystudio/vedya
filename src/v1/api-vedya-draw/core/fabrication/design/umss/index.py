@@ -47,17 +47,17 @@ data = {
         "PLANE_OFFSET": 0.0,
     },
     "MAGNET_HOLE": {"RADIUS": 0.31, "THICKNESS": 0.30, "PLANE_OFFSET": 0.0},
-    # "MAGNET_BASE": {
-    #     "RADIUS": 3.0,
-    #     "THICKNESS": 1.5,
-    #     "PLANE_OFFSET": -2.5
-    # },
-    # "MAGNET_BASE_RING": {
-    #     "RADIUS": 3.0,
-    #     "THICKNESS": 2.5,
-    #     "PLANE_OFFSET": -2.5,
-    #     "STROKE_WEIGHT": 1.0
-    # }
+    "MAGNET_BASE": {
+        "RADIUS": 0.31,
+        "THICKNESS": 0.15,
+        "PLANE_OFFSET": -0.25,
+    },
+    "MAGNET_BASE_RING": {
+        "RADIUS": 0.31,
+        "THICKNESS": 0.05,
+        "STROKE_WEIGHT": 0.1,
+        "PLANE_OFFSET": -0.05
+    }
 }
 
 
@@ -72,39 +72,39 @@ def start_func(root_comp: adsk.fusion.Component):
 
     TILE_DATA = data["TILE_BASE"]
     MAGNET_HOLE_DATA = data["MAGNET_HOLE"]
-    # MAGNET_BASE_DATA = data["MAGNET_BASE"]
-    # MAGNET_BASE_RING_DATA = data["MAGNET_BASE_RING"]
+    MAGNET_BASE_DATA = data["MAGNET_BASE"]
+    MAGNET_BASE_RING_DATA = data["MAGNET_BASE_RING"]
 
     composition = Composition(root_comp=root_comp, plane_offset=0.0)
 
     # top-level tile
-    composition.add_geometry(
-        Rectangle(
-            extrude=FullExtrude(
-                thickness=TILE_DATA["THICKNESS"],
-                plane_offset=TILE_DATA["PLANE_OFFSET"],
-            ),
-            array_type=ArrayType.SINGLE_AXIS,
-            x_count=1,
-            y_count=1,
-            length=TILE_DATA["LENGTH"],
-            width=TILE_DATA["WIDTH"],
-            boolean=[
-                Difference(
-                    Circle(
-                        extrude=FullExtrude(
-                            thickness=MAGNET_HOLE_DATA["THICKNESS"],
-                            plane_offset=MAGNET_HOLE_DATA["PLANE_OFFSET"],
-                        ),
-                        array_type=ArrayType.SINGLE_AXIS,
-                        x_count=1,
-                        y_count=1,
-                        radius=MAGNET_HOLE_DATA["RADIUS"],
-                    )
-                ),
-            ],
-        )
-    )
+    # composition.add_geometry(
+    #     Rectangle(
+    #         extrude=FullExtrude(
+    #             thickness=TILE_DATA["THICKNESS"],
+    #             plane_offset=TILE_DATA["PLANE_OFFSET"],
+    #         ),
+    #         array_type=ArrayType.SINGLE_AXIS,
+    #         x_count=1,
+    #         y_count=1,
+    #         length=TILE_DATA["LENGTH"],
+    #         width=TILE_DATA["WIDTH"],
+    #         boolean=[
+    #             Difference(
+    #                 Circle(
+    #                     extrude=FullExtrude(
+    #                         thickness=MAGNET_HOLE_DATA["THICKNESS"],
+    #                         plane_offset=MAGNET_HOLE_DATA["PLANE_OFFSET"],
+    #                     ),
+    #                     array_type=ArrayType.SINGLE_AXIS,
+    #                     x_count=1,
+    #                     y_count=1,
+    #                     radius=MAGNET_HOLE_DATA["RADIUS"],
+    #                 )
+    #             ),
+    #         ],
+    #     )
+    # )
 
     # # lower-level tile - magnet enclosure
     # composition.add_geometry(
@@ -119,19 +119,30 @@ def start_func(root_comp: adsk.fusion.Component):
     #         array_type=ArrayType.SINGLE_AXIS,
     #         x_count=1,
     #         y_count=1,
-    #         boolean=[
-    #             Union(
-    #                 Circle(
-    #                     radius=MAGNET_BASE_DATA["RADIUS"],
-    #                     extrude=FullExtrude(
-    #                         thickness=MAGNET_BASE_DATA["THICKNESS"],
-    #                         plane_offset=MAGNET_BASE_DATA["PLANE_OFFSET"],
-    #                     ),
-    #                 ),
-    #             ),
-    #         ],
+    #     #     boolean=[
+    #     #         Union(
+    #     #             Circle(
+    #     #                 radius=MAGNET_BASE_DATA["RADIUS"],
+    #     #                 extrude=FullExtrude(
+    #     #                     thickness=MAGNET_BASE_DATA["THICKNESS"],
+    #     #                     plane_offset=MAGNET_BASE_DATA["PLANE_OFFSET"],
+    #     #                 ),
+    #     #             ),
+    #     #         ),
+    #     #     ],
     #     )
     # )
+    
+    
+    composition.add_geometry(
+        Circle(
+            radius=MAGNET_BASE_DATA["RADIUS"],
+            extrude=FullExtrude(
+                thickness=MAGNET_BASE_DATA["THICKNESS"],
+                plane_offset=MAGNET_BASE_DATA["PLANE_OFFSET"],
+            ),
+        )
+    )
 
     log(str(composition))
 
