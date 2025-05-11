@@ -13,10 +13,6 @@ A generative design system for creating and fabricating geometric patterns and m
 
 ## Visual Examples
 
-### Design Renders
-![Vedya Design Render](public/vedya-design-render.png)
-![Mandala Pattern](public/mandala-pattern.png)
-
 ### Fabrication Process
 ![Wood Source Material](public/wood-side-view-1.jpeg)
 ![CNC Milling Process](public/cnc-milling-process.jpeg)
