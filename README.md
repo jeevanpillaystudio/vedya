@@ -1,6 +1,6 @@
 # Vedya Design System
 
-A generative design system for creating and fabricating mandala-like patterns and modular structures.
+A generative design system for creating and fabricating geometric patterns and modular structures with computational methods in Fusion 360.
 
 ## Overview
 
@@ -8,22 +8,19 @@ A generative design system for creating and fabricating mandala-like patterns an
 **Materials:** Wood (Huon Pine), Modelling Paste, 3D Print Materials, CNC Router Materials  
 **Dimensions:** Full Installation 2m x 2m; Prototypes vary in size
 
-![Vedya Prototype](public/lidar-scans/vedya-prototype-wood.blend)
+![Vedya Prototype](public/final-piece.jpeg)
+![Vedya on-site](public/shire-site.jpeg)
 
 ## Visual Examples
 
 ### Design Renders
-![Vedya Design Render](src/public/images/vedya-design-render.png)
-![Mandala Pattern](src/public/images/mandala-pattern.png)
+![Vedya Design Render](public/vedya-design-render.png)
+![Mandala Pattern](public/mandala-pattern.png)
 
 ### Fabrication Process
-![CNC Milling Process](src/public/images/cnc-milling-process.png)
-![3D Printing Layers](src/public/images/3d-printing-layers.png)
+![Wood Source Material](public/wood-side-view-1.jpeg)
+![CNC Milling Process](public/cnc-milling-process.jpeg)
 
-### Video Documentation
-- [Fabrication Timelapse](src/public/videos/fabrication-timelapse.mov)
-- [Assembly Process](src/public/videos/assembly-process.mov)
-- [Final Installation](src/public/videos/final-installation.mov)
 
 ## Algorithm & Design Approach
 
@@ -89,33 +86,6 @@ FUNCTION GenerateShireDesign(rootComponent):
 
 ### Key Geometric Algorithms
 
-#### Seed of Life Algorithm
-
-The Seed of Life is a sacred geometry pattern formed by seven overlapping circles of the same size. The algorithm to generate this pattern follows these steps:
-
-```
-FUNCTION GenerateSeedOfLife(centerX, centerY, radius):
-    // Create the central circle
-    circles = [Circle(centerX, centerY, radius)]
-    
-    // Create six circles around the central circle
-    FOR i = 0 TO 5:
-        angle = i * (2π/6)
-        newCenterX = centerX + radius * cos(angle)
-        newCenterY = centerY + radius * sin(angle)
-        circles.ADD(Circle(newCenterX, newCenterY, radius))
-    
-    RETURN circles
-```
-
-![Seed of Life Pattern](src/public/images/seed-of-life.png)
-
-The Seed of Life pattern has deep historical significance in sacred geometry, appearing in ancient cultures worldwide. In the Vedya system, this pattern serves as a foundational element for creating complex mandala designs. The implementation allows for:
-
-- Variable scaling of the pattern
-- Layering with different radii
-- Combination with other geometric elements through boolean operations
-- Depth extrusion to create 3D forms
 
 #### Astroid Curve Algorithm
 
@@ -135,7 +105,7 @@ FUNCTION GenerateAstroidPoints(centerX, centerY, radius, n, numPoints):
     RETURN points
 ```
 
-![Astroid Curve Pattern](src/public/images/astroid-curve.png)
+![Astroid Curve Pattern](public/astroid.gif)
 
 Where:
 - `n` is the power parameter that controls the shape (n=3 for classic astroid)
@@ -147,6 +117,33 @@ The Torus Astroid in the Vedya system combines this curve with circular elements
 - Stroke weight variations
 - Radial symmetry
 - Depth variations when extruded to 3D
+
+#### Seed of Life Algorithm
+
+The Seed of Life is a sacred geometry pattern formed by seven overlapping circles of the same size. The algorithm to generate this pattern follows these steps:
+
+```
+FUNCTION GenerateSeedOfLife(centerX, centerY, radius):
+    // Create the central circle
+    circles = [Circle(centerX, centerY, radius)]
+    
+    // Create six circles around the central circle
+    FOR i = 0 TO 5:
+        angle = i * (2π/6)
+        newCenterX = centerX + radius * cos(angle)
+        newCenterY = centerY + radius * sin(angle)
+        circles.ADD(Circle(newCenterX, newCenterY, radius))
+    
+    RETURN circles
+```
+
+
+The Seed of Life pattern has deep historical significance in sacred geometry, appearing in ancient cultures worldwide. In the Vedya system, this pattern serves as a foundational element for creating complex mandala designs. The implementation allows for:
+
+- Variable scaling of the pattern
+- Layering with different radii
+- Combination with other geometric elements through boolean operations
+- Depth extrusion to create 3D forms
 
 ### Geometric Operations
 
@@ -218,21 +215,19 @@ The Vedya system follows a pattern → transform → render workflow:
 ### Terrain Models
 - [Low Resolution Kailash](public/low-res-kailash/low-res-kailash.stl)
 - [Medium Resolution Kailash](public/mid-res-kailash/mid-res-kailash.stl)
-- [Terrain Integration Process](src/public/images/terrain-integration.png)
+- [Terrain Integration Process](public/terrain-integration.png)
 
 ## Project Components
 
 ### Shire
 Mandala design for Australia Bush Festival, collaboration between Jeevan Pillay and Adam Brown, Gemma & team at Tasmania.
 - Implementation: [Shire Design](src/core/fabrication/design/shire/index.py)
-- [Design Sketches](src/public/images/shire-design-sketches.png)
-- [Installation Photos](src/public/images/shire-installation.png)
+- [Installation Photos](public/shire-site.jpeg)
 
 ## Documentation
 
 Additional documentation available in subdirectories:
 - [Core Library Documentation](src/lib/README.md)
-- [3D Printer Prototyping](public/README.md)
 - [Print 1 Notes](public/3d-printer-prototypes/print-1/README.md)
 - [Print 2 Notes](public/3d-printer-prototypes/print-2/README.md)
 
