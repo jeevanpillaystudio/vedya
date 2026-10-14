@@ -14,6 +14,11 @@ than the tip.
 - The border is left out. The toolpaths cut where a wall inside the board's edge would
   stand, so the milled piece had none; ADR 0003 records the open question.
 - A tip may sit 0.15 mm into the model: the stock CAM left on floors, and the mesh.
+- The model counts under the tool only where it stands more than 0.1 mm inside the
+  edge of the tool's circle. CAM brings the tool to a wall within its own cutting
+  tolerance; the deepest graze measured is 0.065 mm. The 0.1 mm stays an order of
+  magnitude below 1.2 mm, the shallowest step of a seed-of-life layer, the smallest
+  error this test exists to catch.
 - The tool is checked wherever it goes: at each programmed point, and along each line
   and arc between them every quarter millimetre.
 
@@ -58,6 +63,10 @@ TOP = 38.4
 
 ALLOWANCE = 0.15
 """How far a tip may sit into the model: stock left on floors, and the mesh."""
+
+SIDEWAYS = 0.1
+"""How far the model may reach inside the edge of the tool's circle: CAM's tolerance on
+walls."""
 
 CELL = 0.5
 """The height map's cell."""
@@ -521,7 +530,8 @@ def describe(
 ) -> str:
     return "\n".join(
         [
-            f"{count} of {of} positions cut more than {ALLOWANCE} mm into the model ({parts}).",
+            f"{count} of {of} positions cut more than {ALLOWANCE} mm into the model, more than "
+            f"{SIDEWAYS} mm inside the tool's edge ({parts}).",
             "In the design's coordinates, with z from its top, the deepest:",
             *map(str, by_overlap),
             "and those furthest inside the tool's edge:",
@@ -538,7 +548,7 @@ def test_no_tool_position_cuts_into_the_model(milled: HeightMap, name: str, radi
     cutting = path.positions[path.positions[:, 2] < 0]
     # The design's x is the toolpath's Y, and its y the toolpath's X.
     design = cutting[:, [1, 0]]
-    highest, rows, columns = highest_under(milled, design, radius)
+    highest, rows, columns = highest_under(milled, design, radius - SIDEWAYS)
     overlap = (highest - TOP) - cutting[:, 2]
     bad = np.nonzero(overlap > ALLOWANCE)[0]
     if not len(bad):
