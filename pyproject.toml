@@ -40,6 +40,14 @@ dev = [
     "ruff>=0.8",
     "shapely>=2.1",
 ]
+# What `make figures` needs to draw the README's images: not a default group, so neither
+# `uv sync` nor CI installs it.
+docs = [
+    "matplotlib>=3.10",
+    "pillow>=11",
+    "pyvista>=0.46",
+    "vedya[examples]",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.13,<0.13.0"]

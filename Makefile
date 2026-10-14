@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := check
-.PHONY: sync lint format typecheck test test-fast slow cov check golden designs hooks
+.PHONY: sync lint format typecheck test test-fast slow cov check golden designs figures hooks
 
 sync:  ## install the locked environment
 	uv sync --locked --all-extras
@@ -34,6 +34,9 @@ golden:  ## rerun the original Fusion 360 code on the stand-in and rewrite tests
 
 designs:  ## build every design `vedya list` names into out/; each file starts with its design's name
 	for design in $$(uv run vedya list | cut -f1); do uv run vedya build "$$design" --out out || exit 1; done
+
+figures:  ## build the designs and draw the README's images into docs/images/
+	uv run --group docs python -m tools.figures
 
 hooks:
 	uv run pre-commit install

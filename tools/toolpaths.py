@@ -4,7 +4,8 @@ Shire was milled in April 2024 with two toolpaths, `public/cnc-cuts/6mm-adaptive
 `3mm-adaptive.tap`, adaptive clearing with flat end mills of 6 and 3 mm, which CAM wrote
 from that month's model. `read_toolpath` reads where such a program puts the tool's tip,
 and `plan` what of a model stands at or above each of its heights, seen from above.
-`tests/test_toolpaths.py` holds Shire to the toolpaths with them.
+`tests/test_toolpaths.py` holds Shire to the toolpaths with them, and `tools/figures.py`
+draws the surface the toolpaths cut.
 
 - The toolpaths' z = 0 is the design's top, `TOP` up. Their X runs along the board's
   length, which is the design's y, and their Y across it, the design's x.
