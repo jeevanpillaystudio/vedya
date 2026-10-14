@@ -1,6 +1,6 @@
 # 0003: Shire reproduces the model that was milled
 
-Status: accepted, October 2026.
+Status: accepted, October 2026; amended October 2026, when layer 0 came to be cut to the board by default.
 
 ## Context
 
@@ -35,7 +35,7 @@ Shire reproduces the milled model. The stand-in (ADR 0002) runs the 2024 script 
 - There is no kailash band. In April its cut, from a top-level component of its own, reaches nothing; by August its call raises a `TypeError` before it runs. The in-bounds intersect never runs either, and the outer diagonal steps are commented out. None of them is built.
 - The aggregate is the union of every part. April and August give the same one.
 - The torus adds no relief. Its region lies inside the core's top astroid, over the same heights, 28.8 to 33.6 mm, so the core already holds all of it; the toolpaths agree, cutting no deeper than 4.8 mm within 90 mm of the centre. It is kept as a part because the design built it.
-- Layer 0 overhangs the board's long sides, from 320 to 360 mm out, as the script built it. Nothing in the 2024 code trims it, and the milling boundary lies inside the board, so the piece shows nothing of it.
+- Layer 0 overhung the board's long sides by up to 40 mm, from 320 to 360 mm out: the script drew its circle, of radius 360 mm, on a board 640 mm wide, and nothing in the 2024 code trims it. The board could not hold it, and the milling boundary lies inside the board, so the piece shows nothing of it. Shire now cuts layer 0 to the board by default (`ShireParams.clip_to_board`), as layer 2 is cut; `clip_to_board=False` builds the 2024 model exactly, overhang included. The pin is kept on that unclipped build: the goldens and every comparison with the stand-in use it, and the tests hold the default's layer 0 and aggregate to the unclipped ones cut to the board.
 
 The border is the open question. The script draws it as a Side1 wall on the board's outline, 19.2 mm thick, standing on the board from 9.6 to 38.4 mm; under the rule above that is a wall inside the outline, and that is what Shire builds. The milled model had no wall there. Either Fusion put the wall outside the outline, so that it fell outside the milled area, or the border was left out of the model given to CAM. The repository does not record which.
 
