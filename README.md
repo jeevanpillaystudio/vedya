@@ -28,16 +28,16 @@ The Vedya system uses a hierarchical composition-based algorithm to generate com
 FUNCTION GenerateVedyaDesign(designType, seed, fabricationType, fabricationMode):
     // Initialize design context
     context = CreateDesignContext(designType, seed, fabricationType, fabricationMode)
-    
+
     // Generate base geometry based on selected design template
     component = GenerateShireDesign(context.rootComponent)
-    
+
     // Apply post-processing based on fabrication mode
     IF fabricationMode == "slicer":
         SliceComponent(component, layerDepth, layerCount)
     ELSE IF fabricationMode == "aggregator":
         AggregateComponents(component)
-    
+
     RETURN component
 ```
 
@@ -56,27 +56,27 @@ Example of the Shire design generation:
 FUNCTION GenerateShireDesign(rootComponent):
     // Create background layer
     background = CreateBackgroundLayer(rootComponent)
-    
+
     // Create border
     border = CreateBorder(rootComponent)
-    
+
     // Create seed of life patterns (layered)
     seedOfLifeLayer0 = CreateSeedOfLifeLayer0(rootComponent)
     seedOfLifeLayer1 = CreateSeedOfLifeLayer1(rootComponent)
     seedOfLifeLayer2 = CreateSeedOfLifeLayer2(rootComponent)
-    
+
     // Create core component
     core = CreateComponentCore(rootComponent)
-    
+
     // Create torus astroid pattern
     torusAstroid = CreateTorusAstroid(rootComponent)
-    
+
     // Apply middle cut
     ApplyMiddleCut(rootComponent)
-    
+
     // Apply terrain cut (optional)
     ApplyTerrainCut(rootComponent)
-    
+
     RETURN rootComponent
 ```
 
@@ -90,14 +90,14 @@ An astroid is a hypocycloid with four cusps. In the Vedya system, we implement a
 ```
 FUNCTION GenerateAstroidPoints(centerX, centerY, radius, n, numPoints):
     points = []
-    
+
     // Generate points along the astroid curve
     FOR i = 0 TO numPoints-1:
         t = i * (2π/numPoints)
         x = centerX + radius * cos(t)^n
         y = centerY + radius * sin(t)^n
         points.ADD((x, y))
-    
+
     RETURN points
 ```
 
@@ -122,14 +122,14 @@ The Seed of Life is a sacred geometry pattern formed by seven overlapping circle
 FUNCTION GenerateSeedOfLife(centerX, centerY, radius):
     // Create the central circle
     circles = [Circle(centerX, centerY, radius)]
-    
+
     // Create six circles around the central circle
     FOR i = 0 TO 5:
         angle = i * (2π/6)
         newCenterX = centerX + radius * cos(angle)
         newCenterY = centerY + radius * sin(angle)
         circles.ADD(Circle(newCenterX, newCenterY, radius))
-    
+
     RETURN circles
 ```
 
@@ -185,10 +185,10 @@ The Vedya system follows a pattern → transform → render workflow:
    ```
    # Transform coordinates
    vedya transform input.txt --target cylinder --resolution 0.1 --length 10 --height 4 --radius 1 --output output.txt
-   
+
    # Render output
    vedya render output.txt --output output.stl --color grayscale
-   
+
    # Run examples
    vedya example output_path
    ```
