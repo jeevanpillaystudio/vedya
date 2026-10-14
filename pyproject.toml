@@ -18,6 +18,9 @@ render = [
     "opencv-python-headless>=4.10",
     "plotly>=5.23",
 ]
+examples = [
+    "noise==1.2.2",
+]
 
 [project.scripts]
 vedya = "vedya.cli:app"
