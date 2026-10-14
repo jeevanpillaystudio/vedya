@@ -8,49 +8,51 @@ than the tip.
 
 - The toolpaths' z = 0 is the design's top, 38.4 mm up. Their X runs along the board's
   length, which is the design's y, and their Y across it, the design's x.
-- The model is read as a height map: over the centre of each cell of a 0.5 mm grid, its
-  highest point, from its horizontal faces meshed to 0.01 mm. The model is the union of
-  its parts, so its height map is the highest of theirs.
+- The model is read exactly, in plan. It is a stack of flat slabs, so what of it stands
+  above a height is, seen from above, the union of its upward faces at that height and
+  higher, and changes only at those faces' heights. Each face is drawn as a polygon
+  whose sides stray at most 0.005 mm from its edges, which is the check's resolution.
+  The model is the union of its parts, so its plan is the union of theirs.
 - The border is left out. The toolpaths cut where a wall inside the board's edge would
   stand, so the milled piece had none; ADR 0003 records the open question.
-- A tip may sit 0.15 mm into the model: the stock CAM left on floors, and the mesh.
-- The model counts under the tool only where it stands more than 0.1 mm inside the
-  edge of the tool's circle. CAM brings the tool to a wall within its own cutting
-  tolerance; the deepest graze measured is 0.065 mm. The 0.1 mm stays an order of
-  magnitude below 1.2 mm, the shallowest step of a seed-of-life layer, the smallest
-  error this test exists to catch.
+- A tip may sit 0.15 mm into the model: the stock CAM left on floors.
+- A tool position is checked against what stands more than 0.15 mm above its tip: the
+  horizontal distance from the tool's centre to that region. It fails only where the
+  distance is less than the tool's radius less 0.1 mm, where the model stands more than
+  0.1 mm inside the edge of the tool's circle. CAM brings the tool to a wall within its
+  own cutting tolerance; the deepest graze is 0.070 mm, with the 3 mm tool. The 0.1 mm
+  stays an order of magnitude below 1.2 mm, the shallowest step of a seed-of-life
+  layer, the smallest error this test exists to catch.
 - The tool is checked wherever it goes: at each programmed point, and along each line
   and arc between them every quarter millimetre.
 
 Every length is in millimetres.
 """
 
-import copy
 import math
 import re
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import build123d as bd
 import numpy as np
 import numpy.typing as npt
 import pytest
+import shapely
 
 # OCP is compiled and ships no type stubs, so its names are invisible to the type checker.
-from OCP.BRep import BRep_Tool  # pyright: ignore[reportAttributeAccessIssue]
-from OCP.BRepMesh import BRepMesh_IncrementalMesh  # pyright: ignore[reportAttributeAccessIssue]
-from OCP.TopLoc import TopLoc_Location  # pyright: ignore[reportAttributeAccessIssue]
+from OCP.BRepAdaptor import BRepAdaptor_Curve  # pyright: ignore[reportAttributeAccessIssue]
+from OCP.BRepTools import BRepTools_WireExplorer  # pyright: ignore[reportAttributeAccessIssue]
+from OCP.GCPnts import GCPnts_TangentialDeflection  # pyright: ignore[reportAttributeAccessIssue]
+from OCP.TopAbs import TopAbs_Orientation  # pyright: ignore[reportAttributeAccessIssue]
+from shapely.geometry.base import BaseGeometry
 
-from vedya.export import ANGULAR_TOLERANCE, LINEAR_TOLERANCE
-from vedya.geometry import circle, rectangle, slab
+from vedya.geometry import astroid, circle, rectangle, slab
 from vedya.model import Model
 
 type Floats = npt.NDArray[np.float64]
-type Centres = npt.NDArray[np.floating[Any]]
-type Indices = npt.NDArray[np.intp]
 
 CNC_CUTS = Path(__file__).parent.parent / "public" / "cnc-cuts"
 """The toolpaths the piece was milled with."""
@@ -62,14 +64,14 @@ TOP = 38.4
 """The design's top, where the toolpaths' z is 0."""
 
 ALLOWANCE = 0.15
-"""How far a tip may sit into the model: stock left on floors, and the mesh."""
+"""How far a tip may sit into the model: stock left on floors."""
 
 SIDEWAYS = 0.1
 """How far the model may reach inside the edge of the tool's circle: CAM's tolerance on
 walls."""
 
-CELL = 0.5
-"""The height map's cell."""
+CHORD = 0.005
+"""How far the sides of a face's polygon may stray from its edges."""
 
 STEP = 0.25
 """The longest stretch of a move between two positions checked."""
@@ -208,171 +210,123 @@ def _arc(
     return points
 
 
-# The model's height map.
+# The model in plan.
 
 
 @dataclass(frozen=True)
-class HeightMap:
-    """The highest point of some solids over each cell of a grid in the XY plane.
+class Plan:
+    """What of some solids stands at or above each of their tops, seen from above.
 
     Attributes:
-        low: The grid's low corner. Cell (row, column) is centred at
-            low + (column + ½, row + ½) · cell.
-        cell: The side of a cell.
-        heights: The highest point over each cell's centre, by row and column; -inf where
-            there is none.
-        owners: The index in `names` of the solid that highest point is on; -1 for none.
-        names: The solids' names.
+        tops: The heights of the solids' upward faces, lowest first.
+        above: For each of `tops`, the region in XY over which some solid stands at that
+            height or higher: the union of the upward faces there and higher up.
+        faces: For each of `tops`, the upward faces there, joined by the name of the
+            solid they are on.
     """
 
-    low: tuple[float, float]
-    cell: float
-    heights: Floats
-    owners: Indices
-    names: tuple[str, ...]
+    tops: Floats
+    above: tuple[BaseGeometry, ...]
+    faces: tuple[dict[str, BaseGeometry], ...]
 
-    def centres(self, rows: Indices, columns: Indices) -> tuple[Centres, Centres]:
-        """The x and y of the centres of the cells at `rows` and `columns`."""
-        x0, y0 = self.low
-        return x0 + (columns + 0.5) * self.cell, y0 + (rows + 0.5) * self.cell
+    def first_above(self, levels: Floats) -> npt.NDArray[np.intp]:
+        """For each of `levels`, the index of the lowest top higher than it; the number
+        of tops where none is."""
+        return np.searchsorted(self.tops, levels, side="right")
 
 
-def height_map(solids: Sequence[bd.Part], names: Sequence[str], cell: float) -> HeightMap:
-    """The height map of `solids`, named `names`, on a grid of `cell`.
+def plan(solids: Sequence[bd.Part], names: Sequence[str], chord: float) -> Plan:
+    """The plan of `solids`, named `names`, each face drawn to `chord`.
 
-    Every face of a solid must be horizontal or vertical, as a slab's are: the height of
-    a solid over a point is that of its highest horizontal face there.
+    Every face of a solid must be horizontal or vertical, as a slab's are: a solid stands
+    over a point up to its highest upward face there.
     """
-    flats = [_horizontal_triangles(solid) for solid in solids]
-    corners = np.concatenate([triangles.reshape(-1, 3) for triangles in flats])
-    x0 = math.floor(corners[:, 0].min() / cell) * cell
-    y0 = math.floor(corners[:, 1].min() / cell) * cell
-    columns = math.ceil((corners[:, 0].max() - x0) / cell)
-    rows = math.ceil((corners[:, 1].max() - y0) / cell)
-    heights = np.full((rows, columns), -np.inf)
-    owners = np.full((rows, columns), -1, dtype=np.intp)
-    for index, triangles in enumerate(flats):
-        levels = np.round(triangles[:, 0, 2], 6)
-        for level in np.unique(levels):
-            these = triangles[levels == level]
-            z = float(these[:, :, 2].max())
-            covered = _covered(these[:, :, :2], (x0, y0), cell, (rows, columns))
-            higher = covered & (heights < z)
-            heights[higher] = z
-            owners[higher] = index
-    return HeightMap((x0, y0), cell, heights, owners, tuple(names))
-
-
-def _horizontal_triangles(solid: bd.Part) -> Floats:
-    """The triangles of `solid`'s horizontal faces, meshed to `LINEAR_TOLERANCE`, as
-    (triangle, corner, xyz)."""
-    # Mesh a copy, so the model's own shapes carry no mesh. build123d's own `tessellate`
-    # takes its tolerance relative to each edge's length, too coarse for large circles.
-    copied = copy.deepcopy(solid)
-    BRepMesh_IncrementalMesh(copied.wrapped, LINEAR_TOLERANCE, False, ANGULAR_TOLERANCE, True)
-    found: list[Floats] = []
-    for face in copied.faces():
-        upward = face.normal_at().Z
-        if face.geom_type == bd.GeomType.PLANE and abs(abs(upward) - 1) < 1e-9:
-            location = TopLoc_Location()
-            mesh = BRep_Tool.Triangulation_s(face.wrapped, location)
-            moved = location.Transformation()
-            corners = np.array(
-                [
-                    (point.X(), point.Y(), point.Z())
-                    for point in (
-                        mesh.Node(i).Transformed(moved) for i in range(1, mesh.NbNodes() + 1)
-                    )
-                ]
-            )
-            order = np.array([mesh.Triangle(i).Get() for i in range(1, mesh.NbTriangles() + 1)])
-            found.append(corners[order - 1])
-        elif abs(upward) > 1e-9:
-            raise ValueError(f"a {face.geom_type.name} face neither horizontal nor vertical")
-    return np.concatenate(found)
-
-
-def _covered(
-    triangles: Floats, low: tuple[float, float], cell: float, shape: tuple[int, int]
-) -> npt.NDArray[np.bool_]:
-    """Which cells of the grid have their centres in any of `triangles`, given in XY.
-
-    Each triangle is cut along each row of centres it spans; the span it covers on that
-    row is counted into a running sum along the row.
-    """
-    x0, y0 = low
-    rows, columns = shape
-    ys = triangles[:, :, 1]
-    first = np.ceil((ys.min(axis=1) - y0) / cell - 0.5 - 1e-9).astype(np.intp)
-    last = np.floor((ys.max(axis=1) - y0) / cell - 0.5 + 1e-9).astype(np.intp)
-    spans = np.maximum(last - first + 1, 0)
-    which = np.repeat(np.arange(len(triangles)), spans)
-    row = np.repeat(first, spans) + (
-        np.arange(spans.sum()) - np.repeat(np.cumsum(spans) - spans, spans)
+    by_top: dict[float, dict[str, list[shapely.Polygon]]] = {}
+    for name, solid in zip(names, solids, strict=True):
+        for face in solid.faces():
+            upward = face.normal_at().Z
+            if face.geom_type == bd.GeomType.PLANE and abs(upward - 1) < 1e-9:
+                top = round(face.center().Z, 6)
+                by_top.setdefault(top, {}).setdefault(name, []).append(_polygon(face, chord))
+            elif abs(upward) > 1e-9 and abs(upward + 1) > 1e-9:
+                raise ValueError(f"a {face.geom_type.name} face neither horizontal nor vertical")
+    tops = sorted(by_top)
+    faces = tuple(
+        {name: shapely.union_all(polygons) for name, polygons in by_top[top].items()}
+        for top in tops
     )
-    y = y0 + (row + 0.5) * cell
-    corners = triangles[which]
-    low_x = np.full(len(which), np.inf)
-    high_x = np.full(len(which), -np.inf)
-    for k in range(3):
-        a, b = corners[:, k], corners[:, (k + 1) % 3]
-        crosses = (y - a[:, 1]) * (y - b[:, 1]) <= 0
-        level = a[:, 1] == b[:, 1]
-        with np.errstate(divide="ignore", invalid="ignore"):
-            x = np.where(
-                level, a[:, 0], a[:, 0] + (y - a[:, 1]) * (b[:, 0] - a[:, 0]) / (b[:, 1] - a[:, 1])
-            )
-        other = np.where(level, b[:, 0], x)
-        low_x = np.where(crosses, np.minimum(low_x, np.minimum(x, other)), low_x)
-        high_x = np.where(crosses, np.maximum(high_x, np.maximum(x, other)), high_x)
-    begin = np.ceil((low_x - x0) / cell - 0.5 - 1e-9)
-    end = np.floor((high_x - x0) / cell - 0.5 + 1e-9)
-    keep = np.isfinite(begin) & (end >= begin) & (row >= 0) & (row < rows)
-    begin = np.clip(begin[keep], 0, columns).astype(np.intp)
-    end = np.clip(end[keep], -1, columns - 1).astype(np.intp)
-    row = row[keep]
-    counts = np.zeros((rows, columns + 1), dtype=np.int32)
-    np.add.at(counts, (row, begin), 1)
-    np.add.at(counts, (row, end + 1), -1)
-    return np.cumsum(counts, axis=1)[:, :columns] > 0
+    above: list[BaseGeometry] = []
+    standing: BaseGeometry = shapely.Polygon()
+    for here in reversed(faces):
+        standing = shapely.union_all([standing, *here.values()])
+        above.append(standing)
+    above.reverse()
+    # Prepared, a region answers distances through an index of its sides.
+    shapely.prepare(above)
+    return Plan(np.array(tops), tuple(above), faces)
 
 
-def highest_under(
-    heights: HeightMap, points: Floats, radius: float, chunk: int = 10_000
-) -> tuple[Floats, Indices, Indices]:
-    """For each of `points` in XY, the highest point of the map whose cell's centre lies
-    within `radius` of it, and that cell's row and column."""
-    x0, y0 = heights.low
-    rows, columns = heights.heights.shape
-    reach = math.ceil(radius / heights.cell) + 1
-    offsets = np.arange(-reach, reach + 1)
-    d_row, d_column = (grid.ravel() for grid in np.meshgrid(offsets, offsets, indexing="ij"))
-    highest = np.empty(len(points))
-    at_row = np.empty(len(points), dtype=np.intp)
-    at_column = np.empty(len(points), dtype=np.intp)
-    for begin in range(0, len(points), chunk):
-        part = points[begin : begin + chunk]
-        base_row = np.floor((part[:, 1] - y0) / heights.cell - 0.5).astype(np.intp)
-        base_column = np.floor((part[:, 0] - x0) / heights.cell - 0.5).astype(np.intp)
-        row = base_row[:, np.newaxis] + d_row
-        column = base_column[:, np.newaxis] + d_column
-        x, y = heights.centres(row, column)
-        under = (x - part[:, :1]) ** 2 + (y - part[:, 1:2]) ** 2 <= radius**2
-        under &= (row >= 0) & (row < rows) & (column >= 0) & (column < columns)
-        found = np.where(
-            under,
-            heights.heights[np.clip(row, 0, rows - 1), np.clip(column, 0, columns - 1)],
-            -np.inf,
-        )
-        best = found.argmax(axis=1)
-        picked = np.arange(len(part))
-        highest[begin : begin + chunk] = found[picked, best]
-        at_row[begin : begin + chunk] = row[picked, best]
-        at_column[begin : begin + chunk] = column[picked, best]
-    return highest, at_row, at_column
+def _polygon(face: bd.Face, chord: float) -> shapely.Polygon:
+    """`face`, which is level, as a polygon in XY whose sides stray at most `chord` from
+    its edges."""
+    polygon = shapely.Polygon(
+        _ring(face.outer_wire(), face, chord),
+        [_ring(wire, face, chord) for wire in face.inner_wires()],
+    )
+    if not polygon.is_valid:
+        raise ValueError(f"a face drew as an invalid polygon: {shapely.is_valid_reason(polygon)}")
+    return polygon
 
 
-# The reader and the height map, on what can be worked out by hand.
+_TURN = 0.1
+"""The furthest, in radians, a face's edge may turn between neighbouring corners."""
+
+
+def _ring(wire: bd.Wire, face: bd.Face, chord: float) -> list[tuple[float, float]]:
+    """The corners of a polygon along `wire`, a loop of `face`, in the loop's order."""
+    corners: list[tuple[float, float]] = []
+    explorer = BRepTools_WireExplorer(wire.wrapped, face.wrapped)
+    while explorer.More():
+        edge = explorer.Current()
+        curve = BRepAdaptor_Curve(edge)
+        # OpenCascade's mesher's sampling, which also bounds how far the curve turns
+        # between neighbouring points, so that it follows an astroid round its cusps; its
+        # sampling by deflection alone cuts their tips by up to 0.34 mm. It is asked for
+        # half the chord, since its bound is approximate: asked for 0.005 mm, it strays
+        # up to 0.0055 mm on Shire's splines; asked for half, 0.0025 mm.
+        points = GCPnts_TangentialDeflection(curve, _TURN, chord / 2, 2, 1e-9, 1e-7)
+        along = [
+            (points.Value(i).X(), points.Value(i).Y()) for i in range(1, points.NbPoints() + 1)
+        ]
+        if edge.Orientation() == TopAbs_Orientation.TopAbs_REVERSED:
+            along.reverse()
+        corners.extend(along[:-1])  # the next edge starts where this one ends
+        explorer.Next()
+    return corners
+
+
+def distance_above(plan: Plan, points: Floats, levels: Floats, reach: float) -> Floats:
+    """For each of `points` in XY, the horizontal distance from it to what stands higher
+    than its level in `levels`; inf where that is further than `reach`, or nothing is."""
+    found = np.full(len(points), np.inf)
+    first = plan.first_above(levels)
+    for k in np.unique(first[first < len(plan.tops)]):
+        which = np.nonzero(first == k)[0]
+        region = plan.above[k]
+        near = which[shapely.dwithin(region, shapely.points(points[which]), reach)]
+        found[near] = shapely.distance(region, shapely.points(points[near]))
+    return found
+
+
+def inside_edge(plan: Plan, points: Floats, tips: Floats, radius: float) -> Floats:
+    """For each tool position, its centre at `points` in XY and its tip at `tips` in z,
+    how far inside the edge of its circle the model stands more than `ALLOWANCE` above
+    the tip: `radius` less the distance to it; -inf where nothing stands within the
+    circle."""
+    return radius - distance_above(plan, points, tips + ALLOWANCE, radius)
+
+
+# The reader and the plan, on what can be worked out by hand.
 
 PROGRAM = """(T9 D=4. CR=0. - ZMIN=-2. - FLAT END MILL)
 G90 G94 G91.1 G40 G49 G17
@@ -436,65 +390,89 @@ def test_the_reader_refuses_what_it_does_not_follow() -> None:
         read_toolpath(PROGRAM.replace("G0 X10.", "G91 G0 X10."), STEP)
 
 
-def test_the_height_map_holds_the_highest_face_over_each_cell() -> None:
+def test_the_plan_holds_what_stands_above_each_top() -> None:
     board = slab(rectangle(20.0, 10.0), 0.0, 2.0)
     post = slab(circle(2.0, at=(5.0, 0.0)), 1.0, 4.0)
-    heights = height_map([board, post], ("board", "post"), CELL)
-    assert heights.low == (-10.0, -5.0)
-    assert heights.heights.shape == (20, 40)
-    covered = np.isfinite(heights.heights)
-    assert covered.all()
-    # The post's top covers cells centred within its circle, about π · 2² / 0.5² of them.
-    on_post = heights.heights == 5.0
-    x, y = heights.centres(*np.nonzero(on_post))
-    assert ((x - 5.0) ** 2 + y**2 <= 4.0).all()
-    assert on_post.sum() == pytest.approx(math.pi * 4.0 / CELL**2, rel=0.1)
-    assert (heights.owners[on_post] == 1).all()
-    assert (heights.heights[~on_post] == 2.0).all()
+    seen = plan([board, post], ("board", "post"), CHORD)
+    assert list(seen.tops) == [2.0, 5.0]
+    # At the board's top, the post stands inside the board.
+    assert seen.above[0].area == pytest.approx(200.0, rel=1e-12)
+    assert set(seen.faces[0]) == {"board"}
+    assert set(seen.faces[1]) == {"post"}
+    # The post's top is a polygon inside its circle, its corners on it, short of it by
+    # no more than the chord along its edge.
+    top = seen.above[1]
+    corners = shapely.get_coordinates(top)
+    assert np.hypot(corners[:, 0] - 5.0, corners[:, 1]) == pytest.approx(2.0, abs=1e-9)
+    assert 4 * math.pi - 2 * math.pi * 2.0 * CHORD <= top.area <= 4 * math.pi
+    levels = np.array([1.0, 2.0, 4.99, 5.0])
+    assert list(seen.first_above(levels)) == [0, 1, 1, 2]
 
 
-def test_the_highest_point_under_a_disc_reaches_its_edge_and_no_further() -> None:
+def test_the_plan_follows_an_astroid_round_its_cusps() -> None:
+    star = slab(astroid(185.6), 0.0, 1.0)
+    seen = plan([star], ("star",), CHORD)
+    (top,) = (face for face in star.faces() if face.center().Z > 0.5)
+    sides = seen.above[0].boundary
+    for edge in top.edges():
+        curve = BRepAdaptor_Curve(edge.wrapped)
+        along = np.linspace(curve.FirstParameter(), curve.LastParameter(), 20_001)
+        points = np.array([(curve.Value(u).X(), curve.Value(u).Y()) for u in along])
+        assert shapely.distance(sides, shapely.points(points)).max() <= CHORD
+    # Each cusp's tip is a corner of the polygon.
+    corners = shapely.get_coordinates(sides)
+    for tip in ((185.6, 0.0), (0.0, 185.6), (-185.6, 0.0), (0.0, -185.6)):
+        assert np.hypot(*(corners - tip).T).min() <= CHORD
+
+
+def test_a_wall_between_the_old_grid_centres_is_seen() -> None:
     floor = slab(rectangle(10.0, 10.0), 0.0, 3.0)
     wall = slab(bd.Pos(4.0, 0.0) * rectangle(2.0, 10.0), 3.0, 2.0)
-    heights = height_map([floor, wall], ("floor", "wall"), CELL)
-    # The wall stands from x = 3 to 5; the nearest cell centres are at x = 3.25.
-    tool = np.array([[0.25, 0.25], [0.24, 0.25]])
-    highest, _, _ = highest_under(heights, tool, 3.0)
-    assert list(highest) == [5.0, 3.0]
+    seen = plan([floor, wall], ("floor", "wall"), CHORD)
+    # The wall stands from x = 3 to 5. A tool of radius 3 at x = 0.25, its tip on the
+    # floor, reaches 0.25 mm into it, between the centres at 3.25 of the 0.5 mm grid the
+    # check once read. At x = 0.05 it grazes the wall by 0.05 mm, which is allowed.
+    centres = np.array([[0.25, 0.25], [0.05, 0.25], [4.0, 0.0], [0.25, 0.25]])
+    tips = np.array([3.0, 3.0, 3.0, 4.9])
+    inside = inside_edge(seen, centres, tips, 3.0)
+    assert inside[:3] == pytest.approx([0.25, 0.05, 3.0], abs=1e-9)
+    # A tip within the allowance of the wall's top sees nothing above it.
+    assert inside[3] == -np.inf
+    assert list(inside > SIDEWAYS) == [True, False, True, False]
 
 
 # The toolpaths against the model.
 
 
 @pytest.fixture(scope="module")
-def milled(shire: Model) -> HeightMap:
+def milled(shire: Model) -> Plan:
     names = [name for name in shire.parts if name not in LEFT_OUT]
-    return height_map([shire.parts[name] for name in names], names, CELL)
+    return plan([shire.parts[name] for name in names], names, CHORD)
 
 
-def inside_edge(
-    heights: HeightMap, points: Floats, radius: float, levels: Floats, chunk: int = 10_000
-) -> Floats:
-    """For each of `points` in XY, how far inside the edge of a disc of `radius` about it
-    the map stands higher than the point's level in `levels`; -inf where it does not."""
-    x0, y0 = heights.low
-    rows, columns = heights.heights.shape
-    reach = math.ceil(radius / heights.cell) + 1
-    offsets = np.arange(-reach, reach + 1)
-    d_row, d_column = (grid.ravel() for grid in np.meshgrid(offsets, offsets, indexing="ij"))
-    found = np.empty(len(points))
-    for begin in range(0, len(points), chunk):
-        part = points[begin : begin + chunk]
-        row = np.floor((part[:, 1] - y0) / heights.cell - 0.5).astype(np.intp)[:, np.newaxis]
-        column = np.floor((part[:, 0] - x0) / heights.cell - 0.5).astype(np.intp)[:, np.newaxis]
-        row, column = row + d_row, column + d_column
-        x, y = heights.centres(row, column)
-        distance = np.hypot(x - part[:, :1], y - part[:, 1:2])
-        valid = (row >= 0) & (row < rows) & (column >= 0) & (column < columns)
-        above = heights.heights[np.clip(row, 0, rows - 1), np.clip(column, 0, columns - 1)]
-        higher = valid & (distance <= radius) & (above > levels[begin : begin + chunk, np.newaxis])
-        found[begin : begin + chunk] = radius - np.where(higher, distance, np.inf).min(axis=1)
-    return found
+def highest_within(plan: Plan, points: Floats, reach: float) -> tuple[Floats, list[str]]:
+    """For each of `points` in XY, the highest top of the plan whose region comes within
+    `reach` of it, and the solid whose face at that top lies nearest; -inf and "" where
+    none does."""
+    heights = np.full(len(points), -np.inf)
+    owners = [""] * len(points)
+    left = np.arange(len(points))
+    for k in reversed(range(len(plan.tops))):
+        hit = shapely.dwithin(plan.above[k], shapely.points(points[left]), reach)
+        found, left = left[hit], left[~hit]
+        if len(found):
+            # Nothing higher comes within reach, so what does lies in the faces at this top.
+            heights[found] = plan.tops[k]
+            names = list(plan.faces[k])
+            distances = np.stack(
+                [
+                    shapely.distance(plan.faces[k][name], shapely.points(points[found]))
+                    for name in names
+                ]
+            )
+            for i, nearest in zip(found, distances.argmin(axis=0), strict=True):
+                owners[i] = names[nearest]
+    return heights, owners
 
 
 @dataclass(frozen=True)
@@ -505,9 +483,11 @@ class Gouge:
         x: The tool's centre, along the board's width.
         y: The tool's centre, along the board's length.
         tip: The tool's tip, from the design's top.
-        model: The model's highest point under the tool, from the design's top.
-        inside: How far inside the tool's edge the model stands above the allowance.
-        part: The part that highest point is on.
+        model: The highest top of the model within the tool's radius less `SIDEWAYS` of
+            its centre, from the design's top.
+        inside: How far inside the tool's edge the model stands more than `ALLOWANCE`
+            above the tip: the radius less the distance to it.
+        part: The part whose face at that highest top lies nearest the tool's centre.
     """
 
     x: float
@@ -530,8 +510,8 @@ def describe(
 ) -> str:
     return "\n".join(
         [
-            f"{count} of {of} positions cut more than {ALLOWANCE} mm into the model, more than "
-            f"{SIDEWAYS} mm inside the tool's edge ({parts}).",
+            f"{count} of {of} positions have the model more than {SIDEWAYS} mm inside the "
+            f"tool's edge, more than {ALLOWANCE} mm above its tip ({parts}).",
             "In the design's coordinates, with z from its top, the deepest:",
             *map(str, by_overlap),
             "and those furthest inside the tool's edge:",
@@ -542,19 +522,20 @@ def describe(
 
 @pytest.mark.slow
 @pytest.mark.parametrize(("name", "radius"), TOOL_RADII.items())
-def test_no_tool_position_cuts_into_the_model(milled: HeightMap, name: str, radius: float) -> None:
+def test_no_tool_position_cuts_into_the_model(milled: Plan, name: str, radius: float) -> None:
     path = read_toolpath((CNC_CUTS / name).read_text(encoding="ascii"), STEP)
     assert path.diameter == 2 * radius
     cutting = path.positions[path.positions[:, 2] < 0]
-    # The design's x is the toolpath's Y, and its y the toolpath's X.
+    # The design's x is the toolpath's Y, and its y the toolpath's X; its z is the
+    # toolpath's above the design's floor.
     design = cutting[:, [1, 0]]
-    highest, rows, columns = highest_under(milled, design, radius - SIDEWAYS)
-    overlap = (highest - TOP) - cutting[:, 2]
-    bad = np.nonzero(overlap > ALLOWANCE)[0]
+    tips = cutting[:, 2] + TOP
+    inside = inside_edge(milled, design, tips, radius)
+    bad = np.nonzero(inside > SIDEWAYS)[0]
     if not len(bad):
         return
-    owners = milled.owners[rows[bad], columns[bad]]
-    inside = inside_edge(milled, design[bad], radius, cutting[bad, 2] + TOP + ALLOWANCE)
+    model, owners = highest_within(milled, design[bad], radius - SIDEWAYS)
+    overlap = model - tips[bad]
 
     def gouge(k: int) -> Gouge:
         i = bad[k]
@@ -562,16 +543,16 @@ def test_no_tool_position_cuts_into_the_model(milled: HeightMap, name: str, radi
             x=float(design[i, 0]),
             y=float(design[i, 1]),
             tip=float(cutting[i, 2]),
-            model=float(highest[i] - TOP),
-            inside=float(inside[k]),
-            part=milled.names[owners[k]],
+            model=float(model[k] - TOP),
+            inside=float(inside[i]),
+            part=owners[k],
         )
 
-    parts = Counter(milled.names[owner] for owner in owners)
+    parts = Counter(owners)
     pytest.fail(
         describe(
-            [gouge(k) for k in np.argsort(-overlap[bad], kind="stable")[:8]],
-            [gouge(k) for k in np.argsort(-inside, kind="stable")[:8]],
+            [gouge(k) for k in np.argsort(-overlap, kind="stable")[:8]],
+            [gouge(k) for k in np.argsort(-inside[bad], kind="stable")[:8]],
             len(bad),
             len(cutting),
             ", ".join(f"{part} {n}" for part, n in parts.most_common()),
