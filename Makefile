@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := check
-.PHONY: sync lint format typecheck test test-fast cov check golden designs hooks
+.PHONY: sync lint format typecheck test test-fast slow cov check golden designs hooks
 
 sync:  ## install the locked environment
 	uv sync --locked --all-extras
@@ -21,16 +21,19 @@ test:
 test-fast:
 	uv run pytest -m "not slow"
 
+slow:  ## the slow tests: the Fusion 360 scripts from history, and the toolpaths
+	uv run pytest -m slow
+
 cov:
 	uv run pytest --cov --cov-report=term-missing
 
-check: lint typecheck test
+check: lint typecheck test-fast  ## ruff, pyright and the fast tests; `make slow` runs the rest
 
 golden:  ## rerun the original Fusion 360 code on the stand-in and rewrite tests/golden
 	uv run python -m tools.legacy.golden
 
-designs:  ## build every design into out/
-	uv run vedya build --all --out out
+designs:  ## build every design `vedya list` names into out/; each file starts with its design's name
+	for design in $$(uv run vedya list | cut -f1); do uv run vedya build "$$design" --out out || exit 1; done
 
 hooks:
 	uv run pre-commit install
