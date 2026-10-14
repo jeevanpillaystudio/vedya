@@ -43,7 +43,8 @@ def flow_field(
     finer than the last and weighted `persistence` times as much, and repeats every
     `width` units across and `height` up, with base 0. The defaults are the 2024 library's
     example's, and so is the arithmetic, so each vector equals that library's to the last
-    bit.
+    bit with the same build of noise. noise works in single precision, and its builds for
+    Apple silicon and x86-64 differ in the last bit of some values.
 
     Raises `ValueError` for a grid without a point, fewer than one octave, or a scale,
     persistence or lacunarity that is not positive.

@@ -21,7 +21,18 @@ runner = CliRunner()
 
 PNOISE = 0.07723968476057053
 """`pnoise2(0.1, 0.2)` with the 2024 example's octaves, persistence, lacunarity, repeats and
-base, as noise 1.2.2 gave it on Python 3.12 and 3.14 on an Apple-silicon Mac."""
+base, as noise 1.2.2 gives it on Apple silicon: on a Mac with Python 3.12 and 3.14, and in
+CI's macOS job.
+
+On x86-64, in CI's Linux jobs on Python 3.12, 3.13 and 3.14 and its Windows job, it gives
+0.07723967730998993: one step of single precision lower, `NOISE_STEP`. noise computes in
+single precision, and the compiler for Apple silicon fuses a multiplication and an
+addition into one rounding where x86-64's rounds twice. Built on Apple silicon with the
+fusing turned off (`-ffp-contract=off`), noise gives the x86-64 value to the bit.
+"""
+
+NOISE_STEP = 2.0**-27
+"""One step of single precision between 1/16 and 1/8: how far the noise may stray."""
 
 
 type Field = npt.NDArray[np.float64]
@@ -36,7 +47,7 @@ def test_the_noise_is_the_noise_the_2024_library_drew() -> None:
     value = pnoise2(
         0.1, 0.2, octaves=6, persistence=0.5, lacunarity=2.0, repeatx=150, repeaty=150, base=0
     )
-    assert value == PNOISE
+    assert abs(value - PNOISE) <= NOISE_STEP
 
 
 def test_the_example_field_is_150_by_150_unit_vectors(field: Field) -> None:
