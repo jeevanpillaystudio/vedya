@@ -1,4 +1,4 @@
-"""Models, the aggregate of their parts, and the fingerprint of a known solid."""
+"""Models, the union and aggregate of parts, and the fingerprint of a known solid."""
 
 import math
 
@@ -8,8 +8,9 @@ import pytest
 # OCP is compiled and ships no type stubs, so its names are invisible to the type checker.
 from OCP.BRep import BRep_Tool  # pyright: ignore[reportAttributeAccessIssue]
 
+from references import largest_tolerance
 from vedya.geometry import Align, Region, astroid, circle, rectangle, slab, stroke
-from vedya.model import Model, aggregate, fingerprint
+from vedya.model import Model, aggregate, fingerprint, union
 
 
 def box(x: float, y: float, z: float, at: tuple[float, float, float] = (0.0, 0.0, 0.0)) -> bd.Part:
@@ -150,7 +151,7 @@ def test_aggregate_joins_a_cusp_inside_a_stepped_part() -> None:
 
 
 def test_aggregate_joins_a_part_a_3d_fuse_left_approximate() -> None:
-    # Fused in 3D, two astroids in steps, as Shire's core has them, share a curve that
+    # Fused in 3D, two astroids in steps, as Shire's core stacks them, share a curve that
     # OpenCascade approximates, leaving its edges 0.4 mm loose. Such a part is cut into
     # sections by planes, which miss about 2e-7 of an astroid's section at its cusps.
     steps = slab(astroid(300.0), 0.0, 4.0) + slab(astroid(290.0), 2.0, 4.0)
@@ -172,3 +173,24 @@ def test_aggregate_fuses_parts_that_are_not_slabs_as_solids() -> None:
     cap = math.pi * 0.5**2 * (3 * 1.0 - 0.5) / 3
     assert fingerprint(union).volume == pytest.approx(4 / 3 * math.pi + 16.0 - cap, rel=1e-9)
     assert len(union.solids()) == 1
+
+
+def test_a_union_needs_a_part() -> None:
+    with pytest.raises(ValueError, match="at least one part"):
+        union([])
+
+
+def test_union_keeps_the_curves_a_3d_fuse_loosens() -> None:
+    # The two astroids in steps whose 3D fuse leaves edges 0.4 mm loose, above.
+    steps = union([slab(astroid(300.0), 0.0, 4.0), slab(astroid(290.0), 2.0, 4.0)])
+    assert steps.is_valid
+    assert largest_tolerance(steps) < 1e-6
+    expected = area(astroid(300.0)) * 4.0 + area(astroid(290.0)) * 2.0
+    assert fingerprint(steps).volume == pytest.approx(expected, rel=1e-9)
+
+
+def test_union_leaves_its_parts_as_they_were() -> None:
+    parts = [slab(rectangle(10.0, 10.0), 0.0, 1.0), slab(circle(3.0), 0.5, 2.0)]
+    before = [fingerprint(part) for part in parts]
+    union(parts)
+    assert [fingerprint(part) for part in parts] == before

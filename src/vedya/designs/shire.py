@@ -33,7 +33,7 @@ import build123d as bd
 
 from vedya.designs import Design
 from vedya.geometry import Align, Region, astroid, circle, diamond, rectangle, slab, stroke
-from vedya.model import Model
+from vedya.model import Model, union
 from vedya.patterns import depth_steps, seed_of_life, torus_rings
 
 __all__ = ["PART_NAMES", "SeedPass", "ShireParams", "build", "design", "seed_layer"]
@@ -97,7 +97,9 @@ class ShireParams:
 
 
 # Each part makes its regions afresh where it uses them: a region combined twice may be
-# left unfit for the second boolean by the first (see `vedya.geometry`).
+# left unfit for the second boolean by the first (see `vedya.geometry`). A part of more
+# than one slab joins them with `union`, band by band, never by a 3D fuse, which would
+# loosen the edges where an astroid's wall meets another's level face.
 
 
 def _board(params: ShireParams) -> bd.Sketch:
@@ -142,7 +144,7 @@ def seed_layer(mask: Region, start: float, passes: Sequence[SeedPass]) -> bd.Par
                 seed.radius, step.stroke, centre=Align.INSIDE, petals=Align.CENTER
             )
             laid.append(_Slab(low, high, region))
-    return _fuse([slab(each.region, each.low, each.high - each.low) for each in laid])
+    return union(slab(each.region, each.low, each.high - each.low) for each in laid)
 
 
 _LEVEL = 1e-9
@@ -188,7 +190,7 @@ def _core(params: ShireParams) -> bd.Part:
     layer, wall = params.layer, params.wall
     outer, middle, inner = params.diamonds
     low, high = params.astroids
-    return _fuse(
+    return union(
         [
             slab(_board(params) - diamond(outer), 2 * layer, 2 * layer),
             slab(stroke(diamond(middle), wall, Align.INSIDE), 2.5 * layer, 3 * layer),
@@ -205,7 +207,7 @@ def _torus(params: ShireParams) -> bd.Part:
     layer, wall = params.layer, params.wall
     radius, count, base_stroke = params.torus
     top = params.astroids[1] - wall
-    return _fuse(
+    return union(
         [
             slab(
                 (astroid(top) - torus_rings(radius, count, step.stroke))
@@ -241,12 +243,6 @@ PART_NAMES: tuple[str, ...] = tuple(_BUILDERS)
 def build(params: ShireParams) -> Model:
     """Every part in `PART_NAMES`, in that order."""
     return Model({name: make(params) for name, make in _BUILDERS.items()})
-
-
-def _fuse(solids: list[bd.Part]) -> bd.Part:
-    first, *rest = solids
-    fused = first + rest
-    return fused if isinstance(fused, bd.Part) else bd.Part(fused.solids())
 
 
 design = Design(name="shire", params=ShireParams, build=build)

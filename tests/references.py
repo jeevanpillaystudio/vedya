@@ -4,10 +4,18 @@
   360 scripts (`make golden`). A fingerprint matches its golden to a relative 1e-6 in
   volume and area, and to 1e-3 mm in its bounding box and centroid.
 - Milestone 1's STL files, which Fusion exported from the 2024 code with no manual step.
+- How clean a solid written for fabrication must be: valid, and no edge looser than
+  `CLEAN`.
 """
 
 import math
 from pathlib import Path
+from typing import Any
+
+from build123d.topology import Shape
+
+# OCP is compiled and ships no type stubs, so its names are invisible to the type checker.
+from OCP.BRep import BRep_Tool  # pyright: ignore[reportAttributeAccessIssue]
 
 from vedya.model import Fingerprint
 
@@ -27,6 +35,20 @@ RELATIVE = 1e-6
 
 LENGTH = 1e-3
 """How far, in mm, a bounding box's corner or a centroid may stray from its golden."""
+
+CLEAN = 1e-3
+"""The loosest, in mm, that an edge, vertex or face of a solid written for fabrication
+may be: how far it may lie from the curve or surface it stands for. OpenCascade leaves
+exact ones at 1e-7; a 3D fuse of overlapping slabs left Shire's core at 0.39."""
+
+
+def largest_tolerance(shape: Shape[Any]) -> float:
+    """The loosest tolerance, in mm, of any face, edge or vertex of `shape`."""
+    return max(
+        BRep_Tool.Tolerance_s(item.wrapped)
+        for items in (shape.faces(), shape.edges(), shape.vertices())
+        for item in items
+    )
 
 
 def milestone_1_stl(hole_radius: float) -> Path:

@@ -1,6 +1,7 @@
 """What a design builds, and the numbers that pin it.
 
-A `Model` is a design's named parts in the order it builds them. `aggregate` fuses them
+A `Model` is a design's named parts in the order it builds them. `union` joins solids
+into one, as a design joins the slabs of a part, and `aggregate` joins a model's parts
 into the one solid that is milled or printed whole. `fingerprint` reduces a shape to the
 numbers the tests compare against the goldens.
 
@@ -37,7 +38,7 @@ from OCP.GeomAbs import GeomAbs_SurfaceType  # pyright: ignore[reportAttributeAc
 from OCP.GProp import GProp_GProps  # pyright: ignore[reportAttributeAccessIssue]
 from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain  # pyright: ignore[reportAttributeAccessIssue]
 
-__all__ = ["Fingerprint", "Model", "aggregate", "fingerprint"]
+__all__ = ["Fingerprint", "Model", "aggregate", "fingerprint", "union"]
 
 type Vec3 = tuple[float, float, float]
 
@@ -77,33 +78,44 @@ class Model:
         object.__setattr__(self, "parts", MappingProxyType(dict(self.parts)))
 
 
-def aggregate(model: Model) -> bd.Part:
-    """Every part of `model` fused into one, as Fusion's aggregator joined every body.
+def union(parts: Iterable[bd.Part]) -> bd.Part:
+    """`parts` joined into one part: every point that lies in any of them.
 
-    Where every part is a stack of slabs along z, as every part a design builds from
-    `slab` is, the parts are joined band by band. The heights of their level faces cut z
-    into bands; in each band the parts' sections are joined in the plane, and the bands'
-    slabs, which meet only at their level faces, are then fused. Other parts are fused
-    as solids.
+    Where every part is a stack of slabs along z, as every part built from `slab` is, the
+    parts are joined band by band. The heights of their level faces cut z into bands; in
+    each band the parts' sections are joined in the plane, and the bands' slabs, which
+    meet only at their level faces, are then fused. Other parts are fused as solids.
 
     The bands keep OpenCascade's 3D fuse from meeting one part inside another. Where a
     thin wedge of one part, such as an astroid's cusp, lies inside another part whose
     level face crosses it, the 3D fuse can keep the wedge's faces inside the result: the
     solid stays valid, but encloses the wedge twice, and its volume and area come out
-    too large (Shire's core and layer-1 by 35 mm³), or the fuse drops a piece. Joined in
-    the plane, where OpenCascade's booleans hold, no part meets another in 3D.
+    too large (Shire's core and layer-1 by 35 mm³), or the fuse drops a piece. Where the
+    wall of one astroid meets the level face of a wider one, the 3D fuse approximates the
+    curve they share and loosens its edges to 0.39 mm. Joined in the plane, where
+    OpenCascade's booleans hold, no part meets another in 3D, and every edge stays on
+    the curve it was drawn with.
 
-    A model of one part aggregates to a copy of it. The parts are never changed.
+    The union of one part is a copy of it. The parts are never changed. Raises
+    `ValueError` when there are no parts.
     """
-    parts = list(model.parts.values())
-    if len(parts) == 1:
-        return copy.deepcopy(parts[0])
-    if all(_is_stack(part) for part in parts):
-        return _join_by_bands(parts)
+    solids = list(parts)
+    if not solids:
+        raise ValueError("a union needs at least one part")
+    if len(solids) == 1:
+        return copy.deepcopy(solids[0])
+    if all(_is_stack(part) for part in solids):
+        return _join_by_bands(solids)
     # build123d cleans what a boolean makes, and the clean can rewrite edges the result
     # shares with its operands, so the parts are fused as copies.
-    first, *rest = (copy.deepcopy(part) for part in parts)
+    first, *rest = (copy.deepcopy(part) for part in solids)
     return _as_part(first + rest)
+
+
+def aggregate(model: Model) -> bd.Part:
+    """Every part of `model` joined into one, as Fusion's aggregator joined every body:
+    their `union`. A model of one part aggregates to a copy of it."""
+    return union(model.parts.values())
 
 
 _LEVEL = 1e-7
@@ -148,7 +160,7 @@ def _join_by_bands(parts: Sequence[bd.Part]) -> bd.Part:
     """The union of `parts`, each a stack of prisms along z, built band by band."""
     stacks = [_bands(part) for part in parts]
     levels = _merged(edge for stack in stacks for band in stack for edge in band[:2])
-    slabs: list[bd.Part] = []
+    joined: list[_Band] = []
     for low, high in itertools.pairwise(levels):
         middle = (low + high) / 2
         faces = [
@@ -159,17 +171,29 @@ def _join_by_bands(parts: Sequence[bd.Part]) -> bd.Part:
             for face in region
         ]
         if faces:
-            region = bd.Sketch(_in_plane(BRepAlgoAPI_Fuse(), faces[:1], faces[1:]))
-            rise = bd.extrude(region, amount=high - low, dir=(0.0, 0.0, 1.0))
-            slabs.append(bd.Pos(0.0, 0.0, low) * rise)
+            joined.append((low, high, _in_plane(BRepAlgoAPI_Fuse(), faces[:1], faces[1:])))
+    return _stacked(joined)
+
+
+type _Band = tuple[float, float, list[bd.Face]]
+"""From one height up to another, a part's section there: faces in the plane z = 0."""
+
+
+def _stacked(bands: Sequence[_Band]) -> bd.Part:
+    """The solid each band's section sweeps from its lower height to its upper; an empty
+    part if there are no bands."""
+    slabs = [
+        bd.Pos(0.0, 0.0, low)
+        * bd.extrude(bd.Sketch(region), amount=high - low, dir=(0.0, 0.0, 1.0))
+        for low, high, region in bands
+    ]
+    if not slabs:
+        return bd.Part()
     first, *rest = slabs
     # The slabs meet only where their level faces coincide, the case OpenCascade's glue
     # is for.
     return _as_part(first.fuse(*rest, glue=True) if rest else first)
 
-
-type _Band = tuple[float, float, list[bd.Face]]
-"""From one height up to another, a part's section there: faces in the plane z = 0."""
 
 _EXACT = 1e-6
 """The widest tolerance, in mm, of an edge that lies on its curves: OpenCascade leaves
@@ -188,9 +212,10 @@ def _bands(part: bd.Part) -> list[_Band]:
     gains those that face down, the bottoms of what starts.
 
     A 3D boolean can leave a level face only approximate. Where the wall of one astroid
-    meets the level face of a wider one, as in Shire's core, OpenCascade approximates the
-    curve they share, misses the cusps' tips, and widens the edges' tolerance to cover it,
-    to 0.39 mm. Such a part is cut instead by a plane through the middle of each band.
+    meets the level face of a wider one, as when Shire's core was fused in 3D, OpenCascade
+    approximates the curve they share, misses the cusps' tips, and widens the edges'
+    tolerance to cover it, to 0.39 mm. `union` makes no such part, but one made elsewhere
+    is cut instead by a plane through the middle of each band.
     The plane meets the walls, which a boolean keeps as they were drawn; it misses about
     2e-7 of the section at a cusp, where the wall's curve turns back on itself.
     """
