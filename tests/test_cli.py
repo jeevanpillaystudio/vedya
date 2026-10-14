@@ -1,5 +1,6 @@
 """The `vedya` command, run as a user runs it."""
 
+import logging
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,8 +9,14 @@ import build123d as bd
 import pytest
 from typer.testing import CliRunner
 
+from stl_mesh import is_closed, mesh_volume, read_3mf, read_stl
+from tools.legacy import golden
 from vedya.cli import _apply_settings, app
-from vedya.model import fingerprint
+from vedya.designs.umss import PART_NAMES as UMSS_PARTS
+from vedya.designs.umss import UmssParams
+from vedya.designs.umss import build as build_umss
+from vedya.export import LINEAR_TOLERANCE
+from vedya.model import aggregate, fingerprint
 
 runner = CliRunner()
 
@@ -50,6 +57,10 @@ def test_build_applies_typed_settings(tmp_path: Path) -> None:
         (["build", "umss", "--set", "tile=32,32"], "expected 3 comma-separated values"),
         (["build", "umss", "--set", "parts=lid"], "no part 'lid'"),
         (["build", "umss", "--format", "obj"], "cannot write obj"),
+        (["build", "umss", "--slice", "3.2"], "must be written HEIGHT:COUNT"),
+        (["build", "umss", "--slice", "thin:2"], "must be written HEIGHT:COUNT"),
+        (["build", "umss", "--slice", "3.2:0"], "the count at least 1"),
+        (["build", "umss", "--slice", "-1:3"], "the height must be positive"),
     ],
 )
 def test_build_reports_a_mistake_in_one_line(tmp_path: Path, args: list[str], message: str) -> None:
@@ -59,6 +70,54 @@ def test_build_reports_a_mistake_in_one_line(tmp_path: Path, args: list[str], me
     assert message in result.stderr
     assert len(result.stderr.splitlines()) == 1
     assert not (tmp_path / "out").exists()
+
+
+def test_build_writes_only_the_parts_when_asked(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app, ["build", "umss", "--parts", "--format", "step", "--out", str(tmp_path)]
+    )
+    assert result.exit_code == 0, result.output
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["umss-magnet-base.step"]
+
+
+def test_build_slices_the_aggregate_and_skips_an_empty_layer(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    # The magnet base, from -2.5 to -1 mm, and the base ring, from -0.5 to 0, leave the
+    # layer from -1 to -0.5 empty; the tile stands from 0 to 3.
+    args = ["build", "umss", "--set", "parts=tile,magnet-base,base-ring"]
+    options = ["--aggregate", "--slice", "0.5:12", "--format", "3mf", "--out", str(tmp_path)]
+    with caplog.at_level(logging.WARNING, logger="vedya"):
+        result = runner.invoke(app, [*args, *options])
+    assert result.exit_code == 0, result.output
+    layers = [f"umss-slice-{i:02d}.3mf" for i in range(11) if i != 3]
+    assert sorted(path.name for path in tmp_path.iterdir()) == sorted(["umss.3mf", *layers])
+    assert "layer 3 holds nothing" in caplog.text
+    meshes = [read_3mf(tmp_path / name) for name in layers]
+    assert all(is_closed(mesh.corners) for mesh in meshes)
+    # Each mesh lies within the tolerance of its solid's faces: the union's, and on each
+    # side of the 10 cuts at most the tile.
+    exact = fingerprint(aggregate(build_umss(UmssParams(parts=UMSS_PARTS))))
+    total = sum(mesh_volume(mesh.triangles) for mesh in meshes)
+    assert abs(total - exact.volume) <= LINEAR_TOLERANCE * (exact.area + 2 * 10 * 32.0 * 32.0)
+    whole = mesh_volume(read_3mf(tmp_path / "umss.3mf").triangles)
+    assert abs(whole - exact.volume) <= LINEAR_TOLERANCE * exact.area
+
+
+@pytest.mark.slow
+def test_build_shire_into_twelve_layers_writes_thirteen_files(tmp_path: Path) -> None:
+    args = ["build", "shire", "--aggregate", "--slice", "3.2:12", "--format", "stl"]
+    result = runner.invoke(app, [*args, "--out", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    layers = [f"shire-slice-{i:02d}.stl" for i in range(12)]
+    assert sorted(path.name for path in tmp_path.iterdir()) == sorted(["shire.stl", *layers])
+    whole = read_stl(tmp_path / "shire.stl")
+    total = sum(mesh_volume(read_stl(tmp_path / name)) for name in layers)
+    # The layers' solids hold the whole's volume, and each mesh lies within the tolerance
+    # of its solid's faces: the whole's, and on each side of the 11 cuts at most the board.
+    golden_area = golden.read("shire").aggregate.area  # pyright: ignore[reportOptionalMemberAccess]
+    faces = 2 * golden_area + 2 * 11 * 640.0 * 960.0
+    assert abs(total - mesh_volume(whole)) <= LINEAR_TOLERANCE * faces
 
 
 @dataclass(frozen=True)

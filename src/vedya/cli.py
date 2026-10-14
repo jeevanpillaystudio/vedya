@@ -3,23 +3,33 @@
     vedya list
     vedya build umss --out out/
     vedya build umss --set parts=tile --set hole_radius=3.0 --format step --out out/m1
+    vedya build shire --aggregate --slice 3.2:12 --format stl,3mf --out out/sliced
 
-`build` writes each part as `<design>-<part>.<format>` and the fused design as
-`<design>.<format>`. A `--set name=value` overrides one parameter: a number, a word, or
-a comma-separated list of them for a tuple field.
+`build` writes what its options choose, in each format `--format` names:
+
+- `--parts`: each part, as `<design>-<part>.<format>`.
+- `--aggregate`: the parts joined into one, as `<design>.<format>`.
+- `--slice H:N`: the parts joined into one and cut into layers H mm high from the
+  bottom up, at most N cuts, as `<design>-slice-<i>.<format>` from 0 at the bottom; the
+  last is what is left above the last cut.
+
+With none of them it writes the parts and the aggregate. A `--set name=value` overrides
+one parameter: a number, a word, or a comma-separated list of them for a tuple field.
 """
 
 import dataclasses
 import logging
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, get_args, get_origin, get_type_hints
 
+import build123d as bd
 import typer
 
 from vedya.designs import Design, load_designs
 from vedya.export import SUFFIXES, export
-from vedya.model import aggregate
+from vedya.model import aggregate, slice_layers
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
@@ -54,17 +64,31 @@ def list_designs() -> None:
 def build(
     design: Annotated[str, typer.Argument(help="The design to build, as `vedya list` names it.")],
     out: Annotated[Path, typer.Option(help="The folder to write into; made if missing.")],
+    parts: Annotated[bool, typer.Option("--parts", help="Write each part.")] = False,
+    whole: Annotated[
+        bool, typer.Option("--aggregate", help="Write the parts joined into one.")
+    ] = False,
+    layers: Annotated[
+        str | None,
+        typer.Option(
+            "--slice",
+            metavar="H:N",
+            help="Write the parts joined into one and cut into layers H mm high, from the "
+            "bottom up, at most N cuts; the last file is what is left above them.",
+        ),
+    ] = None,
     formats: Annotated[
-        str, typer.Option("--format", help="Comma-separated formats to write.")
+        str, typer.Option("--format", help="Comma-separated formats to write: stl, step, 3mf.")
     ] = "stl,step",
     settings: Annotated[
         list[str] | None,
         typer.Option("--set", help="Override a parameter, as name=value. Repeatable."),
     ] = None,
 ) -> None:
-    """Build DESIGN and write its parts and their union into OUT."""
+    """Build DESIGN and write into OUT what the options choose: by default, its parts and
+    their union."""
     try:
-        written = _build(design, out, formats, settings or [])
+        written = _build(design, out, formats, settings or [], _Outputs(parts, whole, layers))
     except Exception as error:
         log.info("%s failed", design, exc_info=True)
         typer.echo(f"error: {error}", err=True)
@@ -73,17 +97,46 @@ def build(
         typer.echo(path)
 
 
-def _build(name: str, out: Path, formats: str, settings: Sequence[str]) -> list[Path]:
+@dataclass(frozen=True)
+class _Outputs:
+    """What `build` writes: the parts, their union, and the union in layers, as
+    `HEIGHT:COUNT`."""
+
+    parts: bool
+    whole: bool
+    layers: str | None
+
+
+def _build(
+    name: str, out: Path, formats: str, settings: Sequence[str], outputs: _Outputs
+) -> list[Path]:
     designs = load_designs()
     if name not in designs:
         raise ValueError(f"no design named {name!r}; the designs are {', '.join(designs)}")
     chosen: Design[Any] = designs[name]
     suffixes = _suffixes(formats)
     params = _apply_settings(chosen.params(), settings)
+    layers = _layers(outputs.layers) if outputs.layers is not None else None
+    parts, whole = outputs.parts, outputs.whole
+    if not (parts or whole or layers):
+        parts = whole = True
     log.info("building %s with %s", name, params)
     model = chosen.build(params)
-    shapes = {f"{name}-{part}": shape for part, shape in model.parts.items()}
-    shapes[name] = aggregate(model)
+    shapes: dict[str, bd.Part] = {}
+    if parts:
+        shapes.update({f"{name}-{part}": shape for part, shape in model.parts.items()})
+    if whole or layers:
+        union = aggregate(model)
+        if whole:
+            shapes[name] = union
+        if layers:
+            cut = slice_layers(union, *layers)
+            digits = len(str(len(cut) - 1))
+            for i, layer in enumerate(cut):
+                if layer.solids():
+                    shapes[f"{name}-slice-{i:0{digits}d}"] = layer
+                else:
+                    log.warning("%s: layer %d holds nothing, so no file is written", name, i)
     out.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
     for stem, shape in shapes.items():
@@ -93,6 +146,20 @@ def _build(name: str, out: Path, formats: str, settings: Sequence[str]) -> list[
             export(shape, path)
             written.append(path)
     return written
+
+
+def _layers(text: str) -> tuple[float, int]:
+    """The layer height and the most cuts, from `HEIGHT:COUNT`, such as `3.2:12`."""
+    height, colon, count = text.partition(":")
+    try:
+        if not colon:
+            raise ValueError
+        layer_height, max_count = float(height), int(count)
+    except ValueError:
+        raise ValueError(f"--slice {text!r} must be written HEIGHT:COUNT, such as 3.2:12") from None
+    if not layer_height > 0 or max_count < 1:
+        raise ValueError(f"--slice {text!r}: the height must be positive and the count at least 1")
+    return layer_height, max_count
 
 
 def _suffixes(formats: str) -> list[str]:
