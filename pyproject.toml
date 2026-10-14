@@ -27,6 +27,7 @@ vedya = "vedya.cli:app"
 
 # Every design, the package's own included, registers here; `vedya.designs.load_designs` reads it.
 [project.entry-points."vedya.designs"]
+shire = "vedya.designs.shire:design"
 umss = "vedya.designs.umss:design"
 
 [dependency-groups]

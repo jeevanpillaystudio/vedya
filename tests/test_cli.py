@@ -14,10 +14,11 @@ from vedya.model import fingerprint
 runner = CliRunner()
 
 
-def test_list_names_umss() -> None:
+@pytest.mark.parametrize("name", ["umss", "shire"])
+def test_list_names_each_design(name: str) -> None:
     result = runner.invoke(app, ["list"])
     assert result.exit_code == 0, result.output
-    assert any(line.startswith("umss\t") for line in result.stdout.splitlines())
+    assert any(line.startswith(f"{name}\t") for line in result.stdout.splitlines())
 
 
 def test_build_writes_each_part_and_the_union(tmp_path: Path) -> None:
