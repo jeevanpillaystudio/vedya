@@ -42,6 +42,11 @@ default-groups = ["dev"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+src = ["src", "tests", "."]
+# The Fusion 360 code is kept unchanged until the port replaces it; nothing lints it.
+extend-exclude = ["src/APIDrawVedya.py", "src/__main__.py", "src/core", "src/lib"]
+# Apply the excludes to files named on the command line too, as pre-commit names them.
+force-exclude = true
 
 [tool.ruff.lint]
 select = [
@@ -67,7 +72,7 @@ select = [
 "tools/legacy/adsk/**" = ["N802", "N803", "N815", "N999", "ARG002"]
 
 [tool.pyright]
-include = ["src", "tests", "tools"]
+include = ["src/vedya", "tests", "tools"]
 exclude = ["tools/legacy/adsk"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"

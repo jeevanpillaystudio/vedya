@@ -1,4 +1,7 @@
 # Ruff and the lock check run through uv, so the hooks use the same versions as uv.lock.
+# The Fusion 360 code and its files stay byte for byte as they are until the port replaces
+# them, so that each moved file keeps its blob; no hook touches them.
+exclude: '^(src/(?!vedya/)|\.vscode/|\.env\.example$)'
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -11,6 +14,7 @@ repos:
       - id: end-of-file-fixer
         exclude: '^(public|tests/golden)/'
       - id: trailing-whitespace
+        args: ["--markdown-linebreak-ext=md"]
         exclude: '^(public|tests/golden)/'
   - repo: local
     hooks:
