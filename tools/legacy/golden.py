@@ -286,7 +286,9 @@ def _bodies(
     A component with no bodies is not a part: the aggregator at a36cc3c makes one to hold
     its combine feature, and the joined body stays in the root, where its copies were made.
     """
-    groups = [bodies for occurrence in root.occurrences if (bodies := occurrence.component.reach())]
+    groups = [
+        bodies for occurrence in root.occurrences if (bodies := occurrence.component.all_bodies())
+    ]
     if not groups:
         raise ValueError("the script built nothing")
     return groups, list(root.bRepBodies)

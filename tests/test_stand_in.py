@@ -123,18 +123,48 @@ def test_a_thin_wall_keeps_a_rectangles_corners_sharp(root: fusion.Component) ->
     assert fp.volume == pytest.approx(2.0 * 1.0 - 1.8 * 0.8, rel=1e-12)
 
 
-def test_a_cut_reaches_its_component_and_those_inside_it(root: fusion.Component) -> None:
-    parent = component(root, "parent")
-    own = component(parent, "own")
+def test_a_cut_reaches_every_body_in_its_top_level_component(root: fusion.Component) -> None:
+    layer = component(root, "layer")  # top-level: a child of the root
+    own = component(layer, "own")
     nested = component(own, "nested")
-    sibling = component(parent, "sibling")
-    for holder in (parent, own, nested, sibling):
+    sibling = component(layer, "sibling")
+    cousin = component(sibling, "cousin")
+    other = component(root, "other")  # another top-level component
+    for holder in (root, layer, own, nested, sibling, cousin, other):
         disc(holder)
     extrude(own, circle(own, 0.5), 1.0, Op.CutFeatureOperation)
     whole, cut = math.pi, math.pi * (1.0 - 0.25)
-    assert [volume(c) for c in (parent, own, nested, sibling)] == pytest.approx(
-        [whole, cut, cut, whole], rel=1e-12
+    assert [volume(c) for c in (layer, own, nested, sibling, cousin)] == pytest.approx(
+        [cut] * 5, rel=1e-12
     )
+    # Neither the root's own bodies nor another top-level component's are reached.
+    assert [volume(c) for c in (root, other)] == pytest.approx([whole, whole], rel=1e-12)
+
+
+def test_a_cut_made_in_a_top_level_component_reaches_only_its_tree(
+    root: fusion.Component,
+) -> None:
+    # As a36cc3c's middle cut: its component holds a ring the disc misses, and the board
+    # under it is another top-level component's.
+    board, middle = component(root, "board"), component(root, "middle")
+    disc(board, radius=2.0)
+    extrude(middle, circle(middle, 1.5), 1.0, wall=(Side.Side2, 0.2))
+    with pytest.raises(RuntimeError, match="No target body found"):
+        extrude(middle, circle(middle, 1.0), 1.0, Op.CutFeatureOperation)
+    assert volume(board) == pytest.approx(math.pi * 4.0, rel=1e-12)
+
+
+def test_an_intersect_trims_a_sibling_leafs_body(root: fusion.Component) -> None:
+    # As a seed-of-life layer: a later pass's leaf intersects a disc of its own height,
+    # and the earlier pass's body under the same layer is trimmed to that height.
+    layer = component(root, "layer")
+    earlier = component(component(layer, "pass-a"), "leaf")
+    later = component(component(layer, "pass-b"), "leaf")
+    extrude(earlier, circle(earlier, 1.0), 2.0)
+    extrude(later, circle(later, 1.0), 1.0, Op.IntersectFeatureOperation)
+    (body,) = earlier.bRepBodies
+    low, high = body.shape.bounds
+    assert (*low, *high) == pytest.approx((-1.0, -1.0, 0.0, 1.0, 1.0, 1.0), abs=1e-12)
 
 
 def test_an_intersect_leaves_a_body_it_misses_whole(root: fusion.Component) -> None:
@@ -169,6 +199,20 @@ def test_a_join_that_reaches_nothing_makes_a_new_body(root: fusion.Component) ->
     assert empty.bRepBodies.count == 1
     assert volume(empty) == pytest.approx(math.pi * 0.25, rel=1e-12)
     assert volume(sibling) == pytest.approx(math.pi, rel=1e-12)
+
+
+def test_a_join_reaches_neither_siblings_nor_children(root: fusion.Component) -> None:
+    layer = component(root, "layer")
+    own = component(layer, "own")
+    child = component(own, "child")
+    sibling = component(layer, "sibling")
+    disc(child)
+    disc(sibling)
+    extrude(own, circle(own, 0.5), 1.0, Op.JoinFeatureOperation)
+    assert own.bRepBodies.count == 1
+    assert volume(own) == pytest.approx(math.pi * 0.25, rel=1e-12)
+    assert [child.bRepBodies.count, sibling.bRepBodies.count] == [1, 1]
+    assert [volume(child), volume(sibling)] == pytest.approx([math.pi, math.pi], rel=1e-12)
 
 
 def test_a_join_merges_what_it_reaches_into_one_body(root: fusion.Component) -> None:

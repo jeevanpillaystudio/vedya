@@ -18,7 +18,8 @@ fraction of one, up to 38.4 mm. Its parts, in the order the Fusion 360 script bu
   upwards, with a wall along the astroid's edge.
 - `middle-ring`: a wall outside the circle at the centre, which stands through the core.
 
-A seed-of-life layer is a region, its mask, carved by seeds of life: see `seed_layer`.
+A seed-of-life layer is a region, its mask, carved by seeds of life in two passes whose
+steps differ; where they overlap, the later pass's steps hold (see `seed_layer`).
 
 A diamond is a square turned 45°, given by its half-diagonal. An astroid is given by the
 distance from its centre to a cusp.
@@ -119,24 +120,50 @@ def seed_layer(mask: Region, start: float, passes: Sequence[SeedPass]) -> bd.Par
     mask less a seed of life of the pass's radius, drawn with a stroke that grows by the
     pass's `stroke` at each step up (`depth_steps`). The seed's centre ring is stroked
     inside its circle and its petals astride theirs, as the Fusion 360 script drew them.
-    The layer is the union of every pass's slabs.
+
+    The slabs are laid in order, pass after pass and each pass from the bottom up, and
+    each one cuts back every slab laid before it that it overlaps in height to the
+    heights the two share. The passes all rise from `start`, so a later pass's slabs
+    trim the earlier passes' to their own steps, and above the later pass's top the
+    earlier passes stand alone. The layer is the union of what is left. That is how the
+    piece was milled: in Fusion, each step's intersect with the mask reached every body
+    in the layer.
     """
     if not passes:
         raise ValueError("a seed-of-life layer needs at least one pass")
-    return _fuse(
-        [
-            slab(
-                # The mask is copied for each slab, as a region combined once may be left
-                # unfit for another boolean (see `vedya.geometry`).
-                copy.deepcopy(mask)
-                - seed_of_life(seed.radius, step.stroke, centre=Align.INSIDE, petals=Align.CENTER),
-                step.z,
-                step.height,
+    laid: list[_Slab] = []
+    for seed in passes:
+        for step in depth_steps(seed.steps, start, seed.height, seed.stroke):
+            low, high = step.z, step.z + step.height
+            laid = [earlier.trimmed(low, high) for earlier in laid]
+            # The mask is copied for each slab, as a region combined once may be left unfit
+            # for another boolean (see `vedya.geometry`).
+            region = copy.deepcopy(mask) - seed_of_life(
+                seed.radius, step.stroke, centre=Align.INSIDE, petals=Align.CENTER
             )
-            for seed in passes
-            for step in depth_steps(seed.steps, start, seed.height, seed.stroke)
-        ]
-    )
+            laid.append(_Slab(low, high, region))
+    return _fuse([slab(each.region, each.low, each.high - each.low) for each in laid])
+
+
+_LEVEL = 1e-9
+"""Heights closer than this, in mm, are one: steps that only meet do not overlap."""
+
+
+@dataclass(frozen=True)
+class _Slab:
+    """A region to be swept from `low` up to `high`."""
+
+    low: float
+    high: float
+    region: Region
+
+    def trimmed(self, low: float, high: float) -> "_Slab":
+        """This slab cut back to the heights it shares with `low` to `high`, if it shares
+        any; otherwise this slab."""
+        shared_low, shared_high = max(self.low, low), min(self.high, high)
+        if shared_high - shared_low <= _LEVEL:
+            return self
+        return _Slab(shared_low, shared_high, self.region)
 
 
 def _layer_0(params: ShireParams) -> bd.Part:

@@ -15,11 +15,23 @@ piece that was milled:
   loops. A region's `areaProperties().area` is exact.
 - A thin extrude's wall grows inside the profile on Side1, outside it on Side2, and
   astride it on Center, with sharp corners.
-- A Cut, Intersect or Join extrude reaches the bodies it overlaps in its own component
-  and the components inside it. It never reaches a sibling's or a parent's bodies.
+- A Cut or Intersect extrude reaches every body it overlaps in its top-level component:
+  the component under the root that holds the feature's component, or is it, and every
+  component nested in it. It never reaches another top-level component's bodies.
+- A Join extrude reaches only the bodies it overlaps in its own component, and makes a
+  new body there when it reaches none.
 - A Cut or Intersect that reaches no body raises `RuntimeError(NO_TARGET)`, as Fusion's
-  `add` does. A Join that reaches none makes a new body.
+  `add` does.
 - A combine changes its target and, unless told to keep them, deletes its tools.
+
+The reach is what the April 2024 toolpaths record. A seed-of-life layer's later pass
+trims the earlier pass's slabs it overlaps, so a leaf's Intersect reached its sibling
+leaves under the layer's component. The middle cut and the kailash cut, each made from a
+top-level component of its own, reached nothing: the centre was not bored, nor the
+kailash band cut. A Join keeps to its own component: the April script joins each leaf's
+rings into one body. Had a ring joined a sibling leaf's body instead, the leaf's combine
+would have had no tools, and the run would have stopped before the core and the torus,
+which were milled.
 
 Where a script reaches behaviour that record does not settle, the stand-in chooses as
 Autodesk documents it, or as the scripts assume:
@@ -180,11 +192,12 @@ class BRepBodies(_Collection[BRepBody]):
 class Component:
     """A component: its bodies, the components inside it, and what makes its geometry."""
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, parent: Component | None = None) -> None:
         self.name = name
+        self.parent = parent
         self._bodies: list[BRepBody] = []
         self._made = 0
-        self.occurrences = Occurrences()
+        self.occurrences = Occurrences(self)
         self.xYConstructionPlane = ConstructionPlane("XY", 0.0)
         self.constructionPlanes = ConstructionPlanes()
         self.sketches = Sketches()
@@ -206,13 +219,19 @@ class Component:
         self._bodies.remove(body)
         body.isValid = False
 
-    def reach(self) -> list[BRepBody]:
-        """The bodies a feature of this component can reach: its own, then those of the
-        components inside it, depth first."""
+    def all_bodies(self) -> list[BRepBody]:
+        """Its own bodies, then those of the components nested in it, depth first."""
         bodies = list(self._bodies)
         for occurrence in self.occurrences:
-            bodies.extend(occurrence.component.reach())
+            bodies.extend(occurrence.component.all_bodies())
         return bodies
+
+    def top_level(self) -> Component:
+        """The component under the root that holds this one, or is it; the root is its own."""
+        component = self
+        while component.parent is not None and component.parent.parent is not None:
+            component = component.parent
+        return component
 
 
 class Occurrence:
@@ -228,8 +247,12 @@ class Occurrence:
 
 
 class Occurrences(_Collection[Occurrence]):
+    def __init__(self, owner: Component) -> None:
+        super().__init__()
+        self._owner = owner
+
     def addNewComponent(self, transform: core.Matrix3D) -> Occurrence:
-        occurrence = Occurrence(Component(f"Component{len(self._items) + 1}"))
+        occurrence = Occurrence(Component(f"Component{len(self._items) + 1}", self._owner))
         self._items.append(occurrence)
         return occurrence
 
@@ -622,17 +645,16 @@ def _apply(component: Component, tool: Stack, operation: FeatureOperations) -> l
             raise NotImplementedError("the stand-in cannot extrude into a new component")
         case _:
             pass
-    reached = [body for body in component.reach() if _overlaps(body.shape, tool)]
     if operation is FeatureOperations.JoinFeatureOperation:
+        reached = [body for body in component.bRepBodies if _overlaps(body.shape, tool)]
         if not reached:
             return [component.add_body(tool)]
-        if len({id(body.parentComponent) for body in reached}) > 1:
-            raise NotImplementedError("the stand-in cannot join bodies of different components")
         first, *rest = reached
         first.shape = prisms.union([first.shape, tool, *(body.shape for body in rest)])
         for body in rest:
             body.parentComponent.remove_body(body)
         return [first]
+    reached = [body for body in component.top_level().all_bodies() if _overlaps(body.shape, tool)]
     if not reached:
         raise RuntimeError(NO_TARGET)
     for body in reached:
