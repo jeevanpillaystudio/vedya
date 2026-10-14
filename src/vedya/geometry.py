@@ -4,16 +4,22 @@ Every design is built from these few functions. A region is a set of faces on th
 plane, combined with build123d's operators: `+` for union, `-` for difference and `&` for
 intersection. A slab lifts a region into a solid of a given height at a given z.
 
+An operator may leave the shapes it is given unfit for another boolean: build123d cleans
+each result, and the clean can rewrite edges the result shares with its operands. So a
+design makes a region afresh for each use, as these functions are cheap, and does not
+keep one to combine twice.
+
 Every length is in millimetres.
 """
 
+import math
 from enum import Enum
 from typing import Any
 
 import build123d as bd
 from build123d.topology import Shape
 
-__all__ = ["Align", "Region", "circle", "diamond", "rectangle", "slab", "stroke"]
+__all__ = ["Align", "Region", "astroid", "circle", "diamond", "rectangle", "slab", "stroke"]
 
 type Region = bd.Sketch | bd.Compound | bd.Wire
 """Faces on the XY plane, as build123d's operators type them.
@@ -54,6 +60,29 @@ def diamond(half_diagonal: float) -> bd.Sketch:
     _require_positive("half_diagonal", half_diagonal)
     s = half_diagonal
     return bd.Polygon((s, 0.0), (0.0, s), (-s, 0.0), (0.0, -s), align=None)
+
+
+def astroid(radius: float, points: int = 128) -> bd.Sketch:
+    """The astroid of `radius`, with its four cusps at (±radius, 0) and (0, ±radius).
+
+    The outline is the cubic spline through `points + 1` samples of
+    radius · (cos³θ, sin³θ), at θ = 2πi / points for i from 0 to `points`, as Fusion 360
+    fitted it: not periodic, and closed because its first and last samples meet. The
+    spline rounds the cusps a little, so with 128 points the area is (3/8)π·radius² less
+    a relative 9.19e-7, at every radius.
+    """
+    _require_positive("radius", radius)
+    if points < 4:
+        raise ValueError(f"an astroid needs at least 4 points, not {points!r}")
+    samples: list[bd.VectorLike] = []
+    for i in range(points + 1):
+        # The angle and the powers are written as the Fusion 360 script wrote them.
+        angle = i * 2 * math.pi / points
+        cos, sin = math.cos(angle), math.sin(angle)
+        x = pow(abs(cos), 3.0) * math.copysign(1, cos) * radius
+        y = pow(abs(sin), 3.0) * math.copysign(1, sin) * radius
+        samples.append((x, y, 0.0))
+    return bd.Sketch([bd.Face(bd.Wire([bd.Edge.make_spline(samples)]))])
 
 
 def stroke(shape: Region, width: float, align: Align) -> bd.Sketch:

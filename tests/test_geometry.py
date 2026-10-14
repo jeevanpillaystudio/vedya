@@ -8,7 +8,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from vedya.geometry import Align, Region, circle, diamond, rectangle, slab, stroke
+from vedya.geometry import Align, Region, astroid, circle, diamond, rectangle, slab, stroke
 from vedya.model import fingerprint
 
 REL = 1e-9
@@ -40,6 +40,49 @@ def test_diamond_has_its_vertices_on_the_axes() -> None:
     assert area(diamond(310.0)) == pytest.approx(2 * 310.0**2, rel=REL)
 
 
+ASTROID_AREA_ERROR = -9.1943e-7
+"""How far the area of a 128-point astroid falls short of (3/8)πR², relative to it.
+
+The spline through the samples rounds the four cusps. Measured at radii from 1 to
+500 mm, the shortfall is -9.19430e-7 at every one, to 1e-15.
+"""
+
+
+def astroid_sample(radius: float, i: int, points: int = 128) -> tuple[float, float]:
+    angle = 2 * math.pi * i / points
+    return radius * math.cos(angle) ** 3, radius * math.sin(angle) ** 3
+
+
+@examples
+@given(radius=sizes)
+def test_astroid_area_is_three_eighths_pi_r_squared_less_the_rounded_cusps(radius: float) -> None:
+    exact = 3 / 8 * math.pi * radius**2
+    assert area(astroid(radius)) / exact - 1 == pytest.approx(ASTROID_AREA_ERROR, abs=1e-11)
+
+
+def test_astroid_passes_through_its_samples() -> None:
+    (outline,) = astroid(100.0).edges()
+    for i in range(129):
+        assert outline.distance_to(bd.Vector(*astroid_sample(100.0, i), 0.0)) < 1e-9
+
+
+def test_astroid_has_its_cusps_on_the_axes() -> None:
+    (face,) = astroid(294.4).faces()
+    assert face.is_valid
+    assert not face.inner_wires()
+    fp = fingerprint(face)
+    assert fp.bbox_min == pytest.approx((-294.4, -294.4, 0.0), abs=1e-6)
+    assert fp.bbox_max == pytest.approx((294.4, 294.4, 0.0), abs=1e-6)
+    assert fp.centroid == pytest.approx((0.0, 0.0, 0.0), abs=1e-4)
+
+
+def test_more_points_fit_the_astroid_closer() -> None:
+    errors = [abs(area(astroid(100.0, n)) / (3 / 8 * math.pi * 1e4) - 1) for n in (32, 128, 256)]
+    assert errors == sorted(errors, reverse=True)
+    with pytest.raises(ValueError, match="at least 4 points"):
+        astroid(100.0, 3)
+
+
 @pytest.mark.parametrize(
     "make",
     [
@@ -47,6 +90,7 @@ def test_diamond_has_its_vertices_on_the_axes() -> None:
         lambda: rectangle(-1.0, 2.0),
         lambda: rectangle(1.0, 0.0),
         lambda: diamond(0.0),
+        lambda: astroid(-1.0),
         lambda: stroke(circle(1.0), 0.0, Align.OUTSIDE),
         lambda: slab(circle(1.0), 0.0, 0.0),
     ],

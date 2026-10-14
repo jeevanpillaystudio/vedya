@@ -7,6 +7,7 @@ numbers the tests compare against the goldens.
 Every length is in millimetres.
 """
 
+import copy
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -62,8 +63,13 @@ class Model:
 
 
 def aggregate(model: Model) -> bd.Part:
-    """Every part of `model` fused into one, as Fusion's aggregator joined every body."""
-    first, *rest = model.parts.values()
+    """Every part of `model` fused into one, as Fusion's aggregator joined every body.
+
+    The parts are fused as copies. build123d cleans what a boolean makes, and the clean
+    can rewrite edges the result shares with its operands, which leaves the operands
+    unfit for another boolean; the model's parts stay as they were built.
+    """
+    first, *rest = (copy.deepcopy(part) for part in model.parts.values())
     fused = first + rest
     return fused if isinstance(fused, bd.Part) else bd.Part(fused.solids())
 

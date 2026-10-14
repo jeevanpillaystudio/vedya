@@ -5,7 +5,7 @@ import math
 import build123d as bd
 import pytest
 
-from vedya.geometry import circle, slab
+from vedya.geometry import Align, circle, rectangle, slab, stroke
 from vedya.model import Model, aggregate, fingerprint
 
 
@@ -85,3 +85,24 @@ def test_aggregate_keeps_separate_parts_apart() -> None:
 def test_aggregate_of_one_part_is_that_part() -> None:
     part = box(1, 2, 3)
     assert fingerprint(aggregate(Model({"only": part}))) == fingerprint(part)
+
+
+def test_aggregate_leaves_the_parts_as_they_were_built() -> None:
+    # A fuse of these keeps edges of both, which the clean after it may then rewrite.
+    model = Model(
+        {
+            "board": slab(rectangle(10.0, 10.0), 0.0, 1.0),
+            "ring": slab(stroke(circle(3.0), 1.0, Align.OUTSIDE), 1.0, 2.0),
+        }
+    )
+    before = {name: fingerprint(part) for name, part in model.parts.items()}
+    union = aggregate(model)
+    assert fingerprint(union).volume == pytest.approx(100.0 + 2 * math.pi * 7.0, rel=1e-9)
+    for name, part in model.parts.items():
+        assert fingerprint(part) == before[name]
+        assert not any(
+            mine.wrapped.IsSame(theirs.wrapped)  # pyright: ignore[reportOptionalMemberAccess]
+            for mine in part.edges()
+            for theirs in union.edges()
+        ), f"the union shares edges with {name}"
+    assert fingerprint(aggregate(model)) == fingerprint(union)
