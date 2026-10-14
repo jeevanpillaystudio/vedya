@@ -25,6 +25,10 @@ examples = [
 [project.scripts]
 vedya = "vedya.cli:app"
 
+# Every design, the package's own included, registers here; `vedya.designs.load_designs` reads it.
+[project.entry-points."vedya.designs"]
+umss = "vedya.designs.umss:design"
+
 [dependency-groups]
 dev = [
     "hypothesis>=6.120",
