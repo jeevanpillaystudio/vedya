@@ -12,7 +12,7 @@ Vedya is Jeevan Pillay's generative design system for geometric reliefs and modu
 - **Materials:** Wood (Huon pine), modelling paste, 3D print materials, CNC router materials
 - **Dimensions:** Full installation 2 m × 2 m; prototypes vary in size
 
-Shire is a mandala design for the Australia Bush Festival, a collaboration between Jeevan Pillay and Adam Brown, Gemma & team in Tasmania. Its relief of seeds of life, stepped diamonds, astroids and a torus of rings was milled in Huon pine in April 2024, from a board 640 by 960 mm and 38.4 mm deep.
+Shire is a mandala design for the Australia Bush Festival, a collaboration between Jeevan Pillay and Adam Brown, Gemma & team in Tasmania. Its relief of seeds of life, stepped diamonds and astroids was milled in Huon pine in April 2024, from a board 640 by 960 mm and 38.4 mm deep.
 
 <p align="center">
   <img src="public/sourcing-wood.jpeg" alt="Sourcing the wood" width="40%">
