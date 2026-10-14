@@ -10,6 +10,7 @@ from typing import ClassVar
 
 __all__ = [
     "Application",
+    "BoundingBox3D",
     "Matrix3D",
     "ObjectCollection",
     "Point3D",
@@ -30,6 +31,14 @@ class Point3D:
     @staticmethod
     def create(x: float = 0.0, y: float = 0.0, z: float = 0.0) -> Point3D:
         return Point3D(float(x), float(y), float(z))
+
+
+class BoundingBox3D:
+    """The box aligned with the axes that holds a body, from `minPoint` to `maxPoint`."""
+
+    def __init__(self, minPoint: Point3D, maxPoint: Point3D) -> None:
+        self.minPoint = minPoint
+        self.maxPoint = maxPoint
 
 
 class Matrix3D:
@@ -65,11 +74,18 @@ class ObjectCollection:
         self._items.append(item)
         return True
 
+    def removeByIndex(self, index: int) -> bool:
+        del self._items[index]
+        return True
+
     @property
     def count(self) -> int:
         return len(self._items)
 
     def item(self, index: int) -> object:
+        return self._items[index]
+
+    def __getitem__(self, index: int) -> object:
         return self._items[index]
 
     def __iter__(self) -> Iterator[object]:

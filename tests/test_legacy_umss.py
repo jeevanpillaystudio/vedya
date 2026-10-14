@@ -27,7 +27,7 @@ MILESTONE_ENTRY = "src/v1/api-vedya-draw/APIDrawVedya.py"
     ],
 )
 def test_the_stand_in_reproduces_milestone_1(commit: str, hole_radius: float) -> None:
-    tile = golden.run(commit, MILESTONE_ENTRY, ("tile",))["tile"]
+    tile = golden.run(commit, MILESTONE_ENTRY, ("tile",)).parts["tile"]
     triangles = read_stl(milestone_1_stl(hole_radius))
     low_excess, high_excess = MEASURED_EXCESS
     assert low_excess <= mesh_volume(triangles) - tile.volume <= high_excess
@@ -53,6 +53,8 @@ def test_the_golden_is_what_heads_script_builds_on_the_stand_in() -> None:
     assert committed.commit == history.resolve(source.commit)
     assert committed.entry == source.entry
     rebuilt = golden.run(source.commit, source.entry, source.parts)
-    assert list(rebuilt) == list(committed.parts)
-    for name, fp in rebuilt.items():
+    assert list(rebuilt.parts) == list(committed.parts)
+    for name, fp in rebuilt.parts.items():
         assert not differences(fp, committed.parts[name]), name
+    assert rebuilt.aggregate is None
+    assert committed.aggregate is None

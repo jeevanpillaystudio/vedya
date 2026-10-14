@@ -4,11 +4,13 @@
     uv run python -m tools.legacy.golden umss
 
 `run` writes a script's files at a commit to a temporary folder, imports its entry point
-with the stand-in as `adsk`, and calls `run(context)` as Fusion did. It then fuses the
+with the stand-in as `adsk`, and calls `run(context)` as Fusion did. It then joins the
 bodies under each top-level component, in the order the script made the components,
-scales them from Fusion's centimetres to millimetres, and fingerprints each.
+scales them from Fusion's centimetres to millimetres, and fingerprints each. A script that
+joins its whole design into one body, as the aggregator at a36cc3c does, leaves that body
+in the root component; it is fingerprinted as the design's aggregate.
 
-The scripts name components with random suffixes, so a golden is keyed by build order:
+Some scripts name components with random suffixes, so a golden is keyed by build order:
 each design's `Source` gives the part name of each top-level component in turn.
 """
 
@@ -28,16 +30,27 @@ from contextlib import contextmanager, redirect_stdout
 from dataclasses import dataclass
 from importlib.metadata import version
 from pathlib import Path, PurePosixPath
+from types import ModuleType
 from typing import Any
 from unittest import mock
 
-import build123d as bd
-
-from tools.legacy import adsk, history
+from tools.legacy import adsk, history, prisms
 from tools.legacy.adsk import core, fusion
-from vedya.model import Fingerprint, fingerprint
+from tools.legacy.prisms import Stack
+from vedya.model import Fingerprint
 
-__all__ = ["GOLDEN_DIR", "MM_PER_CM", "SOURCES", "Golden", "Source", "read", "run", "solids"]
+__all__ = [
+    "GOLDEN_DIR",
+    "MM_PER_CM",
+    "SOURCES",
+    "Built",
+    "Golden",
+    "Source",
+    "read",
+    "run",
+    "scripts",
+    "stacks",
+]
 
 log = logging.getLogger("tools.legacy.golden")
 
@@ -56,14 +69,16 @@ class Source:
         design: The design's name, and its golden's file name in `GOLDEN_DIR`.
         commit: The commit whose script is run.
         entry: The script's entry point at that commit, from the repository's root.
-        parts: The part name of each top-level component, in the order the script makes
-            them.
+        parts: The part name of each top-level component that holds bodies, in the order
+            the script makes them.
+        aggregate: Whether the script joins its whole design into the root component.
     """
 
     design: str
     commit: str
     entry: str
     parts: tuple[str, ...]
+    aggregate: bool = False
 
 
 SOURCES: dict[str, Source] = {
@@ -71,9 +86,33 @@ SOURCES: dict[str, Source] = {
     for source in (
         # HEAD's script builds only UMSS's magnet base, in one component.
         Source("umss", "08f31da", "src/APIDrawVedya.py", ("magnet-base",)),
+        # The last Shire that imports builds eight components, then its aggregator joins a
+        # copy of every body in the root, in a ninth component that is left with no body.
+        # Its kailash cut and in-bounds intersect raise a TypeError, which the script
+        # catches, before they make a component.
+        Source(
+            "shire",
+            "a36cc3c",
+            "src/v1/api-vedya-draw/APIDrawVedya.py",
+            ("bg", "border", "layer-0", "layer-2", "layer-1", "core", "torus", "middle-ring"),
+            aggregate=True,
+        ),
     )
 }
 """Every design with a golden, by name."""
+
+
+@dataclass(frozen=True)
+class Built[T]:
+    """What a script built: each part, and the whole design where the script joined it.
+
+    Attributes:
+        parts: Each part, by name, in build order.
+        aggregate: The one body the script joined its whole design into, or None.
+    """
+
+    parts: dict[str, T]
+    aggregate: T | None = None
 
 
 @dataclass(frozen=True)
@@ -86,6 +125,7 @@ class Golden:
         entry: The script's entry point at that commit.
         build123d: The version of build123d the stand-in ran on.
         parts: Each part's fingerprint, in millimetres, in build order.
+        aggregate: The fingerprint of the body the script joined its design into, or None.
     """
 
     design: str
@@ -93,44 +133,90 @@ class Golden:
     entry: str
     build123d: str
     parts: dict[str, Fingerprint]
+    aggregate: Fingerprint | None
 
 
-def solids(commit: str, entry: str) -> list[bd.Part]:
-    """What the script `entry` at `commit` builds: the union of the bodies under each
-    top-level component, in millimetres, in the order the script made the components.
+def stacks(commit: str, entry: str, parts: Sequence[str], aggregate: bool = False) -> Built[Stack]:
+    """What the script `entry` at `commit` builds, in millimetres: the union of the bodies
+    under each top-level component that holds any, named by `parts` in the order the
+    script made the components, and, if `aggregate`, the body it leaves in the root.
 
-    Raises `RuntimeError` when the script reports a failure, and `ValueError` when it
-    leaves a component with no bodies or bodies outside every component.
+    Raises `RuntimeError` when the script reports a failure, and `ValueError` when what it
+    built does not have the parts given, or leaves bodies in the root unless `aggregate`.
     """
     full = history.resolve(commit)
-    folder = PurePosixPath(entry).parent
-    scripts = [path for path in history.files(full, folder.as_posix()) if path.endswith(".py")]
-    with tempfile.TemporaryDirectory(prefix="vedya-legacy-") as temp:
-        root = history.materialise(full, scripts, Path(temp))
-        design = _run_script(root.joinpath(*folder.parts), PurePosixPath(entry).stem, full)
-        return [_in_mm(_union(bodies)) for bodies in _top_level_bodies(design.rootComponent)]
-
-
-def run(commit: str, entry: str, parts: Sequence[str]) -> dict[str, Fingerprint]:
-    """The fingerprint of each top-level component the script builds, named by `parts`."""
-    built = solids(commit, entry)
-    if len(built) != len(parts):
+    folder = PurePosixPath(entry).parent.as_posix()
+    output = io.StringIO()
+    with (
+        scripts(full, folder) as load,
+        _random_state_kept(),
+        _writes_refused(),
+        redirect_stdout(output),
+    ):
+        design = adsk.new_document()
+        load(PurePosixPath(entry).stem).run(None)
+        messages = core.Application.get().userInterface.messages
+    if output.getvalue():
+        log.debug("the script printed:\n%s", output.getvalue())
+    if messages:
+        raise RuntimeError("the script reported a failure:\n" + "\n".join(messages))
+    groups, own = _bodies(design.rootComponent)
+    if len(groups) != len(parts):
         raise ValueError(
-            f"{entry} at {commit} built {len(built)} top-level components, "
+            f"{entry} at {commit} built {len(groups)} top-level components with bodies, "
             f"but {len(parts)} part names were given"
         )
-    return {name: fingerprint(shape) for name, shape in zip(parts, built, strict=True)}
+    if own and not aggregate:
+        raise ValueError("the script left bodies in the root component, outside every part")
+    if aggregate and not own:
+        raise ValueError("the script left no body in the root component to be its aggregate")
+    return Built(
+        parts={name: _in_mm(_union(bodies)) for name, bodies in zip(parts, groups, strict=True)},
+        aggregate=_in_mm(_union(own)) if own else None,
+    )
 
 
-def write(source: Source, parts: dict[str, Fingerprint]) -> Path:
-    """Write `parts` as the golden of `source.design`, and return the file's path."""
-    data = {
+def run(
+    commit: str, entry: str, parts: Sequence[str], aggregate: bool = False
+) -> Built[Fingerprint]:
+    """The fingerprints of what `stacks` gives for the same arguments."""
+    built = stacks(commit, entry, parts, aggregate)
+    return Built(
+        parts={name: stack.fingerprint() for name, stack in built.parts.items()},
+        aggregate=None if built.aggregate is None else built.aggregate.fingerprint(),
+    )
+
+
+@contextmanager
+def scripts(commit: str, folder: str) -> Generator[Callable[[str], ModuleType], None, None]:
+    """While the block runs, the Python files under `folder` at `commit` import as one
+    package, with the stand-in as `adsk`.
+
+    Yields a function that imports a module of the package by its dotted name within
+    `folder`, such as `core.geometry.astroid`. Every module is forgotten after the block.
+    """
+    full = history.resolve(commit)
+    files = [path for path in history.files(full, folder) if path.endswith(".py")]
+    package = f"_vedya_legacy_{full}"
+    with tempfile.TemporaryDirectory(prefix="vedya-legacy-") as temp:
+        root = history.materialise(full, files, Path(temp))
+        spec = importlib.machinery.ModuleSpec(package, None, is_package=True)
+        spec.submodule_search_locations = [str(root.joinpath(*PurePosixPath(folder).parts))]
+        with adsk.installed(), _imported_as(package, importlib.util.module_from_spec(spec)):
+            yield lambda name: importlib.import_module(f"{package}.{name}")
+
+
+def write(source: Source, built: Built[Fingerprint]) -> Path:
+    """Write `built` as the golden of `source.design`, and return the file's path."""
+    data: dict[str, object] = {
         "design": source.design,
         "source": {"commit": history.resolve(source.commit), "entry": source.entry},
         "build123d": version("build123d"),
         "units": "mm",
-        "parts": {name: _encode(fp) for name, fp in parts.items()},
+        "parts": {name: _encode(fp) for name, fp in built.parts.items()},
     }
+    if built.aggregate is not None:
+        data["aggregate"] = _encode(built.aggregate)
     path = GOLDEN_DIR / f"{source.design}.json"
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
     return path
@@ -147,32 +233,8 @@ def read(design: str) -> Golden:
         entry=data["source"]["entry"],
         build123d=data["build123d"],
         parts={name: _decode(values) for name, values in data["parts"].items()},
+        aggregate=_decode(data["aggregate"]) if "aggregate" in data else None,
     )
-
-
-def _run_script(folder: Path, module: str, commit: str) -> fusion.Design:
-    """Import `module` from `folder` as a package's entry point, run it as Fusion would, and
-    return the design it built."""
-    package = f"_vedya_legacy_{commit}"
-    spec = importlib.machinery.ModuleSpec(package, None, is_package=True)
-    spec.submodule_search_locations = [str(folder)]
-    output = io.StringIO()
-    with (
-        adsk.installed(),
-        _imported_as(package, importlib.util.module_from_spec(spec)),
-        _random_state_kept(),
-        _writes_refused(),
-        redirect_stdout(output),
-    ):
-        design = adsk.new_document()
-        script = importlib.import_module(f"{package}.{module}")
-        script.run(None)
-        messages = core.Application.get().userInterface.messages
-    if output.getvalue():
-        log.debug("the script printed:\n%s", output.getvalue())
-    if messages:
-        raise RuntimeError("the script reported a failure:\n" + "\n".join(messages))
-    return design
 
 
 @contextmanager
@@ -215,31 +277,27 @@ def _writes_refused() -> Generator[None, None, None]:
         yield
 
 
-def _top_level_bodies(root: fusion.Component) -> list[list[fusion.BRepBody]]:
-    """The bodies under each of `root`'s components, in the order they were made."""
-    if root.bRepBodies.count:
-        raise ValueError("the script left bodies in the root component, outside every part")
-    groups: list[list[fusion.BRepBody]] = []
-    for occurrence in root.occurrences:
-        bodies = occurrence.component.reach()
-        if not bodies:
-            raise ValueError(f"component {occurrence.component.name!r} holds no bodies")
-        groups.append(bodies)
+def _bodies(
+    root: fusion.Component,
+) -> tuple[list[list[fusion.BRepBody]], list[fusion.BRepBody]]:
+    """The bodies under each of `root`'s components that holds any, in the order they were
+    made, and the bodies in `root` itself.
+
+    A component with no bodies is not a part: the aggregator at a36cc3c makes one to hold
+    its combine feature, and the joined body stays in the root, where its copies were made.
+    """
+    groups = [bodies for occurrence in root.occurrences if (bodies := occurrence.component.reach())]
     if not groups:
         raise ValueError("the script built nothing")
-    return groups
+    return groups, list(root.bRepBodies)
 
 
-def _union(bodies: list[fusion.BRepBody]) -> bd.Part:
-    first, *rest = (body.shape for body in bodies)
-    if not rest:
-        return first
-    fused = first + rest
-    return fused if isinstance(fused, bd.Part) else bd.Part(fused.solids())
+def _union(bodies: list[fusion.BRepBody]) -> Stack:
+    return prisms.union([body.shape for body in bodies])
 
 
-def _in_mm(part: bd.Part) -> bd.Part:
-    return part.scale(MM_PER_CM, about=(0.0, 0.0, 0.0))
+def _in_mm(stack: Stack) -> Stack:
+    return stack.scaled(MM_PER_CM)
 
 
 # A golden keeps what the stand-in measures reliably: volumes and areas to ten significant
@@ -297,7 +355,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error(f"no golden for {', '.join(unknown)}; the designs are {', '.join(SOURCES)}")
     for name in names:
         source = SOURCES[name]
-        path = write(source, run(source.commit, source.entry, source.parts))
+        built = run(source.commit, source.entry, source.parts, source.aggregate)
+        path = write(source, built)
         log.info(
             "wrote %s from %s at %s",
             path.relative_to(history.REPOSITORY),

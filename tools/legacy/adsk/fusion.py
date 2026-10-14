@@ -4,6 +4,10 @@ A design is a tree of components. Each holds bodies, construction planes, sketch
 the features that make bodies. Every component sits at the identity transform, as the
 scripts create them, so a plane's height is its height in the design.
 
+Every feature extrudes a sketch drawn parallel to XY straight along z, so a body is a
+stack of prisms, and its shape is a `prisms.Stack`. Its booleans are worked out in the
+plane, band by band, where OpenCascade's booleans hold; `prisms` says why.
+
 How the features behave is the stand-in's contract, set by what Fusion built for the
 piece that was milled:
 
@@ -17,6 +21,22 @@ piece that was milled:
   `add` does. A Join that reaches none makes a new body.
 - A combine changes its target and, unless told to keep them, deletes its tools.
 
+Where a script reaches behaviour that record does not settle, the stand-in chooses as
+Autodesk documents it, or as the scripts assume:
+
+- A fitted spline is the cubic spline that interpolates its fit points in order, as
+  OpenCascade's `GeomAPI_Interpolate` makes it with its own parameters. It is never
+  periodic: a spline whose first and last points coincide is a closed curve with a start
+  and an end, as `SketchFittedSpline.isClosed` describes, and it bounds a region, as the
+  astroids in the milled piece show.
+- A three-point rectangle's first side runs from the first point to the second. Its other
+  side is as long as the third point lies from that side's line, towards the third point.
+- An occurrence is named `<component name>:1`. The scripts place each component once.
+- A copy-paste puts a copy of each body into the component whose features made it. A
+  combine changes its target body wherever that body is.
+- A split by a plane leaves two bodies in the split body's component, listed lower piece
+  first, as the scripts' slicer assumes. Fusion leaves their order undefined.
+
 Members Fusion's scripts can call are camelCase, as Fusion names them. snake_case members
 are the stand-in's own, for the tools that read what a script built.
 """
@@ -25,16 +45,16 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
 from enum import IntEnum
-from typing import Any
 
 import build123d as bd
-from build123d.topology import Shape
 
 # OCP is compiled and ships no type stubs, so its names are invisible to the type checker.
 from OCP.BRepAlgoAPI import BRepAlgoAPI_Splitter  # pyright: ignore[reportAttributeAccessIssue]
 from OCP.collections import List_TopoDS_Shape  # pyright: ignore[reportAttributeAccessIssue]
 
+from tools.legacy import prisms
 from tools.legacy.adsk import core
+from tools.legacy.prisms import Stack
 from vedya.model import fingerprint
 
 __all__ = [
@@ -49,6 +69,8 @@ __all__ = [
     "ConstructionPlane",
     "ConstructionPlaneInput",
     "ConstructionPlanes",
+    "CopyPasteBodies",
+    "CopyPasteBody",
     "Design",
     "DesignTypes",
     "ExtrudeFeature",
@@ -64,11 +86,16 @@ __all__ = [
     "SketchCircle",
     "SketchCircles",
     "SketchCurves",
+    "SketchFittedSpline",
+    "SketchFittedSplines",
     "SketchLine",
     "SketchLineList",
     "SketchLines",
     "SketchPoint",
     "Sketches",
+    "SplitBodyFeature",
+    "SplitBodyFeatureInput",
+    "SplitBodyFeatures",
     "ThinExtrudeWallLocation",
 ]
 
@@ -96,7 +123,8 @@ class ThinExtrudeWallLocation(IntEnum):
 
 
 class _Collection[T]:
-    """One of Fusion's read-only collections: `count`, `item(index)`, iteration, `len`."""
+    """One of Fusion's read-only collections: `count`, `item(index)`, `[index]`, iteration,
+    `len`."""
 
     def __init__(self, items: Iterable[T] = ()) -> None:
         self._items: list[T] = list(items)
@@ -106,6 +134,9 @@ class _Collection[T]:
         return len(self._items)
 
     def item(self, index: int) -> T:
+        return self._items[index]
+
+    def __getitem__(self, index: int) -> T:
         return self._items[index]
 
     def __iter__(self) -> Iterator[T]:
@@ -128,13 +159,18 @@ class Design(core.Product):
 
 
 class BRepBody:
-    """A solid body in a component. `shape` holds its solids, in centimetres."""
+    """A solid body in a component. `shape` is its stack of prisms, in centimetres."""
 
-    def __init__(self, shape: bd.Part, component: Component, name: str) -> None:
+    def __init__(self, shape: Stack, component: Component, name: str) -> None:
         self.shape = shape
         self.name = name
         self.parentComponent = component
         self.isValid = True
+
+    @property
+    def boundingBox(self) -> core.BoundingBox3D:
+        low, high = self.shape.bounds
+        return core.BoundingBox3D(core.Point3D.create(*low), core.Point3D.create(*high))
 
 
 class BRepBodies(_Collection[BRepBody]):
@@ -158,7 +194,7 @@ class Component:
     def bRepBodies(self) -> BRepBodies:
         return BRepBodies(self._bodies)
 
-    def add_body(self, shape: bd.Part) -> BRepBody:
+    def add_body(self, shape: Stack) -> BRepBody:
         """A new body of `shape` in this component."""
         self._made += 1
         body = BRepBody(shape, self, f"Body{self._made}")
@@ -185,12 +221,20 @@ class Occurrence:
     def __init__(self, component: Component) -> None:
         self.component = component
 
+    @property
+    def name(self) -> str:
+        """`<component name>:1`, as Fusion names a component's first occurrence."""
+        return f"{self.component.name}:1"
+
 
 class Occurrences(_Collection[Occurrence]):
     def addNewComponent(self, transform: core.Matrix3D) -> Occurrence:
         occurrence = Occurrence(Component(f"Component{len(self._items) + 1}"))
         self._items.append(occurrence)
         return occurrence
+
+    def itemByName(self, name: str) -> Occurrence | None:
+        return next((item for item in self._items if item.name == name), None)
 
 
 class ConstructionPlane:
@@ -256,6 +300,7 @@ class SketchCurves:
     def __init__(self) -> None:
         self.edges: list[bd.Edge] = []
         self.sketchCircles = SketchCircles(self.edges)
+        self.sketchFittedSplines = SketchFittedSplines(self.edges)
         self.sketchLines = SketchLines(self.edges)
 
 
@@ -282,6 +327,33 @@ class SketchCircles(_Collection[SketchCircle]):
         return circle
 
 
+class SketchFittedSpline:
+    def __init__(self, fit_points: list[tuple[float, float]]) -> None:
+        self.fit_points = fit_points
+
+
+class SketchFittedSplines(_Collection[SketchFittedSpline]):
+    def __init__(self, edges: list[bd.Edge]) -> None:
+        super().__init__()
+        self._edges = edges
+
+    def add(self, fitPoints: core.ObjectCollection) -> SketchFittedSpline:
+        """The spline through `fitPoints`, in order: never periodic, closed where its ends
+        coincide."""
+        points: list[tuple[float, float]] = []
+        for point in fitPoints:
+            if not isinstance(point, core.Point3D):
+                raise TypeError(f"a spline's fit points are Point3D, not {type(point).__name__}")
+            _on_the_sketch(point)
+            points.append((point.x, point.y))
+        if len(points) < 2:
+            raise RuntimeError("a spline needs at least two fit points")
+        self._edges.append(bd.Edge.make_spline([(x, y, 0.0) for x, y in points]))
+        spline = SketchFittedSpline(points)
+        self._items.append(spline)
+        return spline
+
+
 class SketchLine:
     def __init__(self, start: tuple[float, float], end: tuple[float, float]) -> None:
         self.start = start
@@ -305,7 +377,29 @@ class SketchLines(_Collection[SketchLine]):
         (x0, y0), (x1, y1) = (pointOne.x, pointOne.y), (pointTwo.x, pointTwo.y)
         if x0 == x1 or y0 == y1:
             raise RuntimeError("a rectangle's two corners must differ in x and in y")
-        corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+        return self._rectangle([(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+
+    def addThreePointRectangle(
+        self, pointOne: core.Point3D, pointTwo: core.Point3D, pointThree: core.Point3D
+    ) -> SketchLineList:
+        """The rectangle with a side from `pointOne` to `pointTwo`, reaching as far from that
+        side's line as `pointThree` lies, towards it."""
+        for point in (pointOne, pointTwo, pointThree):
+            _on_the_sketch(point)
+        (x0, y0), (x1, y1) = (pointOne.x, pointOne.y), (pointTwo.x, pointTwo.y)
+        side_x, side_y = x1 - x0, y1 - y0
+        length_squared = side_x * side_x + side_y * side_y
+        if length_squared == 0:
+            raise RuntimeError("a rectangle's first two points must differ")
+        # The third corner is the third point moved along the first side until it lies
+        # square to the second point; a third point drawn at that corner stays where it is.
+        along = ((pointThree.x - x1) * side_x + (pointThree.y - y1) * side_y) / length_squared
+        x2, y2 = pointThree.x - along * side_x, pointThree.y - along * side_y
+        if (x2, y2) == (x1, y1):
+            raise RuntimeError("a rectangle's third point must lie off its first side")
+        return self._rectangle([(x0, y0), (x1, y1), (x2, y2), (x0 + x2 - x1, y0 + y2 - y1)])
+
+    def _rectangle(self, corners: list[tuple[float, float]]) -> SketchLineList:
         lines = [SketchLine(corners[i], corners[(i + 1) % 4]) for i in range(4)]
         for line in lines:
             self._edges.append(bd.Edge.make_line((*line.start, 0.0), (*line.end, 0.0)))
@@ -324,9 +418,12 @@ class Profile:
     def __init__(self, face: bd.Face, z: float) -> None:
         self.face = face
         self.z = z
+        self._area: float | None = None
 
     def areaProperties(self) -> AreaProperties:
-        return AreaProperties(fingerprint(self.face).area)
+        if self._area is None:
+            self._area = fingerprint(self.face).area
+        return AreaProperties(self._area)
 
 
 class Profiles(_Collection[Profile]):
@@ -380,8 +477,7 @@ class ExtrudeFeatures(_Collection[ExtrudeFeature]):
         region = extrudeInput.profile.face
         if extrudeInput.wall is not None:
             region = _thin_wall(region, *extrudeInput.wall)
-        placed = region.moved(bd.Location((0.0, 0.0, extrudeInput.profile.z)))
-        tool = bd.Part([bd.Solid.extrude(placed, bd.Vector(0.0, 0.0, distance))])
+        tool = Stack.prism([region], extrudeInput.profile.z, distance)
         feature = ExtrudeFeature(_apply(self._component, tool, extrudeInput.operation))
         self._items.append(feature)
         return feature
@@ -422,19 +518,19 @@ class CombineFeatures(_Collection[CombineFeature]):
             raise RuntimeError("a combine's target cannot also be its tool")
         if not all(body.isValid for body in (target, *tools)):
             raise RuntimeError("a combine was given a body that no longer exists")
-        tool = _union(body.shape for body in tools)
+        tool = prisms.union([body.shape for body in tools])
         match FeatureOperations(combineInput.operation):
             case FeatureOperations.JoinFeatureOperation:
-                result = target.shape + tool
+                result = prisms.union([target.shape, tool])
             case FeatureOperations.CutFeatureOperation:
-                result = target.shape - tool
+                result = prisms.cut(target.shape, tool)
             case FeatureOperations.IntersectFeatureOperation:
-                result = target.shape & tool
+                result = prisms.common(target.shape, tool)
             case operation:
                 raise NotImplementedError(f"the stand-in cannot combine with {operation.name}")
-        if not result.solids():
+        if result.is_empty:
             raise RuntimeError("the combine leaves nothing of its target body")
-        target.shape = _part(result)
+        target.shape = result
         if not combineInput.isKeepToolBodies:
             for body in tools:
                 body.parentComponent.remove_body(body)
@@ -443,13 +539,81 @@ class CombineFeatures(_Collection[CombineFeature]):
         return feature
 
 
+class CopyPasteBody:
+    def __init__(self, bodies: Iterable[BRepBody]) -> None:
+        self.bodies = BRepBodies(bodies)
+
+
+class CopyPasteBodies(_Collection[CopyPasteBody]):
+    def __init__(self, component: Component) -> None:
+        super().__init__()
+        self._component = component
+
+    def add(self, sourceBodies: BRepBody | core.ObjectCollection) -> CopyPasteBody:
+        """A copy of each of `sourceBodies` in this collection's component."""
+        sources = [sourceBodies] if isinstance(sourceBodies, BRepBody) else list(sourceBodies)
+        copies: list[BRepBody] = []
+        for body in sources:
+            if not isinstance(body, BRepBody) or not body.isValid:
+                raise RuntimeError("a copy-paste copies bodies that exist")
+            # A stack never changes, so the copy can share it.
+            copies.append(self._component.add_body(body.shape))
+        if not copies:
+            raise RuntimeError("a copy-paste needs at least one body")
+        feature = CopyPasteBody(copies)
+        self._items.append(feature)
+        return feature
+
+
+class SplitBodyFeatureInput:
+    def __init__(
+        self, splitBodies: BRepBody, splittingTool: ConstructionPlane, isSplittingToolExtended: bool
+    ) -> None:
+        self.splitBodies = splitBodies
+        self.splittingTool = splittingTool
+        self.isSplittingToolExtended = isSplittingToolExtended
+
+
+class SplitBodyFeature:
+    def __init__(self, bodies: Iterable[BRepBody]) -> None:
+        self.bodies = BRepBodies(bodies)
+
+
+class SplitBodyFeatures(_Collection[SplitBodyFeature]):
+    def createInput(
+        self,
+        splitBodies: object,
+        splittingTool: object,
+        isSplittingToolExtended: bool,
+    ) -> SplitBodyFeatureInput:
+        if not isinstance(splitBodies, BRepBody) or not isinstance(
+            splittingTool, ConstructionPlane
+        ):
+            raise NotImplementedError("the stand-in splits one body by a construction plane")
+        return SplitBodyFeatureInput(splitBodies, splittingTool, isSplittingToolExtended)
+
+    def add(self, splitBodyInput: SplitBodyFeatureInput) -> SplitBodyFeature:
+        """Split the body at the plane's height: the lower piece, then the upper piece."""
+        body, z = splitBodyInput.splitBodies, splitBodyInput.splittingTool.z
+        lower, upper = prisms.split(body.shape, z)
+        if lower.is_empty or upper.is_empty:
+            raise RuntimeError("the splitting plane does not cross the body")
+        component = body.parentComponent
+        component.remove_body(body)
+        feature = SplitBodyFeature([component.add_body(lower), component.add_body(upper)])
+        self._items.append(feature)
+        return feature
+
+
 class Features:
     def __init__(self, component: Component) -> None:
         self.extrudeFeatures = ExtrudeFeatures(component)
         self.combineFeatures = CombineFeatures()
+        self.copyPasteBodies = CopyPasteBodies(component)
+        self.splitBodyFeatures = SplitBodyFeatures()
 
 
-def _apply(component: Component, tool: bd.Part, operation: FeatureOperations) -> list[BRepBody]:
+def _apply(component: Component, tool: Stack, operation: FeatureOperations) -> list[BRepBody]:
     """Apply an extruded `tool` made by a feature of `component`; the bodies it made or changed."""
     match operation:
         case FeatureOperations.NewBodyFeatureOperation:
@@ -465,7 +629,7 @@ def _apply(component: Component, tool: bd.Part, operation: FeatureOperations) ->
         if len({id(body.parentComponent) for body in reached}) > 1:
             raise NotImplementedError("the stand-in cannot join bodies of different components")
         first, *rest = reached
-        first.shape = _union([first.shape, tool, *(body.shape for body in rest)])
+        first.shape = prisms.union([first.shape, tool, *(body.shape for body in rest)])
         for body in rest:
             body.parentComponent.remove_body(body)
         return [first]
@@ -473,10 +637,10 @@ def _apply(component: Component, tool: bd.Part, operation: FeatureOperations) ->
         raise RuntimeError(NO_TARGET)
     for body in reached:
         if operation is FeatureOperations.CutFeatureOperation:
-            left = _part(body.shape - tool)
+            left = prisms.cut(body.shape, tool)
         else:
-            left = _part(body.shape & tool)
-        if left.solids():
+            left = prisms.common(body.shape, tool)
+        if not left.is_empty:
             body.shape = left
         else:
             body.parentComponent.remove_body(body)
@@ -558,29 +722,12 @@ def _offset(wire: bd.Wire, distance: float) -> bd.Wire:
     return moved if isinstance(moved, bd.Wire) else bd.Wire([moved])
 
 
-def _overlaps(body: bd.Part, tool: bd.Part) -> bool:
-    """Whether `body` and `tool` share volume; solids that only touch do not."""
-    a, b = body.bounding_box(), tool.bounding_box()
-    if (
-        a.max.X < b.min.X
-        or b.max.X < a.min.X
-        or a.max.Y < b.min.Y
-        or b.max.Y < a.min.Y
-        or a.max.Z < b.min.Z
-        or b.max.Z < a.min.Z
-    ):
+def _overlaps(body: Stack, tool: Stack) -> bool:
+    """Whether `body` and `tool` share volume; stacks that only touch do not."""
+    (a_low, a_high), (b_low, b_high) = body.bounds, tool.bounds
+    if any(a_high[i] < b_low[i] or b_high[i] < a_low[i] for i in range(3)):
         return False
-    return bool((body & tool).solids())
-
-
-def _union(shapes: Iterable[bd.Part]) -> bd.Part:
-    first, *rest = shapes
-    return _part(first + rest) if rest else first
-
-
-def _part(shape: Shape[Any]) -> bd.Part:
-    """`shape` as a `Part`; build123d types its boolean operators loosely."""
-    return shape if isinstance(shape, bd.Part) else bd.Part(shape.solids())
+    return not prisms.common(body, tool).is_empty
 
 
 def _on_the_sketch(point: core.Point3D) -> None:
