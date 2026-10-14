@@ -4,7 +4,7 @@
 
 Vedya is Jeevan Pillay's generative design system for geometric reliefs and modular parts, made to be fabricated: CNC milled, laser cut or 3D printed. Each design is a Python function over build123d, an open-source CAD library, and the `vedya` command writes it as STEP, STL or 3MF, in millimetres. This repository holds the package and its two designs: Shire, the relief above, milled in Huon pine in April 2024, and UMSS, a magnetic tile for 3D printing. Both began in 2024 as a script for Autodesk Fusion 360. They are now ported to build123d, and each is checked against what that script built; Shire is also checked against the toolpaths it was milled from.
 
-*Above: `shire.stl`, as `vedya build shire` writes it, rendered with its heights doubled. Every figure in this README is drawn by `make figures` from the designs as the package builds them; the photographs are in `public/`.*
+*Above: `shire.stl`, as `vedya build shire` writes it, rendered with its heights doubled. Every figure in this README is drawn by `make figures` from the designs as the package builds them; the photographs and the astroid animation are in `public/`.*
 
 ## Shire
 
@@ -14,20 +14,43 @@ Vedya is Jeevan Pillay's generative design system for geometric reliefs and modu
 
 Shire is a mandala design for the Australia Bush Festival, a collaboration between Jeevan Pillay and Adam Brown, Gemma & team in Tasmania. Its relief of seeds of life, stepped diamonds, astroids and a torus of rings was milled in Huon pine in April 2024, from a board 640 by 960 mm and 38.4 mm deep.
 
+<p align="center">
+  <img src="public/sourcing-wood.jpeg" alt="Sourcing the wood" width="40%">
+  <img src="public/wood-side-view-1.jpeg" alt="Wood source material" width="40%">
+</p>
+
+*Sourcing the wood, and the wood source material.*
+
+<p align="center">
+  <img src="public/cnc-milling-process.jpeg" alt="CNC milling" width="33%">
+  <img src="public/final-piece.jpeg" alt="Vedya prototype: Shire, milled in Huon pine" width="33%">
+</p>
+
+*The CNC milling, and the finished piece in Huon pine.*
+
+<p align="center">
+  <img src="public/shire-site.jpeg" alt="Vedya on-site: Shire at the festival" width="80%">
+</p>
+
+*Shire on site.*
+
 ![Shire's top as vedya builds it, beside the piece milled in April 2024](docs/images/shire-and-the-milled-piece.jpg)
 
 *Left: Shire's top as `vedya` builds it, seen from above and shaded, its board 640 × 960 mm. Right: the piece milled in Huon pine in April 2024 ([`public/final-piece.jpeg`](public/final-piece.jpeg)).*
 
-In the left panel, the circle that reaches past the board's long sides is layer-0's. It overhangs them by up to 40 mm, as the 2024 model did: nothing in the 2024 code trims it, and the milling stayed inside the board, so the piece shows none of it.
-
-<p>
-  <img src="public/wood-side-view-1.jpeg" alt="Wood source material" width="49%">
-  <img src="public/cnc-milling-process.jpeg" alt="CNC milling" width="49%">
-</p>
+The 2024 script drew layer-0, the seeds of life around the outer diamond, in a circle of radius 360 mm on a board 640 mm wide, so its model overhung the board's long sides by up to 40 mm, which the wood could not hold. `vedya` cuts layer-0 to the board by default. `--set clip_to_board=false` builds the 2024 model exactly, overhang included, and that is the build the goldens pin.
 
 ## How Shire is built
 
-A design is built from a few primitives in `vedya.geometry` and `vedya.patterns`: circles, rectangles, diamonds (squares turned 45°), astroids, seeds of life and torus rings. Regions on the plane combine with `+`, `-` and `&`; `stroke` draws the band of a given width along a region's outline, on the side `Align` names; and `slab` sweeps a region straight up from a height. Every height in Shire is a whole number of layers, 4.8 mm, or a fraction of one, up to eight layers, 38.4 mm. This is Shire's core, from [`src/vedya/designs/shire.py`](src/vedya/designs/shire.py):
+A design is built from a few primitives in `vedya.geometry` and `vedya.patterns`: circles, rectangles, diamonds (squares turned 45°), astroids, seeds of life and torus rings. Regions on the plane combine with `+`, `-` and `&`; `stroke` draws the band of a given width along a region's outline, on the side `Align` names; and `slab` sweeps a region straight up from a height. Every height in Shire is a whole number of layers, 4.8 mm, or a fraction of one, up to eight layers, 38.4 mm.
+
+<p align="center">
+  <img src="public/astroid.gif" alt="An astroid, traced by a point on a circle rolling inside a circle four times as large" width="240">
+</p>
+
+*An astroid: the curve a point on a circle traces as the circle rolls inside one four times as large. `astroid(R)` draws the curve R·(cos³θ, sin³θ) as a spline, R being the distance from its centre to a cusp.*
+
+This is Shire's core, from [`src/vedya/designs/shire.py`](src/vedya/designs/shire.py):
 
 ```python
 def _core(params: ShireParams) -> bd.Part:
@@ -55,7 +78,7 @@ Shire's parts, in the order it builds them:
 | --- | --- |
 | `bg` | The board, two layers (9.6 mm) thick |
 | `border` | A wall along the board's edge, inside it; the milled piece had none ([ADR 0003](docs/adr/0003-the-milled-contract.md)) |
-| `layer-0` | Seeds of life in the circle of radius 360 mm around the outer diamond, overhanging the board's long sides |
+| `layer-0` | Seeds of life in the circle of radius 360 mm around the outer diamond, cut to the board |
 | `layer-2` | Seeds of life on the board outside that circle |
 | `layer-1` | Seeds of life between the outer and middle diamonds |
 | `core` | The board outside the outer diamond, the diamonds' walls, and four astroids stacked at the centre |
@@ -72,7 +95,7 @@ The parameters and their defaults are the fields of `ShireParams` in [`src/vedya
 
 Each ported design is held to what the 2024 Fusion script built, and Shire to what was milled.
 
-- **Goldens.** [`tests/golden/shire.json`](tests/golden/shire.json) and [`tests/golden/umss.json`](tests/golden/umss.json) hold the volume, area, bounding box and centroid of every part. They were measured by running the 2024 scripts themselves, unchanged, from git history: Shire from commit `a36cc3c` and UMSS from `08f31da`. The scripts run on `tools/legacy/adsk/`, a stand-in for the parts of Fusion's API they call, built on build123d; its contract is at the top of [`tools/legacy/adsk/fusion.py`](tools/legacy/adsk/fusion.py). The fast tests hold every part to its golden, to a relative 1e-6 in volume and area and 0.001 mm in bounding box and centroid. `make golden` regenerates them, and is run only when the stand-in changes, never to make a test pass ([ADR 0002](docs/adr/0002-pin-by-stand-in.md)).
+- **Goldens.** [`tests/golden/shire.json`](tests/golden/shire.json) and [`tests/golden/umss.json`](tests/golden/umss.json) hold the volume, area, bounding box and centroid of every part. They were measured by running the 2024 scripts themselves, unchanged, from git history: Shire from commit `a36cc3c` and UMSS from `08f31da`. Shire's are matched by the 2024 model, built with `clip_to_board=False`; the default, cut to the board, is held to that build cut to the board. The scripts run on `tools/legacy/adsk/`, a stand-in for the parts of Fusion's API they call, built on build123d; its contract is at the top of [`tools/legacy/adsk/fusion.py`](tools/legacy/adsk/fusion.py). The fast tests hold every part to its golden, to a relative 1e-6 in volume and area and 0.001 mm in bounding box and centroid. `make golden` regenerates them, and is run only when the stand-in changes, never to make a test pass ([ADR 0002](docs/adr/0002-pin-by-stand-in.md)).
 - **The toolpaths.** Shire was milled from two toolpaths, [`public/cnc-cuts/6mm-adaptive.tap`](public/cnc-cuts/6mm-adaptive.tap) and [`3mm-adaptive.tap`](public/cnc-cuts/3mm-adaptive.tap), for flat end mills of 6 and 3 mm. [`tests/test_toolpaths.py`](tests/test_toolpaths.py) follows the tool along every move, no two positions more than 0.25 mm apart, and checks every part but the border against it exactly, in plan: wherever the tool went, the model stands no more than 0.15 mm above its tip, the stock CAM left on floors, anywhere more than 0.1 mm inside the edge of its flat end. The G-code reader and the plan are [`tools/toolpaths.py`](tools/toolpaths.py).
 - **The milestone prints.** The slow tests check the stand-in against the STL files Fusion exported for UMSS's first milestone, in `public/umss/` ([notes](public/umss/README.md)).
 
@@ -129,7 +152,7 @@ uv run vedya build shire --aggregate --slice 3.2:12 --format stl,3mf --out out/s
 
 ![Shire's twelve 3.2 mm slices, each from above](docs/images/shire-slices.png)
 
-*The twelve slices of `--slice 3.2:12`, each seen from above. Layer-0's circle shows past the board in `shire-slice-06` to `shire-slice-08`, from 19.2 to 28.8 mm, where it stands.*
+*The twelve slices of `--slice 3.2:12`, each seen from above, from `shire-slice-00` at the bottom to `shire-slice-11` at the top.*
 
 ## UMSS
 
