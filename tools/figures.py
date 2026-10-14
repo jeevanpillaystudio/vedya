@@ -229,11 +229,10 @@ def _widened(mask: Mask, by: int) -> Mask:
     return found
 
 
-SHIRE_GRID = Grid(cell=0.25, west=-380.0, north=500.0, rows=4000, columns=3040)
-"""Shire's board, 640 by 960 mm, and the 40 mm by which layer-0 overhangs its long
-sides, with a margin."""
+SHIRE_GRID = Grid(cell=0.25, west=-340.0, north=500.0, rows=4000, columns=2720)
+"""Shire's board, 640 by 960 mm, with a margin of 20 mm."""
 
-SLICE_GRID = Grid(cell=1.0, west=-380.0, north=500.0, rows=1000, columns=760)
+SLICE_GRID = Grid(cell=1.0, west=-340.0, north=500.0, rows=1000, columns=680)
 """The same rectangle, in cells of 1 mm."""
 
 
@@ -381,8 +380,8 @@ def _save_png(figure: Any, name: str, dpi: int) -> Path:
 
 
 def draw_relief_and_photograph(top: Surface) -> Path:
-    figure = _figure(12.0, 8.4)
-    left, right = figure.subplots(1, 2, width_ratios=[0.76, 0.5625])
+    figure = _figure(11.4, 8.4)
+    left, right = figure.subplots(1, 2, width_ratios=[0.68, 0.5625])
     left.imshow(_relief(top.height), extent=SHIRE_GRID.extent, interpolation="antialiased")
     left.set_title("Shire as vedya builds it, from above")
     _axes_in_mm(left)
@@ -396,7 +395,7 @@ def draw_relief_and_photograph(top: Surface) -> Path:
 
 
 def draw_parts(top: Surface) -> Path:
-    figure = _figure(8.0, 11.0)
+    figure = _figure(7.4, 11.0)
     axes = figure.subplots()
     light = LightSource(azdeg=315, altdeg=35)
     cell = SHIRE_GRID.cell
@@ -429,7 +428,7 @@ def draw_parts(top: Surface) -> Path:
 
 
 def draw_against_the_toolpaths(top: Surface, cut: Raster) -> Path:
-    figure = _figure(18.0, 8.0)
+    figure = _figure(17.0, 8.0)
     model, milled_axes, difference_axes = figure.subplots(1, 3)
     model.imshow(_relief(top.height), extent=SHIRE_GRID.extent, interpolation="antialiased")
     model.set_title("The model's top")
@@ -462,7 +461,7 @@ def draw_against_the_toolpaths(top: Surface, cut: Raster) -> Path:
 
 def draw_slices(layers: Sequence[bd.Part]) -> Path:
     height, count = SLICE
-    figure = _figure(18.0, 9.0)
+    figure = _figure(16.5, 9.0)
     grid = figure.subplots(2, (len(layers) + 1) // 2)
     colours = ListedColormap([PAPER, "#8a5a33"])
     for index, (axes, layer) in enumerate(zip(grid.flat, layers, strict=True)):
