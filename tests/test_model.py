@@ -55,7 +55,7 @@ def test_model_keeps_its_parts_in_build_order() -> None:
     assert list(model.parts) == ["top", "base", "middle-ring"]
 
 
-def test_model_cannot_change_once_built() -> None:
+def test_which_parts_a_model_holds_is_fixed_once_built() -> None:
     parts = {"base": box(1, 1, 1)}
     model = Model(parts)
     parts["late"] = box(1, 1, 1)

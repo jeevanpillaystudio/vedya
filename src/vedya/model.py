@@ -66,6 +66,10 @@ class Model:
 
     Part names are lowercase words joined by hyphens, such as `magnet-base`, because they
     become file names.
+
+    Which parts a model holds, and under which names, is fixed once it is built. The parts
+    themselves are build123d shapes, which can be changed in place; nothing here stops
+    that, so code that reads a model leaves its parts as they are.
     """
 
     parts: Mapping[str, bd.Part]
@@ -76,7 +80,8 @@ class Model:
         for name in self.parts:
             if not _PART_NAME.fullmatch(name):
                 raise ValueError(f"part name {name!r} must be lowercase words joined by hyphens")
-        # A read-only copy, so a model cannot change after it is built.
+        # A read-only copy of the mapping: no part can be added, removed or renamed. The
+        # parts are not copied, and stay as changeable as build123d makes them.
         object.__setattr__(self, "parts", MappingProxyType(dict(self.parts)))
 
 
