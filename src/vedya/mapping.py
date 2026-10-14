@@ -11,8 +11,8 @@ array of such rows and returns one row for each.
 
 The samplers give the points that the maps carry: the cell centres of a rectangle, and
 rings of points that fill a disc. The arithmetic is the 2024 library's
-(`src/lib/src/coord_transform/`), operation for operation, so each map gives its values to
-the last bit.
+(`src/lib/src/coord_transform/` at the tag `fusion/head`), operation for operation, so each
+map gives its values to the last bit.
 """
 
 import math
