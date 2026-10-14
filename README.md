@@ -1,237 +1,145 @@
-# Vedya Design System
+# Vedya
 
-A generative design system for creating and fabricating geometric patterns and modular structures with computational methods in Fusion 360.
+Vedya is a generative design system for geometric reliefs and modular parts, made to be fabricated: CNC milled, laser cut or 3D printed. Each design is a Python function over [build123d](https://github.com/gumyr/build123d), an open-source CAD library, and the `vedya` command writes it as STEP, STL or 3MF, in millimetres.
 
-## Overview
+It began in 2024 as a script for Autodesk Fusion 360. That script is now ported to build123d, and the port is held to what the script built: see [How the port is checked](#how-the-port-is-checked).
 
-**Project:** Mandala Sculpture for Australia Bush Festival  
-**Materials:** Wood (Huon Pine), Modelling Paste, 3D Print Materials, CNC Router Materials  
-**Dimensions:** Full Installation 2m x 2m; Prototypes vary in size
+## Shire
 
-![Vedya Prototype](public/final-piece.jpeg)
-![Vedya on-site](public/shire-site.jpeg)
+![Shire, milled in Huon pine](public/final-piece.jpeg)
 
-## Visual Examples
+- **Project:** Mandala sculpture for the Australia Bush Festival
+- **Materials:** Wood (Huon pine), modelling paste, 3D print materials, CNC router materials
+- **Dimensions:** Full installation 2 m × 2 m; prototypes vary in size
 
-### Fabrication Process
-![Wood Source Material](public/wood-side-view-1.jpeg)
-![CNC Milling Process](public/cnc-milling-process.jpeg)
+Shire is a mandala design for the Australia Bush Festival, a collaboration between Jeevan Pillay and Adam Brown, Gemma & team in Tasmania. Its relief of seeds of life, stepped diamonds, astroids and a torus of rings was milled in Huon pine in April 2024, from a board 640 by 960 mm and 38.4 mm deep.
 
+![Shire on site](public/shire-site.jpeg)
 
-## Algorithm & Design Approach
+![Wood source material](public/wood-side-view-1.jpeg)
+![CNC milling](public/cnc-milling-process.jpeg)
 
-The Vedya system uses a hierarchical composition-based algorithm to generate complex geometric designs:
+The repository's second design, UMSS, is a magnetic tile for the Universal Modular Storage System: a 32 mm square with a pocket for a cylindrical magnet 6 mm across and 3 mm high.
 
-### Core Algorithm
+## Install
 
-```
-FUNCTION GenerateVedyaDesign(designType, seed, fabricationType, fabricationMode):
-    // Initialize design context
-    context = CreateDesignContext(designType, seed, fabricationType, fabricationMode)
+You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/).
 
-    // Generate base geometry based on selected design template
-    component = GenerateShireDesign(context.rootComponent)
-
-    // Apply post-processing based on fabrication mode
-    IF fabricationMode == "slicer":
-        SliceComponent(component, layerDepth, layerCount)
-    ELSE IF fabricationMode == "aggregator":
-        AggregateComponents(component)
-
-    RETURN component
+```sh
+uv sync                 # the package and its development tools
+uv sync --all-extras    # also what `vedya stencil`, `vedya map --figure` and `vedya flowfield` need
 ```
 
-### Composition System
+`make sync` does the second, from the lock file exactly.
 
-The design generation uses a composition-based approach:
+## Build a design
 
-1. **Primitive Shapes**: Basic geometric elements (circles, rectangles)
-2. **Modifiers**: Operations applied to shapes (extrude, boolean, array)
-3. **Composition Layers**: Collections of shapes with modifiers
-4. **Full Composition**: Hierarchical arrangement of layers
-
-Example of the Shire design generation:
-
-```
-FUNCTION GenerateShireDesign(rootComponent):
-    // Create background layer
-    background = CreateBackgroundLayer(rootComponent)
-
-    // Create border
-    border = CreateBorder(rootComponent)
-
-    // Create seed of life patterns (layered)
-    seedOfLifeLayer0 = CreateSeedOfLifeLayer0(rootComponent)
-    seedOfLifeLayer1 = CreateSeedOfLifeLayer1(rootComponent)
-    seedOfLifeLayer2 = CreateSeedOfLifeLayer2(rootComponent)
-
-    // Create core component
-    core = CreateComponentCore(rootComponent)
-
-    // Create torus astroid pattern
-    torusAstroid = CreateTorusAstroid(rootComponent)
-
-    // Apply middle cut
-    ApplyMiddleCut(rootComponent)
-
-    // Apply terrain cut (optional)
-    ApplyTerrainCut(rootComponent)
-
-    RETURN rootComponent
+```sh
+uv run vedya list
+uv run vedya build shire --out out/
 ```
 
-### Key Geometric Algorithms
+`vedya list` names each design with a line about it: `shire` and `umss`. `vedya build shire --out out/` writes each of Shire's eight parts, as `out/shire-<part>.stl` and `.step`, and all of them joined into one, as `out/shire.stl` and `out/shire.step`. Shire takes about half a minute.
 
+Shire's parts, in the order it builds them:
 
-#### Astroid Curve Algorithm
+| Part | What it is |
+| --- | --- |
+| `bg` | The board, two layers (9.6 mm) thick |
+| `border` | A wall along the board's edge, inside it; the milled piece had none ([ADR 0003](docs/adr/0003-the-milled-contract.md)) |
+| `layer-0` | Seeds of life in the circle around the outer diamond |
+| `layer-2` | Seeds of life on the board outside that circle |
+| `layer-1` | Seeds of life between the outer and middle diamonds |
+| `core` | The board outside the outer diamond, the diamonds' walls, and four astroids stacked at the centre |
+| `torus` | The top astroid less a torus of rings, which lies within the core |
+| `middle-ring` | A ring around the centre |
 
-An astroid is a hypocycloid with four cusps. In the Vedya system, we implement a generalized version that allows for variable cusps (n-cusps) and parametric control. The algorithm to generate points along an astroid curve is:
+Options choose what is written:
 
-```
-FUNCTION GenerateAstroidPoints(centerX, centerY, radius, n, numPoints):
-    points = []
+- Given alone, `--parts` writes only the parts, and `--aggregate` only their union.
+- `--format stl,step,3mf` chooses the formats; the default is `stl,step`.
+- `--set name=value` changes a parameter, such as `--set hole_radius=3.0`. The parameters and their defaults are the fields of `ShireParams` in [`src/vedya/designs/shire.py`](src/vedya/designs/shire.py) and `UmssParams` in [`src/vedya/designs/umss.py`](src/vedya/designs/umss.py). Lengths are in millimetres.
 
-    // Generate points along the astroid curve
-    FOR i = 0 TO numPoints-1:
-        t = i * (2π/numPoints)
-        x = centerX + radius * cos(t)^n
-        y = centerY + radius * sin(t)^n
-        points.ADD((x, y))
+UMSS builds its magnet base by default. Its first printed milestone, a tile with a 3.0 mm hole, is:
 
-    RETURN points
-```
-
-![Astroid Curve Pattern](public/astroid.gif)
-
-Where:
-- `n` is the power parameter that controls the shape (n=3 for classic astroid)
-- `numPoints` determines the resolution of the curve
-- `radius` controls the size of the astroid
-
-The Torus Astroid in the Vedya system combines this curve with circular elements to create complex patterns with:
-- Inner and outer boundaries
-- Stroke weight variations
-- Radial symmetry
-- Depth variations when extruded to 3D
-
-#### Seed of Life Algorithm
-
-The Seed of Life is a sacred geometry pattern formed by seven overlapping circles of the same size. The algorithm to generate this pattern follows these steps:
-
-```
-FUNCTION GenerateSeedOfLife(centerX, centerY, radius):
-    // Create the central circle
-    circles = [Circle(centerX, centerY, radius)]
-
-    // Create six circles around the central circle
-    FOR i = 0 TO 5:
-        angle = i * (2π/6)
-        newCenterX = centerX + radius * cos(angle)
-        newCenterY = centerY + radius * sin(angle)
-        circles.ADD(Circle(newCenterX, newCenterY, radius))
-
-    RETURN circles
+```sh
+uv run vedya build umss --set parts=tile --set hole_radius=3.0 --out out/m1
 ```
 
+### Slicing and formats
 
-The Seed of Life pattern has deep historical significance in sacred geometry, appearing in ancient cultures worldwide. In the Vedya system, this pattern serves as a foundational element for creating complex mandala designs. The implementation allows for:
+```sh
+uv run vedya build shire --aggregate --slice 3.2:12 --format stl,3mf --out out/sliced
+```
 
-- Variable scaling of the pattern
-- Layering with different radii
-- Combination with other geometric elements through boolean operations
-- Depth extrusion to create 3D forms
+`--slice H:N` joins the parts and cuts the result into layers H mm high from the bottom up, at most N cuts. Each layer is written as `<design>-slice-<i>`, from `00` at the bottom; the last is what is left above the last cut. Shire, 38.4 mm high, gives twelve layers of 3.2 mm, `shire-slice-00` to `shire-slice-11`, ready for a slicer such as BambuStudio or for laser cutting.
 
-### Geometric Operations
+- **STEP** keeps the exact geometry.
+- **STL** and **3MF** are triangle meshes that stay within 0.01 mm of the exact surface. A 3MF file holds one closed mesh, as a slicer expects.
 
-The system uses several key geometric operations:
+### The library's other tools
 
-1. **Boolean Operations**: Union, difference, and intersection of shapes
-2. **Array Patterns**: Radial, linear, and grid arrangements of elements
-3. **Extrusion**: Converting 2D sketches to 3D forms
-4. **Coordinate Transformations**: Mapping between coordinate systems (cartesian, cylindrical, spherical)
+The 2024 code had a small library beside the Fusion script. Its functions are now `vedya.mapping`, `vedya.render` and `vedya.flowfield`, behind three commands. `stencil` and `map --figure` need the `render` extra, and `flowfield` the `examples` extra; `uv sync --all-extras` installs both.
 
-## Architecture
+```sh
+uv run vedya map cylinder --out out/cylinder.csv --figure out/cylinder.html
+uv run vedya stencil public/stencil/roman-soldier-cc.png --out out/stencil.png
+uv run vedya flowfield --out out/flowfield.npy
+```
 
-The Vedya system follows a pattern → transform → render workflow:
-- **Pattern:** Generate base geometric patterns
-- **Transform:** Apply coordinate transformations (cartesian, cylindrical, spherical)
-- **Render:** Output to various formats (STL, OBJ, PNG)
+- `map cylinder|sphere` wraps a rectangle's cells and a disc's rings onto a cylinder or a sphere, and writes the points as CSV, and with `--figure` as a 3D figure in HTML.
+- `stencil` writes an image's outlines in black on white.
+- `flowfield` writes a grid of unit vectors whose angles follow Perlin noise, as a NumPy array.
 
-## Setup & Installation
+`uv run vedya <command> --help` lists each command's options.
 
-### Fusion 360 Integration
+## Run the checks
 
-1. Configure environment:
-   ```
-   # In .env file
-   PYTHONPATH=/path/to/fusion360/API/Python/libs
-   LOGFILEPATH=/path/to/logfile.txt
-   ```
+```sh
+make check    # ruff, ruff format, pyright in strict mode, and the fast tests
+make slow     # the slow tests: the 2024 code from git history, and the toolpaths
+make golden   # rerun the 2024 code and rewrite tests/golden/
+make designs  # build every design into out/
+```
 
-2. Run the script:
-   - Open Fusion 360
-   - Open the script in Script Editor
-   - Run the script
+`make check` is the default target and takes about a minute. `make slow` takes a few minutes and reads old commits, so it needs a clone with full history; in a shallow clone, run `git fetch --unshallow` first. `make format` fixes what ruff can, and `make hooks` installs the pre-commit hooks.
 
-### Python Development
+CI runs the lint job, the fast tests on Linux (Python 3.12, 3.13 and 3.14), macOS and Windows (3.13), and the slow tests on Linux.
 
-1. Setup environment:
-   ```
-   poetry shell
-   poetry install
-   ```
+## How the port is checked
 
-2. Available commands:
-   ```
-   # Transform coordinates
-   vedya transform input.txt --target cylinder --resolution 0.1 --length 10 --height 4 --radius 1 --output output.txt
+Each ported design is held to what the 2024 Fusion script built.
 
-   # Render output
-   vedya render output.txt --output output.stl --color grayscale
+- **Goldens.** `tests/golden/umss.json` and `tests/golden/shire.json` hold the volume, area, bounding box and centroid of every part. They were measured by running the 2024 scripts themselves, unchanged, from git history: UMSS from commit `08f31da` and Shire from `a36cc3c`. The scripts run on `tools/legacy/adsk/`, a stand-in for the parts of Fusion's API they call, built on build123d. The fast tests hold every part to its golden. `make golden` regenerates them, and is run only when the stand-in changes, never to make a test pass.
+- **Outside records.** The slow tests check the stand-in against the STL files Fusion exported for UMSS's first milestone, in [`public/umss/`](public/umss/README.md), and check Shire against the April 2024 toolpaths it was milled from, in [`public/cnc-cuts/`](public/cnc-cuts/).
 
-   # Run examples
-   vedya example output_path
-   ```
+[`docs/adr/`](docs/adr/) records why: [0001](docs/adr/0001-build123d-in-millimetres.md) build123d in millimetres, [0002](docs/adr/0002-pin-by-stand-in.md) the pin by a stand-in, and [0003](docs/adr/0003-the-milled-contract.md) the milled model as the contract, with the toolpath measurements. [`CONTEXT.md`](CONTEXT.md) defines the words the code uses.
 
-## Fabrication Methods
+## The Fusion 360 code
 
-### 3D Printing
-- **Printers:** Bambu Labs X1C/P1S (256mm³ build volume)
-- **Materials:** PLA, PETG, TPU, ABS, ASA, PVA, PET
-- **Examples:**
-  - [Print 1 with Kailash Terrain](public/3d-printer-prototypes/print-1/3d-vedya-print-with-kailash-0.75;1;8.mp4)
-  - [Print 2 Standard](public/3d-printer-prototypes/print-2/3d-vedya-print-1;1;8.mp4)
-  - [Detailed Print Process](src/public/videos/detailed-print-process.mov)
+The Fusion 360 code is no longer in the tree. Three tags keep its last states:
 
-### CNC Milling
-- Used for wood components (Huon Pine)
-- [Laser Prototype Slice](public/laser-prototypes/vedya-laser-1/slice-body-8/slice-body-8.stl)
-- [CNC Toolpath Simulation](src/public/videos/cnc-toolpath-simulation.mov)
+| Tag | Commit | What it marks |
+| --- | --- | --- |
+| `fusion/milled` | `57f2b02` | The April 2024 script whose Shire model was milled into the finished piece |
+| `fusion/shire-last` | `a36cc3c` | The last commit at which Shire, its slicer and its aggregator import (August 2024) |
+| `fusion/head` | `08f31da` | The last Fusion state of `master`, which builds only UMSS, with the 2024 library under `src/lib/` |
 
-### Terrain Models
-- [Low Resolution Kailash](public/low-res-kailash/low-res-kailash.stl)
-- [Medium Resolution Kailash](public/mid-res-kailash/mid-res-kailash.stl)
-- [Terrain Integration Process](public/terrain-integration.png)
+`git show fusion/milled:src/api-vedya-draw/APIDrawVedya.py` prints the script that was milled.
 
-## Project Components
+## The repository
 
-### Shire
-Mandala design for Australia Bush Festival, collaboration between Jeevan Pillay and Adam Brown, Gemma & team at Tasmania.
-- Implementation: [Shire Design](src/core/fabrication/design/shire/index.py)
-- [Installation Photos](public/shire-site.jpeg)
+```text
+src/vedya/          the package: geometry, patterns, model, export, the CLI, and designs/
+tests/              the tests; golden/ holds the goldens
+tools/legacy/       the stand-in for Fusion's API, and the tools that run the 2024 scripts
+public/             photographs, toolpaths, prints, laser cuts, scans; umss/ and stencil/
+docs/adr/           the decisions
+CONTEXT.md          the domain words
+```
 
-## Documentation
-
-Additional documentation available in subdirectories:
-- [Core Library Documentation](src/lib/README.md)
-- [Print 1 Notes](public/3d-printer-prototypes/print-1/README.md)
-- [Print 2 Notes](public/3d-printer-prototypes/print-2/README.md)
-
-## Troubleshooting
-
-- [Fixing VSCode x Python Code Hints](https://forums.autodesk.com/t5/fusion-api-and-scripts/code-hints-in-visual-studio-code-howto/td-p/9151250)
-- [BambuStudio Filament Process](public/3d-printer-prototypes/README.md)
+Outside `public/umss/`, the files under `public/` whose suffixes [`.gitattributes`](.gitattributes) routes through Git LFS (STL, 3MF, MP4, Blender, OBJ and Fusion files) are LFS pointers. The files the tests read, in `public/umss/`, `public/cnc-cuts/` and `public/stencil/`, are stored in full. Notes on the 3D prints are in [`public/3d-printer-prototypes/README.md`](public/3d-printer-prototypes/README.md).
 
 ## Licence
 
-Vedya is Jeevan Pillay's work, free to reproduce and not to sell. The code is under the [PolyForm Noncommercial License 1.0.0](LICENSE): anyone may use, change and share it for any noncommercial purpose. The photographs, videos, models and toolpaths are under [Creative Commons Attribution-NonCommercial 4.0](LICENSE-MEDIA): anyone may copy, share and adapt them for noncommercial purposes, crediting Jeevan Pillay. The stencil example's input image, `roman-soldier-cc.png`, is a third-party image and is covered by neither.
+Vedya is Jeevan Pillay's work, free to reproduce and not to sell. The code is under the [PolyForm Noncommercial License 1.0.0](LICENSE): anyone may use, change and share it for any noncommercial purpose. The photographs, videos, models and toolpaths are under [Creative Commons Attribution-NonCommercial 4.0](LICENSE-MEDIA): anyone may copy, share and adapt them for noncommercial purposes, crediting Jeevan Pillay. The stencil example's input image, `roman-soldier-cc.png`, and the `stencil_output.png` made from it, are third-party material and covered by neither licence.
