@@ -1,4 +1,8 @@
-"""The stand-in runs the last Shire that imports, at a36cc3c, and the new Shire agrees with it.
+"""The stand-in runs Shire's scripts, and the new Shire agrees with what they build.
+
+The golden comes from a36cc3c, the last Shire that imports, in August 2024. The piece was
+milled from 57f2b02, in April, whose flat script builds the same parts in the same order
+and stops before any aggregator; the union of its parts is August's aggregate.
 
 These tests read git history, and need a clone with every commit.
 """
@@ -9,18 +13,22 @@ from pathlib import PurePosixPath
 from types import ModuleType, SimpleNamespace
 from typing import Any
 
+import build123d as bd
 import pytest
 
 from references import differences
 from tools.legacy import adsk, golden, history, prisms
 from tools.legacy.adsk import core, fusion
 from tools.legacy.prisms import Stack
-from vedya.designs.shire import PART_NAMES, ShireParams, build
+from vedya.designs.shire import PART_NAMES
 from vedya.model import Model
 
 pytestmark = pytest.mark.slow
 
 SOURCE = golden.SOURCES["shire"]
+
+APRIL = ("57f2b02", "src/api-vedya-draw/APIDrawVedya.py")
+"""The commit the piece was milled from, and its script."""
 
 XOR_RELATIVE = 1e-6
 """The largest volume, relative to a part's, that the new part and the script's may not
@@ -33,8 +41,11 @@ def stand_in() -> golden.Built[Stack]:
 
 
 @pytest.fixture(scope="module")
-def model() -> Model:
-    return build(ShireParams())
+def april() -> golden.Built[Stack]:
+    # April's kailash cut, made from a component of its own, reaches no body; the script
+    # catches the error, and the component stays empty.
+    commit, entry = APRIL
+    return golden.stacks(commit, entry, SOURCE.parts)
 
 
 def test_the_golden_is_what_the_august_script_builds(stand_in: golden.Built[Stack]) -> None:
@@ -63,19 +74,49 @@ def xor_volume(a: Stack, b: Stack) -> float:
 
 @pytest.mark.parametrize("name", PART_NAMES)
 def test_each_new_part_fills_the_space_the_scripts_did(
-    stand_in: golden.Built[Stack], model: Model, name: str
+    stand_in: golden.Built[Stack], shire: Model, name: str
 ) -> None:
     old = stand_in.parts[name]
-    new = Stack.of_solid(model.parts[name])
+    new = Stack.of_solid(shire.parts[name])
+    assert xor_volume(new, old) < XOR_RELATIVE * old.fingerprint().volume
+
+
+def test_the_new_aggregate_fills_the_space_the_aggregators_body_did(
+    stand_in: golden.Built[Stack], shire_aggregate: bd.Part
+) -> None:
+    assert stand_in.aggregate is not None
+    old = stand_in.aggregate
+    new = Stack.of_solid(shire_aggregate)
     assert xor_volume(new, old) < XOR_RELATIVE * old.fingerprint().volume
 
 
 def test_the_xor_volume_sees_a_part_a_thousandth_too_large(
-    stand_in: golden.Built[Stack], model: Model
+    stand_in: golden.Built[Stack], shire: Model
 ) -> None:
     old = stand_in.parts["middle-ring"]
-    larger = Stack.of_solid(model.parts["middle-ring"]).scaled(1.001)
+    larger = Stack.of_solid(shire.parts["middle-ring"]).scaled(1.001)
     assert xor_volume(larger, old) > 1000 * XOR_RELATIVE * old.fingerprint().volume
+
+
+def test_april_builds_what_august_does(
+    april: golden.Built[Stack], stand_in: golden.Built[Stack]
+) -> None:
+    # April joins each seed of life's seven rings into one body where August keeps them
+    # apart; a leaf's mask less their union is the same either way.
+    assert april.aggregate is None
+    assert list(april.parts) == list(stand_in.parts)
+    for name, stack in april.parts.items():
+        assert not differences(stack.fingerprint(), stand_in.parts[name].fingerprint()), name
+
+
+def test_april_and_august_give_equal_aggregates(
+    april: golden.Built[Stack], stand_in: golden.Built[Stack]
+) -> None:
+    assert stand_in.aggregate is not None
+    august = stand_in.aggregate
+    union = prisms.union(list(april.parts.values()))
+    assert not differences(union.fingerprint(), august.fingerprint())
+    assert xor_volume(union, august) < XOR_RELATIVE * august.fingerprint().volume
 
 
 # The twelve picks of a region by its area in a Shire run: the curves each sketch holds,

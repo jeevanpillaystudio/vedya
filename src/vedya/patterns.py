@@ -1,8 +1,9 @@
-"""Patterns built from the primitives: depth steps, and the torus of rings.
+"""Patterns built from the primitives: depth steps, the seed of life, and the torus of rings.
 
 A depth step is one slab of a stack that gives a pattern relief: each step stands on the
-one below it, and its stroke grows or shrinks with height. The torus of rings is a ring
-and a circle of smaller rings that meet at its centre.
+one below it, and its stroke grows or shrinks with height. The seed of life is a ring
+and six rings of the same size around it, each through its centre. The torus of rings is
+a ring and a circle of smaller rings that meet at its centre.
 
 Every length is in millimetres.
 """
@@ -16,7 +17,10 @@ import build123d as bd
 from vedya import geometry
 from vedya.geometry import Align
 
-__all__ = ["DepthStep", "Growth", "depth_steps", "torus_rings"]
+__all__ = ["DepthStep", "Growth", "depth_steps", "seed_of_life", "torus_rings"]
+
+_PETALS = 6
+"""The rings around the seed of life's centre ring."""
 
 
 class Growth(Enum):
@@ -64,6 +68,31 @@ def depth_steps(
         )
         for i in range(count)
     ]
+
+
+def seed_of_life(
+    radius: float,
+    stroke: float,
+    centre: Align = Align.INSIDE,
+    petals: Align = Align.CENTER,
+) -> bd.Sketch:
+    """A ring along the circle of `radius` at the origin, and six petals: rings along
+    circles of the same radius, centred `radius` from the origin at 60° steps from the x
+    axis, so that each passes through the origin and the centres of its neighbours.
+
+    Every ring is a stroke of `stroke`, the centre ring's on the side `centre` names and
+    the petals' on the side `petals` names. The defaults are the Fusion 360 script's mix:
+    its centre circle took the thin wall's default side, inside, and Shire asked for the
+    petals' walls to be centred on their circles.
+    """
+    rings = [geometry.stroke(geometry.circle(radius), stroke, centre)]
+    for i in range(_PETALS):
+        # The angle is written as the Fusion 360 script wrote it.
+        angle = math.radians(i * 60)
+        at = (radius * math.cos(angle), radius * math.sin(angle))
+        rings.append(geometry.stroke(geometry.circle(radius, at=at), stroke, petals))
+    first, *rest = rings
+    return bd.Sketch((first + rest).faces())
 
 
 def torus_rings(radius: float, count: int, stroke: float) -> bd.Sketch:

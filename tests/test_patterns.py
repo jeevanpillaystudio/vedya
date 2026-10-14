@@ -1,4 +1,5 @@
-"""Depth steps keep the Fusion 360 script's arithmetic; the torus of rings is where it should be."""
+"""Depth steps keep the Fusion 360 script's arithmetic; the seed of life and the torus of
+rings are where they should be."""
 
 import itertools
 import math
@@ -8,9 +9,9 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from vedya.geometry import Align, circle, stroke
+from vedya.geometry import Align, Region, circle, stroke
 from vedya.model import fingerprint
-from vedya.patterns import DepthStep, Growth, depth_steps, torus_rings
+from vedya.patterns import DepthStep, Growth, depth_steps, seed_of_life, torus_rings
 
 examples = settings(max_examples=50, deadline=None)
 
@@ -65,6 +66,82 @@ def test_the_torus_steps_of_shire() -> None:
 def test_impossible_steps_are_refused(count: int, total: float, base: float, message: str) -> None:
     with pytest.raises(ValueError, match=message):
         depth_steps(count, 0.0, total, base)
+
+
+def area(region: Region) -> float:
+    """The area of `region`'s faces; 0 for a region with none."""
+    faces = region.faces()
+    return fingerprint(bd.Sketch(faces)).area if faces else 0.0
+
+
+SEEDS = [
+    (20.0, 2.0, Align.INSIDE, Align.CENTER),
+    (200.0, 9.6, Align.INSIDE, Align.CENTER),  # Shire's layer-0, lowest step
+    (10.0, 1.0, Align.OUTSIDE, Align.INSIDE),
+]
+
+
+@pytest.mark.parametrize(("radius", "width", "centre", "petals"), SEEDS)
+def test_a_seed_of_life_is_the_union_of_its_seven_stroked_circles(
+    radius: float, width: float, centre: Align, petals: Align
+) -> None:
+    seed = seed_of_life(radius, width, centre=centre, petals=petals)
+    rings = [stroke(circle(radius), width, centre)]
+    for k in range(6):
+        at = (radius * math.cos(k * math.pi / 3), radius * math.sin(k * math.pi / 3))
+        rings.append(stroke(circle(radius, at=at), width, petals))
+    # Fused in the other order, from the last petal back to the centre.
+    last, *others = reversed(rings)
+    union = last + others
+    assert area(seed) == pytest.approx(area(union), rel=1e-9)
+    assert area(seed - union) < 1e-9 * area(seed)
+    assert area(union - seed) < 1e-9 * area(seed)
+    # The rings overlap where the petals cross, so the union is less than their sum.
+    assert area(seed) < sum(area(ring) for ring in rings)
+
+
+@pytest.mark.parametrize(("radius", "width", "centre", "petals"), SEEDS)
+def test_a_seed_of_life_turned_a_sixth_or_mirrored_is_itself(
+    radius: float, width: float, centre: Align, petals: Align
+) -> None:
+    seed = seed_of_life(radius, width, centre=centre, petals=petals)
+    for moved in (bd.Rot(0, 0, 60) * seed, seed.mirror(bd.Plane.XZ), seed.mirror(bd.Plane.YZ)):
+        assert area(moved - seed) < 1e-9 * area(seed)
+        assert area(seed - moved) < 1e-9 * area(seed)
+
+
+def test_a_seed_of_life_reaches_as_far_as_its_petals_strokes() -> None:
+    radius, width = 200.0, 9.6
+    box = seed_of_life(radius, width).bounding_box()
+    # The petals on the x axis are centred radius out; those at 60° rise sin 60° · radius.
+    reach_x = 2 * radius + width / 2
+    reach_y = math.sqrt(3) / 2 * radius + radius + width / 2
+    reached = (box.min.X, box.min.Y, box.max.X, box.max.Y)
+    assert reached == pytest.approx((-reach_x, -reach_y, reach_x, reach_y), abs=1e-6)
+
+
+def test_by_default_the_centre_ring_is_inside_and_the_petals_astride() -> None:
+    default = seed_of_life(50.0, 4.0)
+    explicit = seed_of_life(50.0, 4.0, centre=Align.INSIDE, petals=Align.CENTER)
+    assert area(default - explicit) == 0.0
+    assert area(explicit - default) == 0.0
+    # The centre ring's outer edge is its circle, which the petals' strokes cross.
+    centre_ring = stroke(circle(50.0), 4.0, Align.INSIDE)
+    assert area(centre_ring - default) == 0.0
+
+
+@pytest.mark.parametrize(
+    ("radius", "width", "message"),
+    [(0.0, 1.0, "radius must be positive"), (10.0, 0.0, "width must be positive")],
+)
+def test_impossible_seeds_are_refused(radius: float, width: float, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        seed_of_life(radius, width)
+
+
+def test_a_stroke_wider_than_the_seed_allows_is_refused() -> None:
+    with pytest.raises(ValueError, match="cannot be offset"):
+        seed_of_life(10.0, 25.0)
 
 
 def angle_of(face: bd.Face) -> float:
