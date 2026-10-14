@@ -1,9 +1,12 @@
-"""The `vedya` command: list the designs, and build one into files.
+"""The `vedya` command: build the designs into files, and run the library's other tools.
 
     vedya list
     vedya build umss --out out/
     vedya build umss --set parts=tile --set hole_radius=3.0 --format step --out out/m1
     vedya build shire --aggregate --slice 3.2:12 --format stl,3mf --out out/sliced
+    vedya map cylinder --out out/cylinder.csv --figure out/cylinder.html
+    vedya stencil public/stencil/roman-soldier-cc.png --out out/stencil.png
+    vedya flowfield --out out/flowfield.npy
 
 `build` writes what its options choose, in each format `--format` names:
 
@@ -15,26 +18,45 @@
 
 With none of them it writes the parts and the aggregate. A `--set name=value` overrides
 one parameter: a number, a word, or a comma-separated list of them for a tuple field.
+
+`map`, `stencil` and `flowfield` are the 2024 library's commands, and the values that
+library fixed are their defaults. `map` writes the points a rectangle and a disc give on
+a cylinder or a sphere, as CSV, and with `--figure` as a 3D figure; `stencil` writes an
+image's stencil; `flowfield` writes a Perlin flow field as a NumPy array. `stencil` and
+`--figure` need the `render` extra, and `flowfield` the `examples` extra.
+
+Every command makes the folder it writes into, and reports a failure in one line.
 """
 
+import csv
 import dataclasses
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, get_args, get_origin, get_type_hints
 
 import build123d as bd
+import numpy as np
 import typer
 
 from vedya.designs import Design, load_designs
 from vedya.export import SUFFIXES, export
+from vedya.mapping import (
+    Points,
+    circle_samples,
+    rectangle_samples,
+    to_cylinder,
+    to_sphere,
+)
 from vedya.model import aggregate, slice_layers
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
-__all__ = ["app"]
+__all__ = ["Surface", "app"]
 
 log = logging.getLogger("vedya")
 
@@ -87,14 +109,160 @@ def build(
 ) -> None:
     """Build DESIGN and write into OUT what the options choose: by default, its parts and
     their union."""
-    try:
+    with _reported(design):
         written = _build(design, out, formats, settings or [], _Outputs(parts, whole, layers))
-    except Exception as error:
-        log.info("%s failed", design, exc_info=True)
-        typer.echo(f"error: {error}", err=True)
-        raise typer.Exit(1) from error
     for path in written:
         typer.echo(path)
+
+
+class Surface(StrEnum):
+    """The surfaces `map` wraps the plane onto."""
+
+    CYLINDER = "cylinder"
+    SPHERE = "sphere"
+
+
+@app.command("map")
+def map_points(
+    surface: Annotated[Surface, typer.Argument(help="The surface to wrap the plane onto.")],
+    out: Annotated[
+        Path, typer.Option(help="The CSV file to write, a point a row: shape, x, y, z.")
+    ],
+    figure: Annotated[
+        Path | None,
+        typer.Option(help="Also write the points as a 3D figure, in HTML. Needs the render extra."),
+    ] = None,
+    length: Annotated[
+        float, typer.Option(help="The rectangle's length, which goes once around.")
+    ] = 10.0,
+    height: Annotated[
+        float, typer.Option(help="The rectangle's height; on a sphere, from pole to pole.")
+    ] = 4.0,
+    radius: Annotated[float, typer.Option(help="The cylinder's or the sphere's radius.")] = 1.0,
+    resolution: Annotated[
+        float, typer.Option(help="The rectangle's cell size, and twice the disc's ring spacing.")
+    ] = 0.1,
+    circle_radius: Annotated[float, typer.Option(help="The disc's radius.")] = 1.0,
+    circle_height: Annotated[
+        float, typer.Option(help="The height of the disc's centre, which is at x = 0.")
+    ] = 2.0,
+) -> None:
+    """Wrap a rectangle's cells and a disc's rings onto SURFACE, and write the points to OUT."""
+    with _reported("map"):
+        flat = {
+            "rectangle": rectangle_samples(length, height, resolution),
+            "circle": circle_samples(circle_radius, resolution, centre=(0.0, circle_height)),
+        }
+        if surface is Surface.CYLINDER:
+            clouds = {name: to_cylinder(points, length, radius) for name, points in flat.items()}
+            z_range = (0.0, height)
+        else:
+            clouds = {
+                name: to_sphere(points, length, height, radius) for name, points in flat.items()
+            }
+            z_range = (-radius - 1, radius + 1)
+        page: tuple[Path, str] | None = None
+        if figure is not None:
+            from vedya.render import point_cloud_figure
+
+            drawing = point_cloud_figure(
+                {name.capitalize(): points for name, points in clouds.items()},
+                radius=radius,
+                z_range=z_range,
+                title=f"{surface.value.capitalize()} with Filled Circle",
+            )
+            # The page carries plotly's script, so it opens with no network.
+            page = (figure, drawing.to_html(include_plotlyjs=True))
+        out.parent.mkdir(parents=True, exist_ok=True)
+        _write_points(clouds, out)
+        if page is not None:
+            path, html = page
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(html, encoding="utf-8")
+    typer.echo(out)
+    if figure is not None:
+        typer.echo(figure)
+
+
+@app.command("stencil")
+def stencil_image(
+    image: Annotated[Path, typer.Argument(help="The image to make a stencil of.")],
+    out: Annotated[
+        Path, typer.Option(help="The image file to write, in the format its suffix names.")
+    ],
+    blur: Annotated[
+        int, typer.Option(help="The size, in pixels, of the blur before edges are found.")
+    ] = 5,
+    edges: Annotated[
+        tuple[float, float],
+        typer.Option(metavar="LOW HIGH", help="Canny's thresholds for the outlines."),
+    ] = (100.0, 180.0),
+    block_size: Annotated[
+        int, typer.Option(help="The size, in pixels, of the patch a stroke is darker than.")
+    ] = 5,
+    offset: Annotated[
+        float, typer.Option(help="How many levels darker than its patch a stroke is.")
+    ] = 12.0,
+) -> None:
+    """Write the stencil of IMAGE to OUT, black on white. Needs the render extra."""
+    with _reported("stencil"):
+        from vedya import render
+
+        result = render.stencil(
+            render.read_image(image), blur=blur, edges=edges, block_size=block_size, offset=offset
+        )
+        out.parent.mkdir(parents=True, exist_ok=True)
+        render.write_image(result, out)
+    typer.echo(out)
+
+
+@app.command("flowfield")
+def flowfield_array(
+    out: Annotated[Path, typer.Option(help="The NumPy file to write, named with .npy.")],
+    width: Annotated[int, typer.Option(help="Points across the grid.")] = 150,
+    height: Annotated[int, typer.Option(help="Points up the grid.")] = 150,
+    scale: Annotated[float, typer.Option(help="How far the noise moves per unit of grid.")] = 0.1,
+    octaves: Annotated[int, typer.Option(help="Layers of noise, each finer than the last.")] = 6,
+    persistence: Annotated[
+        float, typer.Option(help="Each layer's weight, relative to the one before.")
+    ] = 0.5,
+    lacunarity: Annotated[
+        float, typer.Option(help="How much finer each layer is than the one before.")
+    ] = 2.0,
+) -> None:
+    """Write a Perlin flow field of unit vectors to OUT. Needs the examples extra."""
+    with _reported("flowfield"):
+        if out.suffix.lower() != ".npy":
+            raise ValueError(f"--out {out.name!r}: the flow field is written as .npy")
+        from vedya.flowfield import flow_field
+
+        field = flow_field(width, height, scale, octaves, persistence, lacunarity)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with out.open("wb") as file:
+            np.save(file, field)
+    typer.echo(out)
+
+
+@contextmanager
+def _reported(what: str) -> Generator[None]:
+    """Report any exception from the block in one line and exit with status 1; `-v` logs
+    its traceback."""
+    try:
+        yield
+    except Exception as error:
+        log.info("%s failed", what, exc_info=True)
+        typer.echo(f"error: {error}", err=True)
+        raise typer.Exit(1) from error
+
+
+def _write_points(clouds: Mapping[str, Points], path: Path) -> None:
+    """Write each cloud's points to `path` as CSV rows of shape, x, y, z, under a header,
+    every coordinate as Python writes the float, which reads back the same."""
+    with path.open("w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["shape", "x", "y", "z"])
+        for name, points in clouds.items():
+            writer.writerows([name, *row] for row in points.tolist())
 
 
 @dataclass(frozen=True)

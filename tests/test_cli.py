@@ -2,6 +2,8 @@
 
 import logging
 import math
+import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -144,3 +146,67 @@ def test_settings_are_typed_as_their_fields() -> None:
 def test_fields_that_are_not_numbers_or_words_are_refused() -> None:
     with pytest.raises(ValueError, match="--set passes: only numbers"):
         _apply_settings(Nested(), ["passes=2"])
+
+
+WITHOUT_THE_EXTRAS = """
+import importlib.abc
+import sys
+
+EXTRAS = {"cv2", "noise", "plotly"}
+
+
+class Missing(importlib.abc.MetaPathFinder):
+    def find_spec(self, name, path=None, target=None):
+        if name.partition(".")[0] in EXTRAS:
+            raise ModuleNotFoundError(f"No module named {name!r}", name=name)
+        return None
+
+
+sys.meta_path.insert(0, Missing())
+
+import vedya
+import vedya.cli
+import vedya.designs
+import vedya.export
+import vedya.geometry
+import vedya.mapping
+import vedya.model
+import vedya.patterns
+from typer.testing import CliRunner
+
+assert vedya.designs.load_designs()
+runner = CliRunner()
+result = runner.invoke(vedya.cli.app, ["map", "sphere", "--out", "points.csv"])
+assert result.exit_code == 0, result.output
+for args in (
+    ["stencil", "image.png", "--out", "stencil.png"],
+    ["flowfield", "--out", "field.npy"],
+    ["map", "cylinder", "--out", "points.csv", "--figure", "figure.html"],
+):
+    result = runner.invoke(vedya.cli.app, args)
+    assert result.exit_code == 1, result.output
+    print(result.stderr, end="")
+assert not EXTRAS & {name.partition(".")[0] for name in sys.modules}
+"""
+
+
+def test_the_core_and_its_commands_work_without_the_extras(tmp_path: Path) -> None:
+    # A fresh interpreter, isolated from the environment and the working folder, in which
+    # OpenCV, plotly and noise cannot be imported.
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", WITHOUT_THE_EXTRAS],
+        capture_output=True,
+        check=False,
+        cwd=tmp_path,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == [
+        "error: vedya.render needs the render extra, which brings cv2: install it with "
+        "`uv sync --extra render` or `pip install 'vedya[render]'`",
+        "error: vedya.flowfield needs the examples extra, which brings noise: install it with "
+        "`uv sync --extra examples` or `pip install 'vedya[examples]'`",
+        "error: vedya.render needs the render extra, which brings cv2: install it with "
+        "`uv sync --extra render` or `pip install 'vedya[render]'`",
+    ]
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["points.csv"]
