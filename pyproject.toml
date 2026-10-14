@@ -80,7 +80,6 @@ select = [
 
 [tool.pyright]
 include = ["src/vedya", "tests", "tools"]
-exclude = ["tools/legacy/adsk"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 # build123d and OCP ship partial types; unknowns from them are not our defects.
@@ -91,13 +90,17 @@ reportUnknownVariableType = false
 
 [[tool.pyright.executionEnvironments]]
 root = "tests"
+# The tests import `tools.legacy` from the repository's root, as pytest's pythonpath does.
+extraPaths = ["."]
 reportPrivateUsage = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# `tools.legacy`, which runs the Fusion 360 scripts for the goldens, is imported from the root.
+pythonpath = ["."]
 addopts = ["-ra", "--strict-markers", "--strict-config"]
 markers = [
-    "slow: builds a full design; deselect with -m 'not slow'",
+    "slow: runs the Fusion 360 scripts from history, or builds a whole design; deselect with -m 'not slow'",
 ]
 xfail_strict = true
 
