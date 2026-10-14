@@ -1,16 +1,20 @@
-"""Models, the union and aggregate of parts, and the fingerprint of a known solid."""
+"""Models, the union and aggregate of parts, layers sliced from a part, and the
+fingerprint of a known solid."""
 
+import itertools
 import math
 
 import build123d as bd
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 # OCP is compiled and ships no type stubs, so its names are invisible to the type checker.
 from OCP.BRep import BRep_Tool  # pyright: ignore[reportAttributeAccessIssue]
 
-from references import largest_tolerance
+from references import CLEAN, largest_tolerance
 from vedya.geometry import Align, Region, astroid, circle, rectangle, slab, stroke
-from vedya.model import Model, aggregate, fingerprint, union
+from vedya.model import Model, aggregate, fingerprint, slice_layers, union
 
 
 def box(x: float, y: float, z: float, at: tuple[float, float, float] = (0.0, 0.0, 0.0)) -> bd.Part:
@@ -194,3 +198,112 @@ def test_union_leaves_its_parts_as_they_were() -> None:
     before = [fingerprint(part) for part in parts]
     union(parts)
     assert [fingerprint(part) for part in parts] == before
+
+
+def heights(layers: list[bd.Part]) -> list[float]:
+    """Each layer's lowest and highest z, layer after layer."""
+    boxes = [layer.bounding_box() for layer in layers]
+    return [z for box in boxes for z in (box.min.Z, box.max.Z)]
+
+
+def flat(spans: list[tuple[float, float]]) -> list[float]:
+    return [z for span in spans for z in span]
+
+
+def test_a_10_mm_box_at_3_2_mm_is_three_layers_and_what_is_left() -> None:
+    part = box(5.0, 4.0, 10.0, at=(0.0, 0.0, 1.0))
+    layers = slice_layers(part, 3.2, 12)
+    assert heights(layers) == pytest.approx(
+        flat([(1.0, 4.2), (4.2, 7.4), (7.4, 10.6), (10.6, 11.0)]), abs=1e-9
+    )
+    assert [fingerprint(layer).volume for layer in layers] == pytest.approx(
+        [64.0, 64.0, 64.0, 8.0], rel=1e-9
+    )
+
+
+def test_a_part_a_whole_number_of_layers_high_leaves_its_top_layer_last() -> None:
+    layers = slice_layers(box(1.0, 1.0, 9.6), 3.2, 12)
+    assert heights(layers) == pytest.approx(flat([(0.0, 3.2), (3.2, 6.4), (6.4, 9.6)]), abs=1e-9)
+
+
+def test_the_count_limits_the_cuts_and_the_rest_is_left_whole() -> None:
+    layers = slice_layers(box(1.0, 1.0, 10.0), 3.2, 2)
+    assert heights(layers) == pytest.approx(flat([(0.0, 3.2), (3.2, 6.4), (6.4, 10.0)]), abs=1e-9)
+
+
+def test_a_layer_higher_than_the_part_leaves_it_whole() -> None:
+    (only,) = slice_layers(box(1.0, 2.0, 3.0), 5.0, 12)
+    assert heights([only]) == pytest.approx([0.0, 3.0], abs=1e-9)
+    assert fingerprint(only).volume == pytest.approx(6.0, rel=1e-12)
+
+
+def test_layers_of_stacked_slabs_are_cut_band_by_band() -> None:
+    # A disc on a board, cut through both; each layer holds what lies at its heights.
+    part = union([slab(rectangle(10.0, 10.0), 0.0, 2.0), slab(circle(3.0), 2.0, 2.0)])
+    layers = slice_layers(part, 1.5, 12)
+    assert heights(layers) == pytest.approx(flat([(0.0, 1.5), (1.5, 3.0), (3.0, 4.0)]), abs=1e-9)
+    disc = math.pi * 3.0**2
+    expected = [150.0, 50.0 + disc, disc]
+    assert [fingerprint(layer).volume for layer in layers] == pytest.approx(expected, rel=1e-9)
+    for layer in layers:
+        assert layer.is_valid
+        assert largest_tolerance(layer) <= CLEAN
+
+
+def test_a_layer_with_nothing_in_it_is_empty() -> None:
+    part = union([slab(circle(1.0), 0.0, 1.0), slab(circle(1.0), 2.0, 1.0)])
+    layers = slice_layers(part, 1.0, 12)
+    assert [bool(layer.solids()) for layer in layers] == [True, False, True]
+
+
+def test_a_part_that_is_not_a_stack_is_cut_by_a_boolean() -> None:
+    ball = bd.Sphere(2.0)
+    layers = slice_layers(ball, 1.0, 12)
+    assert heights(layers) == pytest.approx(
+        flat([(-2.0, -1.0), (-1.0, 0.0), (0.0, 1.0), (1.0, 2.0)]), abs=1e-6
+    )
+    # A cap of height h of a sphere of radius r holds πh²(3r - h)/3.
+    cap, half = math.pi * 1.0 * (6.0 - 1.0) / 3, 2 / 3 * math.pi * 2.0**3
+    expected = [cap, half - cap, half - cap, cap]
+    # build123d's volume integrates a sphere's faces exactly, where the fingerprint's
+    # adaptive rule takes seconds over them.
+    assert [layer.volume for layer in layers] == pytest.approx(expected, rel=1e-12)
+    for layer in layers:
+        assert layer.is_valid
+
+
+@pytest.mark.parametrize(
+    ("height", "count", "message"),
+    [(0.0, 12, "layer_height must be positive"), (3.2, 0, "max_count must be at least 1")],
+)
+def test_slicing_refuses_impossible_layers(height: float, count: int, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        slice_layers(box(1.0, 1.0, 1.0), height, count)
+
+
+def test_slicing_refuses_an_empty_part() -> None:
+    with pytest.raises(ValueError, match="empty"):
+        slice_layers(bd.Part(), 1.0, 1)
+
+
+@settings(max_examples=25, deadline=None)
+@given(
+    total=st.floats(min_value=0.5, max_value=40.0),
+    layer=st.floats(min_value=0.3, max_value=8.0),
+    count=st.integers(min_value=1, max_value=12),
+)
+def test_layers_stack_up_and_hold_the_whole(total: float, layer: float, count: int) -> None:
+    part = box(2.0, 3.0, total)
+    layers = slice_layers(part, layer, count)
+    zs = heights(layers)
+    spans = list(zip(zs[::2], zs[1::2], strict=True))
+    assert spans[0][0] == pytest.approx(0.0, abs=1e-9)
+    assert spans[-1][1] == pytest.approx(total, abs=1e-9)
+    for (_, top), (bottom, _) in itertools.pairwise(spans):
+        assert top == pytest.approx(bottom, abs=1e-9)
+    # Every layer but the last is one layer high, and there are no more than `count` cuts.
+    assert all(high - low == pytest.approx(layer, abs=1e-9) for low, high in spans[:-1])
+    assert len(layers) - 1 <= count
+    assert spans[-1][1] - spans[-1][0] <= layer + 1e-9 or len(layers) - 1 == count
+    total_volume = sum(fingerprint(each).volume for each in layers)
+    assert total_volume == pytest.approx(6.0 * total, rel=1e-9)

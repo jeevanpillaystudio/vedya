@@ -1,15 +1,17 @@
 """What a design builds, and the numbers that pin it.
 
 A `Model` is a design's named parts in the order it builds them. `union` joins solids
-into one, as a design joins the slabs of a part, and `aggregate` joins a model's parts
-into the one solid that is milled or printed whole. `fingerprint` reduces a shape to the
-numbers the tests compare against the goldens.
+into one, as a design joins the slabs of a part; `aggregate` joins a model's parts into
+the one solid that is milled or printed whole, and `slice_layers` cuts a solid into the
+layers it is laser cut or printed in. `fingerprint` reduces a shape to the numbers the
+tests compare against the goldens.
 
 Every length is in millimetres.
 """
 
 import copy
 import itertools
+import math
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -38,7 +40,7 @@ from OCP.GeomAbs import GeomAbs_SurfaceType  # pyright: ignore[reportAttributeAc
 from OCP.GProp import GProp_GProps  # pyright: ignore[reportAttributeAccessIssue]
 from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain  # pyright: ignore[reportAttributeAccessIssue]
 
-__all__ = ["Fingerprint", "Model", "aggregate", "fingerprint", "union"]
+__all__ = ["Fingerprint", "Model", "aggregate", "fingerprint", "slice_layers", "union"]
 
 type Vec3 = tuple[float, float, float]
 
@@ -118,6 +120,53 @@ def aggregate(model: Model) -> bd.Part:
     return union(model.parts.values())
 
 
+def slice_layers(part: bd.Part, layer_height: float, max_count: int) -> list[bd.Part]:
+    """`part` cut into layers `layer_height` high from the bottom up, then what is left.
+
+    The cuts are level planes at `layer_height`, twice it, and so on above the bottom of
+    `part`, at most `max_count` of them and none at or above its top. Each layer is what
+    lies between a cut and the one below it, or the bottom, and the last element is what
+    lies above the last cut. A 10 mm box cut at 3.2 mm gives three layers and 0.4 mm
+    left; a part a whole number of layers high gives that many, the last as what is left.
+    A layer with nothing in it is an empty `Part`. Together the layers hold `part`.
+
+    This is the Fusion 360 slicer's cut, with each piece chosen by its height. A stack of
+    slabs along z, as `union` makes, is cut band by band: each layer is swept from the
+    sections of the bands it holds, so no plane meets the part in 3D. Other parts are
+    cut by OpenCascade's boolean with a box.
+
+    Raises `ValueError` for an empty part, a height that is not positive, or a count
+    below one. The part is never changed.
+    """
+    if not layer_height > 0:
+        raise ValueError(f"layer_height must be positive, not {layer_height!r}")
+    if max_count < 1:
+        raise ValueError(f"max_count must be at least 1, not {max_count!r}")
+    if not part.solids():
+        raise ValueError("cannot slice an empty part")
+    bands = _bands(part) if _is_stack(part) else []
+    if bands:
+        bottom, top = bands[0][0], bands[-1][1]
+    else:
+        box = part.bounding_box()
+        bottom, top = box.min.Z, box.max.Z
+    count = min(max_count, math.floor((top - bottom + _LEVEL) / layer_height))
+    cuts = [bottom + layer_height * (i + 1) for i in range(count)]
+    cuts = [cut for cut in cuts if cut < top - _LEVEL]
+    if bands:
+        # A cut at a band's edge is taken there, so that no layer keeps a sliver of the
+        # band beyond it.
+        edges = _merged(edge for band in bands for edge in band[:2])
+        cuts = [_snapped(cut, edges) for cut in cuts]
+    spans = list(itertools.pairwise([bottom, *cuts, top]))
+    if bands:
+        return [_stacked(_clipped(bands, low, high)) for low, high in spans]
+    return [
+        _between(part, low, high, open_below=i == 0, open_above=i == len(spans) - 1)
+        for i, (low, high) in enumerate(spans)
+    ]
+
+
 _LEVEL = 1e-7
 """Heights closer than this, in mm, are one: OpenCascade's own precision."""
 
@@ -154,6 +203,12 @@ def _merged(heights: Iterable[float]) -> list[float]:
         if not levels or height - levels[-1] > _LEVEL:
             levels.append(height)
     return levels
+
+
+def _snapped(height: float, levels: Sequence[float]) -> float:
+    """`height`, or the level in `levels` that lies within `_LEVEL` of it."""
+    nearest = min(levels, key=lambda level: abs(level - height))
+    return nearest if abs(nearest - height) <= _LEVEL else height
 
 
 def _join_by_bands(parts: Sequence[bd.Part]) -> bd.Part:
@@ -194,6 +249,36 @@ def _stacked(bands: Sequence[_Band]) -> bd.Part:
     # is for.
     return _as_part(first.fuse(*rest, glue=True) if rest else first)
 
+
+def _clipped(bands: Sequence[_Band], low: float, high: float) -> list[_Band]:
+    """The parts of `bands` between the heights `low` and `high`.
+
+    Each section is copied, since one band may be swept into two layers and a boolean
+    on one may rewrite the edges it shares with the other."""
+    return [
+        (max(below, low), min(above, high), [copy.deepcopy(face) for face in region])
+        for below, above, region in bands
+        if min(above, high) - max(below, low) > _LEVEL
+    ]
+
+
+def _between(part: bd.Part, low: float, high: float, open_below: bool, open_above: bool) -> bd.Part:
+    """What of `part` lies between the heights `low` and `high`, by a boolean with a box.
+
+    Where the span is open below or above, the box reaches `_SHEET` beyond it there, so
+    that a bounding box a hair too tight trims nothing."""
+    box = part.bounding_box()
+    below = low - _SHEET if open_below else low
+    above = high + _SHEET if open_above else high
+    cutter = bd.Pos(box.center().X, box.center().Y, below) * bd.Box(
+        box.size.X + 2 * _SHEET, box.size.Y + 2 * _SHEET, above - below, align=_ON_FLOOR
+    )
+    made = _boolean(BRepAlgoAPI_Common(), [part.wrapped], [cutter.wrapped])
+    return bd.Part(bd.Compound(made).solids())  # pyright: ignore[reportArgumentType]
+
+
+_ON_FLOOR = (bd.Align.CENTER, bd.Align.CENTER, bd.Align.MIN)
+"""A box centred in x and y, standing on its base."""
 
 _EXACT = 1e-6
 """The widest tolerance, in mm, of an edge that lies on its curves: OpenCascade leaves
