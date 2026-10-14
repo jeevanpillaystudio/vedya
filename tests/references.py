@@ -19,7 +19,7 @@ from OCP.BRep import BRep_Tool  # pyright: ignore[reportAttributeAccessIssue]
 
 from vedya.model import Fingerprint
 
-MILESTONE_1 = Path(__file__).parent.parent / "src" / "public" / "f360-milestone-1"
+MILESTONE_1 = Path(__file__).parent.parent / "public" / "umss" / "f360-milestone-1"
 """Milestone 1's STL files: the tile with a magnet hole, one file per hole radius."""
 
 MEASURED_EXCESS = (0.0845, 0.0985)
