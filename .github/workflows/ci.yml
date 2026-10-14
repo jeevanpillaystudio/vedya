@@ -42,3 +42,17 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: uv sync --locked --all-extras
       - run: uv run pytest -m "not slow"
+
+  # Runs the original Fusion 360 scripts from git history on the stand-in, so it needs
+  # every commit, not the single one a default checkout fetches.
+  slow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --all-extras
+      - run: uv run pytest -m slow

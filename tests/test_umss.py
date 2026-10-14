@@ -1,21 +1,23 @@
 """UMSS builds what the Fusion 360 script built, and milestone 1 matches its STL files."""
 
 import math
-from pathlib import Path
 
 import numpy as np
 import pytest
 
+from references import MEASURED_EXCESS, differences, milestone_1_stl
 from stl_mesh import mesh_bounds, mesh_volume, read_stl
+from tools.legacy import golden
 from vedya.designs.umss import UmssParams, build
 from vedya.model import fingerprint
 
-MILESTONE_1 = Path(__file__).parent.parent / "src" / "public" / "f360-milestone-1"
 
-# Fusion's STL of the tile sits above the exact solid's volume, because the hole is meshed
-# as a polygon inside its circle. Across the six files the excess measured +0.085 to
-# +0.098 mm³, to three decimals; the band allows half a unit of the last decimal each way.
-MEASURED_EXCESS = (0.0845, 0.0985)
+def test_the_default_matches_the_golden_from_the_fusion_script() -> None:
+    expected = golden.read("umss")
+    model = build(UmssParams())
+    assert list(model.parts) == list(expected.parts)
+    for name, part in model.parts.items():
+        assert not differences(fingerprint(part), expected.parts[name]), name
 
 
 def test_the_default_is_the_magnet_base_disc() -> None:
@@ -62,11 +64,9 @@ def test_impossible_parameters_are_refused(params: UmssParams, message: str) -> 
 
 @pytest.mark.parametrize("hole_radius", [3.0, 3.1, 3.2, 3.3, 3.4, 3.5])
 def test_milestone_1_tile_matches_fusions_stl(hole_radius: float) -> None:
-    # The files are named by the code's centimetre radius: 0.30 cm is a 3.0 mm hole.
-    path = MILESTONE_1 / f"tile-magnet-hole-radius-{hole_radius / 10:.2f}mm.stl"
     tile = build(UmssParams(parts=("tile",), hole_radius=hole_radius)).parts["tile"]
     exact = fingerprint(tile)
-    triangles = read_stl(path)
+    triangles = read_stl(milestone_1_stl(hole_radius))
     low_excess, high_excess = MEASURED_EXCESS
     assert low_excess <= mesh_volume(triangles) - exact.volume <= high_excess
     low, high = mesh_bounds(triangles)
