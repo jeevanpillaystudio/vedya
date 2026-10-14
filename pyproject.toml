@@ -1,0 +1,115 @@
+[project]
+name = "vedya"
+version = "0.1.0"
+description = "Generative geometric designs for fabrication, built on build123d."
+readme = "README.md"
+license = "PolyForm-Noncommercial-1.0.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Jeevan Pillay" }]
+requires-python = ">=3.12"
+dependencies = [
+    "build123d>=0.13",
+    "numpy>=2.1",
+    "typer>=0.15",
+]
+
+[project.optional-dependencies]
+render = [
+    "opencv-python-headless>=4.10",
+    "plotly>=5.23",
+]
+examples = [
+    "noise==1.2.2",
+]
+
+[project.scripts]
+vedya = "vedya.cli:app"
+
+# Every design, the package's own included, registers here; `vedya.designs.load_designs` reads it.
+[project.entry-points."vedya.designs"]
+shire = "vedya.designs.shire:design"
+umss = "vedya.designs.umss:design"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.120",
+    "pre-commit>=4.0",
+    "pyright[nodejs]>=1.1.390",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "ruff>=0.8",
+    "shapely>=2.1",
+]
+# What `make figures` needs to draw the README's images: not a default group, so neither
+# `uv sync` nor CI installs it.
+docs = [
+    "matplotlib>=3.10",
+    "pillow>=11",
+    "pyvista>=0.46",
+    "vedya[examples]",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "."]
+
+[tool.ruff.lint]
+select = [
+    "ARG", # unused arguments
+    "B",   # bugbear
+    "C4",  # comprehensions
+    "E",   # pycodestyle errors
+    "ERA", # commented-out code
+    "F",   # pyflakes
+    "I",   # import order
+    "N",   # naming
+    "PT",  # pytest style
+    "PTH", # pathlib over os.path
+    "RUF", # ruff's own
+    "SIM", # simplifications
+    "TID", # tidy imports
+    "UP",  # modern syntax
+    "W",   # pycodestyle warnings
+]
+
+[tool.ruff.lint.per-file-ignores]
+# The stand-in for Autodesk's adsk package keeps Autodesk's camelCase names.
+"tools/legacy/adsk/**" = ["N802", "N803", "N815", "N999", "ARG002"]
+
+[tool.pyright]
+include = ["src", "tests", "tools"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+# build123d and OCP ship partial types; unknowns from them are not our defects.
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+
+[[tool.pyright.executionEnvironments]]
+root = "tests"
+# The tests import `tools.legacy` from the repository's root, as pytest's pythonpath does.
+extraPaths = ["."]
+reportPrivateUsage = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# `tools.legacy`, which runs the Fusion 360 scripts for the goldens, is imported from the root.
+pythonpath = ["."]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+markers = [
+    "slow: runs the Fusion 360 scripts from history, or builds a whole design; deselect with -m 'not slow'",
+]
+xfail_strict = true
+
+[tool.coverage.run]
+source = ["vedya"]
+branch = true
