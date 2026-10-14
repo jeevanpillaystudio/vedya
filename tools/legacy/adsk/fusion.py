@@ -22,6 +22,9 @@ piece that was milled:
   new body there when it reaches none.
 - A Cut or Intersect that reaches no body raises `RuntimeError(NO_TARGET)`, as Fusion's
   `add` does.
+- Every body is treated as visible, and so as one a feature can reach: the stand-in
+  keeps no visibility, because the scripts never hide a body or an occurrence. None of
+  57f2b02, a36cc3c and 08f31da reads or sets `isVisible`, `isLightBulbOn` or the like.
 - A combine changes its target and, unless told to keep them, deletes its tools.
 
 The reach is what the April 2024 toolpaths record. A seed-of-life layer's later pass
