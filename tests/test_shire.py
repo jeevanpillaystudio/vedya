@@ -1,4 +1,9 @@
-"""Shire builds what the Fusion 360 script built at a36cc3c, part by part and as a whole."""
+"""Shire builds what the Fusion 360 script built at a36cc3c, part by part and as a whole.
+
+With `clip_to_board=False` it builds the 2024 model exactly, and that build is held to
+the goldens. The default cuts layer-0 to the board, and is held to the 2024 build cut to
+the board.
+"""
 
 import math
 
@@ -8,7 +13,7 @@ import pytest
 from references import differences
 from tools.legacy import golden
 from vedya.designs.shire import PART_NAMES, SeedPass, ShireParams, build, seed_layer
-from vedya.geometry import Region, circle
+from vedya.geometry import Region, circle, rectangle, slab
 from vedya.model import Model, fingerprint
 from vedya.patterns import seed_of_life
 
@@ -18,17 +23,48 @@ def test_every_part_of_the_script_is_built_in_its_order(shire: Model) -> None:
 
 
 @pytest.mark.parametrize("name", PART_NAMES)
-def test_each_part_matches_the_golden_from_the_fusion_script(shire: Model, name: str) -> None:
+def test_each_part_matches_the_golden_from_the_fusion_script(
+    shire_unclipped: Model, name: str
+) -> None:
     expected = golden.read("shire").parts[name]
-    assert not differences(fingerprint(shire.parts[name]), expected)
+    assert not differences(fingerprint(shire_unclipped.parts[name]), expected)
 
 
-def test_the_aggregate_is_the_aggregators_one_body(shire_aggregate: bd.Part) -> None:
+def test_the_aggregate_is_the_aggregators_one_body(shire_unclipped_aggregate: bd.Part) -> None:
     expected = golden.read("shire").aggregate
     assert expected is not None
-    assert shire_aggregate.is_valid
-    assert len(shire_aggregate.solids()) == 1
+    assert shire_unclipped_aggregate.is_valid
+    assert len(shire_unclipped_aggregate.solids()) == 1
+    assert not differences(fingerprint(shire_unclipped_aggregate), expected)
+
+
+def within_the_board(part: bd.Part) -> bd.Part:
+    """What of `part` lies over the board, 640 by 960 mm, at any height of the design.
+
+    A 3D intersection with the board's prism: a route of its own, apart from the design's
+    cut of layer-0's mask in the plane."""
+    return bd.Part((part & slab(rectangle(640.0, 960.0), -1.0, 40.4)).solids())
+
+
+def test_layer_0_is_the_2024_layer_cut_to_the_board(shire: Model, shire_unclipped: Model) -> None:
+    expected = fingerprint(within_the_board(shire_unclipped.parts["layer-0"]))
+    assert not differences(fingerprint(shire.parts["layer-0"]), expected)
+
+
+@pytest.mark.slow
+def test_the_aggregate_is_the_2024_aggregate_cut_to_the_board(
+    shire_aggregate: bd.Part, shire_unclipped_aggregate: bd.Part
+) -> None:
+    # Slow only because each fingerprint of the aggregate takes about 6 seconds.
+    expected = fingerprint(within_the_board(shire_unclipped_aggregate))
     assert not differences(fingerprint(shire_aggregate), expected)
+
+
+def test_the_default_build_lies_within_the_board(shire: Model, shire_aggregate: bd.Part) -> None:
+    for name, part in [*shire.parts.items(), ("aggregate", shire_aggregate)]:
+        box = part.bounding_box()
+        assert max(-box.min.X, box.max.X) <= 320.0 + 1e-6, name
+        assert max(-box.min.Y, box.max.Y) <= 480.0 + 1e-6, name
 
 
 def test_the_bg_is_the_board_two_layers_deep(shire: Model) -> None:
@@ -58,10 +94,16 @@ def corners(part: bd.Part) -> tuple[float, ...]:
     return (box.min.X, box.min.Y, box.min.Z, box.max.X, box.max.Y, box.max.Z)
 
 
-def test_layer_0_overhangs_the_long_sides_of_the_board(shire: Model) -> None:
+def test_layer_0_in_2024_overhangs_the_long_sides_of_the_board(shire_unclipped: Model) -> None:
     # Its circle of 360 mm is wider than the board's 640 mm, and nothing trims it.
-    assert corners(shire.parts["layer-0"]) == pytest.approx(
+    assert corners(shire_unclipped.parts["layer-0"]) == pytest.approx(
         (-360.0, -360.0, 19.2, 360.0, 360.0, 28.8), abs=1e-6
+    )
+
+
+def test_layer_0_is_cut_to_the_long_sides_of_the_board(shire: Model) -> None:
+    assert corners(shire.parts["layer-0"]) == pytest.approx(
+        (-320.0, -360.0, 19.2, 320.0, 360.0, 28.8), abs=1e-6
     )
 
 

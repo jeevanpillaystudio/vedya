@@ -6,8 +6,9 @@ fraction of one, up to 38.4 mm. Its parts, in the order the Fusion 360 script bu
 - `bg`: the board, two layers thick.
 - `border`: a wall six layers high along the board's edge, inside it, standing on the bg.
 - `layer-0`: a seed-of-life layer in the circle of 360 mm around the outer diamond, from
-  four layers up. The circle is wider than the board, so the layer overhangs the board's
-  long sides, from 320 to 360 mm out, as the script built it.
+  four layers up. The circle is wider than the board: by default the layer is cut to the
+  board, and with `clip_to_board=False` it overhangs the board's long sides, from 320 to
+  360 mm out, as the script built it.
 - `layer-2`: a seed-of-life layer on the board outside that circle, from four layers up
   to the top.
 - `layer-1`: a seed-of-life layer between the outer and middle diamonds, from two layers
@@ -86,6 +87,11 @@ class ShireParams:
         layer_0: The passes of the seed-of-life layer in the circle around the outer diamond.
         layer_2: The passes of the seed-of-life layer outside that circle.
         layer_1: The passes of the seed-of-life layer between the outer and middle diamonds.
+        clip_to_board: Whether layer-0 is cut to the board. The 2024 script drew its circle
+            of 360 mm on a board 640 mm wide, so that it overhung the board's long sides by
+            up to 40 mm, which the milled board could not hold. True, the default, cuts it
+            to the board, as layer-2 is cut. False builds the 2024 model exactly, overhang
+            included, as the goldens pin it.
     """
 
     layer: float = 4.8
@@ -99,6 +105,7 @@ class ShireParams:
     layer_0: tuple[SeedPass, ...] = (SeedPass(200, 9.6, 9.6, 4), SeedPass(640, 28.8, 4.8, 4))
     layer_2: tuple[SeedPass, ...] = (SeedPass(440, 9.6, 19.2, 6), SeedPass(720, 9.6, 9.6, 4))
     layer_1: tuple[SeedPass, ...] = (SeedPass(280, 19.2, 19.2, 6), SeedPass(160, 9.6, 9.6, 4))
+    clip_to_board: bool = True
 
 
 # Each part makes its regions afresh where it uses them: a region combined twice may be
@@ -184,7 +191,12 @@ class _Slab:
 
 def _layer_0(params: ShireParams) -> bd.Part:
     outer = params.diamonds[0]
-    return seed_layer(circle(_SEED_CIRCLE) - diamond(outer), 4 * params.layer, params.layer_0)
+    mask: Region = circle(_SEED_CIRCLE) - diamond(outer)
+    if params.clip_to_board:
+        # A seed of life carves the same region from the mask whether the mask is cut to
+        # the board before or after, so this is the 2024 layer cut to the board.
+        mask = mask & _board(params)
+    return seed_layer(mask, 4 * params.layer, params.layer_0)
 
 
 def _layer_2(params: ShireParams) -> bd.Part:

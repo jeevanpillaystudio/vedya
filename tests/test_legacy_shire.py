@@ -2,7 +2,8 @@
 
 The golden comes from a36cc3c, the last Shire that imports, in August 2024. The piece was
 milled from 57f2b02, in April, whose flat script builds the same parts in the same order
-and stops before any aggregator; the union of its parts is August's aggregate.
+and stops before any aggregator; the union of its parts is August's aggregate. The new
+Shire is compared as the 2024 script built it, with `clip_to_board=False`.
 
 These tests read git history, and need a clone with every commit.
 """
@@ -74,27 +75,27 @@ def xor_volume(a: Stack, b: Stack) -> float:
 
 @pytest.mark.parametrize("name", PART_NAMES)
 def test_each_new_part_fills_the_space_the_scripts_did(
-    stand_in: golden.Built[Stack], shire: Model, name: str
+    stand_in: golden.Built[Stack], shire_unclipped: Model, name: str
 ) -> None:
     old = stand_in.parts[name]
-    new = Stack.of_solid(shire.parts[name])
+    new = Stack.of_solid(shire_unclipped.parts[name])
     assert xor_volume(new, old) < XOR_RELATIVE * old.fingerprint().volume
 
 
 def test_the_new_aggregate_fills_the_space_the_aggregators_body_did(
-    stand_in: golden.Built[Stack], shire_aggregate: bd.Part
+    stand_in: golden.Built[Stack], shire_unclipped_aggregate: bd.Part
 ) -> None:
     assert stand_in.aggregate is not None
     old = stand_in.aggregate
-    new = Stack.of_solid(shire_aggregate)
+    new = Stack.of_solid(shire_unclipped_aggregate)
     assert xor_volume(new, old) < XOR_RELATIVE * old.fingerprint().volume
 
 
 def test_the_xor_volume_sees_a_part_a_thousandth_too_large(
-    stand_in: golden.Built[Stack], shire: Model
+    stand_in: golden.Built[Stack], shire_unclipped: Model
 ) -> None:
     old = stand_in.parts["middle-ring"]
-    larger = Stack.of_solid(shire.parts["middle-ring"]).scaled(1.001)
+    larger = Stack.of_solid(shire_unclipped.parts["middle-ring"]).scaled(1.001)
     assert xor_volume(larger, old) > 1000 * XOR_RELATIVE * old.fingerprint().volume
 
 
