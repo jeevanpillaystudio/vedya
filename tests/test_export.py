@@ -6,10 +6,10 @@ import build123d as bd
 import numpy as np
 import pytest
 
-from stl_mesh import mesh_bounds, mesh_volume, read_stl
-from vedya.export import LINEAR_TOLERANCE, SUFFIXES, export
+from stl_mesh import is_closed, mesh_bounds, mesh_volume, read_3mf, read_stl
+from vedya.export import LINEAR_TOLERANCE, SUFFIXES, _triangles, export
 from vedya.geometry import circle, rectangle, slab
-from vedya.model import fingerprint
+from vedya.model import fingerprint, union
 
 TILE = slab(rectangle(32.0, 32.0) - circle(3.1), 0.0, 3.0)
 DISC = slab(circle(640.0), -2.5, 1.5)
@@ -35,6 +35,49 @@ def test_stl_lies_within_the_linear_tolerance(tmp_path: Path, solid: bd.Part) ->
     np.testing.assert_allclose(high, exact.bbox_max, atol=LINEAR_TOLERANCE)
 
 
+@pytest.mark.parametrize("solid", [TILE, DISC], ids=["tile", "disc"])
+def test_3mf_is_a_closed_mesh_within_the_linear_tolerance(tmp_path: Path, solid: bd.Part) -> None:
+    export(solid, tmp_path / "solid.3mf")
+    mesh = read_3mf(tmp_path / "solid.3mf")
+    assert mesh.unit == "millimeter"
+    assert is_closed(mesh.corners)
+    exact = fingerprint(solid)
+    assert abs(mesh_volume(mesh.triangles) - exact.volume) <= LINEAR_TOLERANCE * exact.area
+    low, high = mesh_bounds(mesh.triangles)
+    np.testing.assert_allclose(low, exact.bbox_min, atol=LINEAR_TOLERANCE)
+    np.testing.assert_allclose(high, exact.bbox_max, atol=LINEAR_TOLERANCE)
+
+
+def square(x: float, y: float) -> bd.Sketch:
+    return bd.Pos(x, y) * rectangle(1.0, 1.0)
+
+
+@pytest.mark.parametrize(
+    "solid",
+    [
+        # Side by side, one above the other: they touch along a level line.
+        union([slab(square(0.5, 0.5), 0.0, 1.0), slab(square(1.5, 0.5), 1.0, 1.0)]),
+        # Corner to corner: they touch along an upright line.
+        union([slab(square(0.5, 0.5), 0.0, 1.0), slab(square(1.5, 1.5), 0.0, 1.0)]),
+    ],
+    ids=["level", "upright"],
+)
+def test_3mf_of_pieces_that_touch_along_a_line_is_closed(tmp_path: Path, solid: bd.Part) -> None:
+    # Four faces of the solid meet at the line, so the mesh as meshed crosses each side
+    # along it twice each way; each piece is given its own.
+    _, welded = _triangles(solid)
+    assert not is_closed(welded.astype(np.intp))
+    export(solid, tmp_path / "touching.3mf")
+    mesh = read_3mf(tmp_path / "touching.3mf")
+    assert is_closed(mesh.corners)
+    assert mesh_volume(mesh.triangles) == pytest.approx(2.0, rel=1e-6)
+
+
+def test_3mf_is_written_for_an_upper_case_suffix(tmp_path: Path) -> None:
+    export(TILE, tmp_path / "tile.3MF")
+    assert is_closed(read_3mf(tmp_path / "tile.3MF").corners)
+
+
 @pytest.mark.parametrize("suffix", [".step", ".stp", ".STEP"])
 def test_step_keeps_the_exact_solid(tmp_path: Path, suffix: str) -> None:
     path = tmp_path / f"tile{suffix}"
@@ -47,8 +90,10 @@ def test_step_keeps_the_exact_solid(tmp_path: Path, suffix: str) -> None:
 
 
 def test_an_unknown_suffix_names_the_supported_ones(tmp_path: Path) -> None:
+    assert SUFFIXES == (".3mf", ".step", ".stl", ".stp")
     with pytest.raises(ValueError, match=", ".join(SUFFIXES)):
         export(TILE, tmp_path / "tile.obj")
+    assert not (tmp_path / "tile.obj").exists()
 
 
 def test_a_missing_folder_is_reported(tmp_path: Path) -> None:
