@@ -7,8 +7,10 @@ import pytest
 
 from references import differences
 from tools.legacy import golden
-from vedya.designs.shire import PART_NAMES, SeedPass, ShireParams, build
+from vedya.designs.shire import PART_NAMES, SeedPass, ShireParams, build, seed_layer
+from vedya.geometry import Region, circle
 from vedya.model import Model, fingerprint
+from vedya.patterns import seed_of_life
 
 
 def test_every_part_of_the_script_is_built_in_its_order(shire: Model) -> None:
@@ -82,6 +84,32 @@ def test_layer_1_lies_between_the_outer_and_middle_diamonds(shire: Model) -> Non
 # Each is refused by the first part that uses it, before the slow parts are built. An
 # astroid too small for its wall is refused by `astroid` itself (test_geometry), and only
 # after the three layers, so it is not built here again.
+def test_a_later_step_cuts_back_an_earlier_slab_to_its_own_heights() -> None:
+    # The earlier pass's slabs stand from 0 to 1, 1 to 2 and 2 to 3 mm; the later pass's
+    # one step from 0 to 1.5 mm. The first earlier slab lies within the step and stays
+    # whole, the second straddles its top and keeps only 1 to 1.5 mm, and the third lies
+    # wholly above it and stays whole: nothing stands from 1.5 to 2 mm.
+    earlier, later = SeedPass(20.0, 1.0, 3.0, 3), SeedPass(30.0, 1.0, 1.5, 1)
+    layer = seed_layer(circle(60.0), 0.0, (earlier, later))
+
+    def carved(radius: float, stroke: float) -> Region:
+        return circle(60.0) - seed_of_life(radius, stroke)
+
+    def area(*regions: Region) -> float:
+        """The area of the union of `regions`."""
+        first, *rest = regions
+        return fingerprint(bd.Sketch((first + rest).faces())).area
+
+    expected = (
+        area(carved(20.0, 1.0), carved(30.0, 1.0)) * 1.0
+        + area(carved(20.0, 2.0), carved(30.0, 1.0)) * 0.5
+        + area(carved(20.0, 3.0)) * 1.0
+    )
+    assert fingerprint(layer).volume == pytest.approx(expected, rel=1e-9)
+    top = layer.bounding_box().max.Z
+    assert top == pytest.approx(3.0, abs=1e-9)
+
+
 @pytest.mark.parametrize(
     ("params", "message"),
     [

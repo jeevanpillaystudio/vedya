@@ -21,6 +21,11 @@ fraction of one, up to 38.4 mm. Its parts, in the order the Fusion 360 script bu
 A seed-of-life layer is a region, its mask, carved by seeds of life in two passes whose
 steps differ; where they overlap, the later pass's steps hold (see `seed_layer`).
 
+The torus adds nothing to the aggregate. Its region lies inside the core's top astroid
+slab, over the same heights, so the core already holds all of it. The piece milled in
+2024 agrees: within 90 mm of the centre, its toolpaths cut no deeper than 4.8 mm, the
+top of that slab. The torus is kept as a part because the 2024 design built it.
+
 A diamond is a square turned 45°, given by its half-diagonal. An astroid is given by the
 distance from its centre to a cusp.
 """
@@ -123,13 +128,22 @@ def seed_layer(mask: Region, start: float, passes: Sequence[SeedPass]) -> bd.Par
     pass's `stroke` at each step up (`depth_steps`). The seed's centre ring is stroked
     inside its circle and its petals astride theirs, as the Fusion 360 script drew them.
 
-    The slabs are laid in order, pass after pass and each pass from the bottom up, and
-    each one cuts back every slab laid before it that it overlaps in height to the
-    heights the two share. The passes all rise from `start`, so a later pass's slabs
-    trim the earlier passes' to their own steps, and above the later pass's top the
-    earlier passes stand alone. The layer is the union of what is left. That is how the
-    piece was milled: in Fusion, each step's intersect with the mask reached every body
-    in the layer.
+    The slabs are laid in order, pass after pass and each pass from the bottom up. Each
+    slab laid cuts back every slab laid before it to its own heights, as Fusion's
+    intersect of a step with the mask kept, of every body in the layer, only what lay
+    within the step's heights:
+
+    - an earlier slab that shares no height with it, or only meets it, is left whole;
+    - one that lies wholly within its heights is left whole;
+    - one that straddles its top or its bottom loses all of itself outside its heights,
+      above as below.
+
+    The layer is the union of what is left. The passes all rise from `start`, so an
+    earlier pass stands above a later pass's top only in slabs that lie wholly above it;
+    a slab that straddles that top ends at it or lower. In Shire each later pass's top
+    meets an edge of the earlier pass's steps, so above it the earlier pass stands whole.
+    That is how the piece was milled: in Fusion, each step's intersect with the mask
+    reached every body in the layer.
     """
     if not passes:
         raise ValueError("a seed-of-life layer needs at least one pass")
