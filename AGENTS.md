@@ -10,6 +10,7 @@ Read `CONTEXT.md` for the domain words and `docs/adr/` for the decisions before 
 - `make check` runs ruff, ruff format, pyright in strict mode and the fast tests. Run it before every commit. `make format` fixes what ruff can.
 - `make slow` runs the slow tests: the 2024 scripts on the stand-in, the milestone-1 STLs, April against August, the new Shire against the stand-in, the toolpaths, and the 2024 library. Run it when a change touches geometry, a design, `tools/legacy/` or `tests/golden/`. It reads old commits, so it needs full history (`git fetch --unshallow` in a shallow clone).
 - `uv run vedya build <design> --out out/` and `make designs` write files into `out/`, which git ignores.
+- `make figures` builds the designs and redraws the README's images in `docs/images/` with the `docs` dependency group, which neither `uv sync` nor CI installs. Run it when a change alters what a design builds or what `tools/figures.py` draws, commit the images it changes, and update the toolpath table in `README.md` from what it prints.
 - CI runs the lint job, the fast tests on Linux, macOS and Windows, and the slow tests. All must pass before a merge.
 
 ## Goldens
